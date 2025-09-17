@@ -1,0 +1,165 @@
+
+---
+# Validation tasks for hx_ca_trust_standardized role
+# Comprehensive input validation following security best practices
+
+- name: Validate required variables are defined
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_ca_name is defined
+      - hx_ca_trust_ca_name | length > 0
+      - hx_ca_trust_ca_organization is defined
+      - hx_ca_trust_ca_organization | length > 0
+      - hx_ca_trust_cert_dir is defined
+      - hx_ca_trust_private_dir is defined
+    fail_msg: "Required CA trust variables are not properly defined"
+    success_msg: "Required variables validation passed"
+
+- name: Validate certificate paths
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_ca_cert_path is defined
+      - hx_ca_trust_ca_cert_path | length > 0
+      - hx_ca_trust_ca_key_path is defined
+      - hx_ca_trust_ca_key_path | length > 0
+      - "'/etc/ssl' in hx_ca_trust_ca_cert_path or '/usr/local' in hx_ca_trust_ca_cert_path"
+    fail_msg: "Certificate paths must be properly defined and in secure locations"
+    success_msg: "Certificate paths validation passed"
+
+- name: Validate key size
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_key_size | int >= 2048
+      - hx_ca_trust_key_size | int in [2048, 3072, 4096, 8192]
+    fail_msg: "Key size must be at least 2048 bits and a standard size"
+    success_msg: "Key size validation passed"
+
+- name: Validate certificate validity period
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_validity_days | int > 0
+      - hx_ca_trust_validity_days | int <= 7300  # Max 20 years
+    fail_msg: "Certificate validity must be between 1 and 7300 days"
+    success_msg: "Certificate validity validation passed"
+
+- name: Validate digest algorithm
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_digest in ['sha256', 'sha384', 'sha512']
+    fail_msg: "Digest algorithm must be sha256, sha384, or sha512"
+    success_msg: "Digest algorithm validation passed"
+
+- name: Validate file permissions
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_cert_mode | string | regex_search('^0[0-7]{3}$')
+      - hx_ca_trust_key_mode | string | regex_search('^0[0-7]{3}$')
+      - hx_ca_trust_key_mode | string <= '0600'  # Private keys should be restrictive
+    fail_msg: "File permissions must be valid octal format and secure"
+    success_msg: "File permissions validation passed"
+
+- name: Validate owner and group
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_file_owner is defined
+      - hx_ca_trust_file_owner | length > 0
+      - hx_ca_trust_file_group is defined
+      - hx_ca_trust_file_group | length > 0
+    fail_msg: "File owner and group must be defined"
+    success_msg: "Owner and group validation passed"
+
+- name: Validate country code
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_ca_country | length == 2
+      - hx_ca_trust_ca_country | regex_search('^[A-Z]{2}$')
+    fail_msg: "Country code must be a valid 2-letter ISO code"
+    success_msg: "Country code validation passed"
+
+- name: Validate key usage extensions
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_key_usage is defined
+      - hx_ca_trust_key_usage | length > 0
+      - "'keyCertSign' in hx_ca_trust_key_usage"  # Required for CA
+    fail_msg: "Key usage must be defined and include keyCertSign for CA"
+    success_msg: "Key usage validation passed"
+
+- name: Validate expiration warning days
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_expiration_warning_days | int > 0
+      - hx_ca_trust_expiration_warning_days | int <= 365
+    fail_msg: "Expiration warning days must be between 1 and 365"
+    success_msg: "Expiration warning validation passed"
+  when: hx_ca_trust_check_expiration | default(false)
+
+- name: Validate backup retention
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_backup_retention_days | int > 0
+      - hx_ca_trust_backup_retention_days | int <= 2555  # Max ~7 years
+    fail_msg: "Backup retention must be between 1 and 2555 days"
+    success_msg: "Backup retention validation passed"
+  when: hx_ca_trust_backup_enabled | default(false)
+
+- name: Validate log level
+  ansible.builtin.assert:
+    that:
+      - hx_ca_trust_log_level in ['DEBUG', 'INFO', 'WARN', 'ERROR']
+    fail_msg: "Log level must be DEBUG, INFO, WARN, or ERROR"
+    success_msg: "Log level validation passed"
+  when: hx_ca_trust_enable_logging | default(false)
+
+- name: Validate intermediate CAs structure
+  ansible.builtin.assert:
+    that:
+      - item.name is defined
+      - item.cert_path is defined
+      - item.key_path is defined
+    fail_msg: "Intermediate CA entries must have name, cert_path, and key_path"
+    success_msg: "Intermediate CAs validation passed"
+  loop: "{{ hx_ca_trust_intermediate_cas }}"
+  when: hx_ca_trust_intermediate_cas | length > 0
+
+- name: Validate certificate templates
+  ansible.builtin.assert:
+    that:
+      - item.value.key_usage is defined
+      - item.value.extended_key_usage is defined
+      - item.value.validity_days is defined
+      - item.value.validity_days | int > 0
+    fail_msg: "Certificate templates must have key_usage, extended_key_usage, and validity_days"
+    success_msg: "Certificate templates validation passed"
+  loop: "{{ hx_ca_trust_certificate_templates | dict2items }}"
+  when: hx_ca_trust_certificate_templates | length > 0
+
+- name: Check system compatibility
+  ansible.builtin.assert:
+    that:
+      - ansible_os_family in ['Debian', 'RedHat', 'Suse']
+      - ansible_python_version is version('3.6', '>=')
+    fail_msg: "System must be Debian/RedHat/Suse family with Python 3.6+"
+    success_msg: "System compatibility validation passed"
+
+- name: Validate required packages availability
+  ansible.builtin.package_facts:
+    manager: auto
+
+- name: Check OpenSSL availability
+  ansible.builtin.command: openssl version
+  register: openssl_version
+  changed_when: false
+  failed_when: openssl_version.rc != 0
+
+- name: Validate OpenSSL version
+  ansible.builtin.assert:
+    that:
+      - openssl_version.stdout is version('1.1.1', '>=')
+    fail_msg: "OpenSSL version must be 1.1.1 or higher for security"
+    success_msg: "OpenSSL version validation passed"
+
+- name: Log validation completion
+  ansible.builtin.debug:
+    msg: "All validation checks passed successfully for CA trust configuration"
+  when: hx_ca_trust_enable_logging | default(true)

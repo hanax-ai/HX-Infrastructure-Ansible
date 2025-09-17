@@ -1,0 +1,339 @@
+
+---
+# Configuration tasks for hx_domain_join_standardized role
+# Post-installation configuration and system integration
+
+- name: Configure SSSD advanced settings
+  block:
+    - name: Update SSSD configuration with advanced settings
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        insertafter: "{{ item.section }}"
+      loop:
+        - regexp: '^cache_credentials'
+          line: "cache_credentials = {{ hx_domain_join_sssd_cache_credentials | lower }}"
+          section: '^\[domain/'
+        - regexp: '^enumerate'
+          line: "enumerate = {{ hx_domain_join_sssd_enumerate | lower }}"
+          section: '^\[domain/'
+        - regexp: '^case_sensitive'
+          line: "case_sensitive = {{ hx_domain_join_sssd_case_sensitive | lower }}"
+          section: '^\[domain/'
+        - regexp: '^use_fully_qualified_names'
+          line: "use_fully_qualified_names = {{ hx_domain_join_use_fully_qualified_names | lower }}"
+          section: '^\[domain/'
+        - regexp: '^fallback_homedir'
+          line: "fallback_homedir = {{ hx_domain_join_home_directory_template }}"
+          section: '^\[domain/'
+        - regexp: '^default_shell'
+          line: "default_shell = /bin/bash"
+          section: '^\[domain/'
+      become: true
+      notify: restart sssd
+
+    - name: Configure SSSD cache timeouts
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        insertafter: '^\[domain/'
+      loop:
+        - regexp: '^entry_cache_timeout'
+          line: "entry_cache_timeout = {{ hx_domain_join_entry_cache_timeout }}"
+        - regexp: '^account_cache_expiration'
+          line: "account_cache_expiration = {{ hx_domain_join_cache_timeout }}"
+        - regexp: '^enum_cache_timeout'
+          line: "enum_cache_timeout = {{ hx_domain_join_enum_cache_timeout }}"
+        - regexp: '^memcache_timeout'
+          line: "memcache_timeout = {{ hx_domain_join_memcache_timeout }}"
+      become: true
+      notify: restart sssd
+
+    - name: Configure SSSD access control
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^access_provider'
+        line: "access_provider = {{ hx_domain_join_sssd_access_provider }}"
+        insertafter: '^\[domain/'
+      become: true
+      notify: restart sssd
+
+    - name: Configure allowed groups in SSSD
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^ad_access_filter'
+        line: "ad_access_filter = (memberOf:1.2.840.113556.1.4.1941:={{ hx_domain_join_allowed_groups | map('regex_replace', '^(.*)$', 'CN=\\1,CN=Users,DC=' + hx_domain_join_domain_name.split('.') | join(',DC=')) | join(')(memberOf:1.2.840.113556.1.4.1941:=') }})"
+        insertafter: '^\[domain/'
+      become: true
+      notify: restart sssd
+      when: 
+        - hx_domain_join_allowed_groups | length > 0
+        - hx_domain_join_sssd_access_provider == "ad"
+  when: hx_domain_join_use_sssd | default(true)
+
+- name: Configure automatic home directory creation
+  block:
+    - name: Ensure home directory base exists
+      ansible.builtin.file:
+        path: /home
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+
+    - name: Configure PAM mkhomedir module
+      ansible.builtin.lineinfile:
+        path: "{{ item }}"
+        regexp: '^session.*pam_mkhomedir.so'
+        line: "session required pam_mkhomedir.so skel=/etc/skel umask=077"
+        insertafter: '^session.*pam_unix.so'
+      loop:
+        - /etc/pam.d/common-session
+        - /etc/pam.d/sshd
+      become: true
+      when: ansible_os_family == "Debian"
+
+    - name: Configure PAM mkhomedir module (RedHat)
+      ansible.builtin.lineinfile:
+        path: "{{ item }}"
+        regexp: '^session.*pam_mkhomedir.so'
+        line: "session required pam_mkhomedir.so skel=/etc/skel umask=077"
+        insertafter: '^session.*pam_unix.so'
+      loop:
+        - /etc/pam.d/system-auth
+        - /etc/pam.d/password-auth
+      become: true
+      when: ansible_os_family == "RedHat"
+
+- name: Configure session management
+  block:
+    - name: Configure session timeout
+      ansible.builtin.lineinfile:
+        path: /etc/profile.d/session-timeout.sh
+        line: "export TMOUT={{ hx_domain_join_session_timeout }}"
+        create: true
+        mode: '0644'
+      become: true
+
+    - name: Configure idle timeout
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?ClientAliveInterval'
+        line: "ClientAliveInterval {{ hx_domain_join_idle_timeout }}"
+        backup: true
+      become: true
+      notify: restart sshd
+
+    - name: Configure maximum sessions
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?MaxSessions'
+        line: "MaxSessions 10"
+        backup: true
+      become: true
+      notify: restart sshd
+
+- name: Configure service integrations
+  block:
+    - name: Configure SSH integration
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backup: true
+      loop:
+        - regexp: '^#?AuthorizedKeysCommand'
+          line: 'AuthorizedKeysCommand /usr/bin/sss_ssh_authorizedkeys'
+        - regexp: '^#?AuthorizedKeysCommandUser'
+          line: 'AuthorizedKeysCommandUser nobody'
+      become: true
+      notify: restart sshd
+      when: "'ssh' in hx_domain_join_integrate_with_services"
+
+    - name: Configure sudo integration
+      ansible.builtin.template:
+        src: sudoers-domain.j2
+        dest: /etc/sudoers.d/10-domain-users
+        owner: root
+        group: root
+        mode: '0440'
+        validate: 'visudo -cf %s'
+      become: true
+      when: "'sudo' in hx_domain_join_integrate_with_services"
+
+    - name: Configure cron integration
+      ansible.builtin.lineinfile:
+        path: /etc/cron.allow
+        line: "{{ item }}"
+        create: true
+        mode: '0644'
+      loop: "{{ hx_domain_join_allowed_groups }}"
+      become: true
+      when: "'cron' in hx_domain_join_integrate_with_services"
+
+- name: Configure monitoring and health checks
+  block:
+    - name: Create domain health check script
+      ansible.builtin.template:
+        src: domain-health-check.sh.j2
+        dest: /usr/local/bin/hx-domain-health-check
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+
+    - name: Create domain health check cron job
+      ansible.builtin.cron:
+        name: "HX Domain Health Check"
+        job: "/usr/local/bin/hx-domain-health-check"
+        minute: "*/15"
+        user: root
+      become: true
+      when: hx_domain_join_health_checks | default(false)
+
+    - name: Create domain connectivity monitor
+      ansible.builtin.template:
+        src: domain-connectivity-monitor.sh.j2
+        dest: /usr/local/bin/hx-domain-connectivity-monitor
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+
+- name: Configure failover settings
+  block:
+    - name: Configure SSSD failover
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        insertafter: '^\[domain/'
+      loop:
+        - regexp: '^ad_server'
+          line: "ad_server = {{ hx_domain_join_failover_primary }}"
+        - regexp: '^ad_backup_server'
+          line: "ad_backup_server = {{ hx_domain_join_failover_backup | join(', ') }}"
+        - regexp: '^offline_credentials_expiration'
+          line: "offline_credentials_expiration = {{ hx_domain_join_offline_credentials_expiration }}"
+        - regexp: '^offline_failed_login_attempts'
+          line: "offline_failed_login_attempts = {{ hx_domain_join_offline_failed_login_attempts }}"
+      become: true
+      notify: restart sssd
+      when: hx_domain_join_use_sssd | default(true)
+
+    - name: Configure Kerberos failover
+      ansible.builtin.lineinfile:
+        path: /etc/krb5.conf
+        regexp: '^\s*kdc\s*='
+        line: "    kdc = {{ hx_domain_join_domain_controllers | join(':88\n    kdc = ') }}:88"
+        insertafter: '^\[realms\]'
+      become: true
+
+- name: Configure compliance settings
+  block:
+    - name: Configure password complexity (if strict mode)
+      ansible.builtin.lineinfile:
+        path: /etc/pam.d/common-password
+        regexp: '^password.*pam_pwquality.so'
+        line: "password requisite pam_pwquality.so retry=3 minlen=12 dcredit=-1 ucredit=-1 ocredit=-1 lcredit=-1"
+        backup: true
+      become: true
+      when: 
+        - hx_domain_join_compliance_mode == "strict"
+        - hx_domain_join_password_complexity | default(false)
+        - ansible_os_family == "Debian"
+
+    - name: Configure account lockout
+      ansible.builtin.lineinfile:
+        path: /etc/pam.d/common-auth
+        regexp: '^auth.*pam_faillock.so'
+        line: "auth required pam_faillock.so preauth audit silent deny=5 unlock_time=900"
+        insertafter: '^auth.*pam_env.so'
+        backup: true
+      become: true
+      when: 
+        - hx_domain_join_compliance_mode == "strict"
+        - hx_domain_join_account_lockout | default(false)
+        - ansible_os_family == "Debian"
+
+- name: Configure notification system
+  block:
+    - name: Create notification script
+      ansible.builtin.template:
+        src: domain-notify.sh.j2
+        dest: /usr/local/bin/hx-domain-notify
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+
+    - name: Test notification system
+      ansible.builtin.command:
+        cmd: /usr/local/bin/hx-domain-notify test
+      become: true
+      changed_when: false
+      failed_when: false
+  when: hx_domain_join_notifications_enabled | default(false)
+
+- name: Configure log rotation
+  ansible.builtin.template:
+    src: logrotate-domain.j2
+    dest: /etc/logrotate.d/hx-domain-join
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+
+- name: Create domain join management scripts
+  block:
+    - name: Create domain status script
+      ansible.builtin.template:
+        src: domain-status.sh.j2
+        dest: /usr/local/bin/hx-domain-status
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+
+    - name: Create domain leave script
+      ansible.builtin.template:
+        src: domain-leave.sh.j2
+        dest: /usr/local/bin/hx-domain-leave
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+
+    - name: Create domain rejoin script
+      ansible.builtin.template:
+        src: domain-rejoin.sh.j2
+        dest: /usr/local/bin/hx-domain-rejoin
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+
+- name: Log configuration completion
+  ansible.builtin.lineinfile:
+    path: "{{ hx_domain_join_audit_log_path }}"
+    line: "{{ ansible_date_time.iso8601 }} - Domain join configuration completed on {{ inventory_hostname }}"
+    create: true
+  become: true
+  when: hx_domain_join_audit_enabled | default(false)
+
+- name: Display configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "Domain join configuration completed successfully"
+      - "SSSD Advanced Settings: Configured"
+      - "Home Directory Creation: Enabled"
+      - "Session Management: Configured"
+      - "Service Integrations: {{ hx_domain_join_integrate_with_services | length }}"
+      - "Health Checks: {{ 'Enabled' if hx_domain_join_health_checks else 'Disabled' }}"
+      - "Failover Configuration: Enabled"
+      - "Compliance Mode: {{ hx_domain_join_compliance_mode }}"
+      - "Notifications: {{ 'Enabled' if hx_domain_join_notifications_enabled else 'Disabled' }}"
+  when: hx_domain_join_enable_logging | default(true)

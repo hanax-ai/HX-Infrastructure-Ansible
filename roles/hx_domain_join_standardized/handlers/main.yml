@@ -1,0 +1,102 @@
+
+---
+# Handlers for hx_domain_join_standardized role
+# Event-driven actions triggered by configuration changes
+
+- name: restart sssd
+  ansible.builtin.systemd:
+    name: sssd
+    state: restarted
+    enabled: true
+    daemon_reload: true
+  become: true
+  listen: "restart sssd"
+
+- name: restart sshd
+  ansible.builtin.systemd:
+    name: sshd
+    state: restarted
+  become: true
+  listen: "restart sshd"
+
+- name: restart chrony
+  ansible.builtin.systemd:
+    name: chrony
+    state: restarted
+    enabled: true
+  become: true
+  listen: "restart chrony"
+  when: ansible_os_family == "Debian"
+
+- name: restart chronyd
+  ansible.builtin.systemd:
+    name: chronyd
+    state: restarted
+    enabled: true
+  become: true
+  listen: "restart chronyd"
+  when: ansible_os_family == "RedHat"
+
+- name: restart systemd-resolved
+  ansible.builtin.systemd:
+    name: systemd-resolved
+    state: restarted
+  become: true
+  listen: "restart systemd-resolved"
+
+- name: restart auditd
+  ansible.builtin.systemd:
+    name: auditd
+    state: restarted
+  become: true
+  listen: "restart auditd"
+
+- name: restart fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: restarted
+    enabled: true
+  become: true
+  listen: "restart fail2ban"
+
+- name: reload firewall
+  ansible.builtin.systemd:
+    name: "{{ 'ufw' if ansible_os_family == 'Debian' else 'firewalld' }}"
+    state: reloaded
+  become: true
+  listen: "reload firewall"
+
+- name: update nsswitch
+  ansible.builtin.command:
+    cmd: nscd -i passwd
+  become: true
+  listen: "update nsswitch"
+  failed_when: false
+
+- name: clear sssd cache
+  ansible.builtin.command:
+    cmd: sss_cache -E
+  become: true
+  listen: "clear sssd cache"
+  failed_when: false
+
+- name: send domain notification
+  ansible.builtin.command:
+    cmd: /usr/local/bin/hx-domain-notify "{{ notification_message | default('Domain configuration updated') }}"
+  become: true
+  listen: "send domain notification"
+  when: hx_domain_join_notifications_enabled | default(false)
+
+- name: update domain health check
+  ansible.builtin.command:
+    cmd: /usr/local/bin/hx-domain-health-check --update
+  become: true
+  listen: "update domain health check"
+  when: hx_domain_join_health_checks | default(false)
+
+- name: backup domain config
+  ansible.builtin.command:
+    cmd: /usr/local/bin/hx-domain-backup
+  become: true
+  listen: "backup domain config"
+  when: hx_domain_join_backup_enabled | default(false)

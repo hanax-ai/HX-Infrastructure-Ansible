@@ -1,0 +1,29 @@
+
+---
+# Main tasks for hx_domain_join_standardized role
+# Implements SOLID principles with comprehensive Active Directory domain join
+
+- name: Include validation tasks
+  ansible.builtin.include_tasks: validate.yml
+  tags: [validation, always]
+
+- name: Include preparation tasks
+  ansible.builtin.include_tasks: prepare.yml
+  tags: [preparation, setup]
+
+- name: Include installation tasks
+  ansible.builtin.include_tasks: install.yml
+  tags: [installation, domain_join]
+
+- name: Include configuration tasks
+  ansible.builtin.include_tasks: configure.yml
+  tags: [configuration, setup]
+
+- name: Include security tasks
+  ansible.builtin.include_tasks: security.yml
+  tags: [security, hardening]
+
+- name: Include verification tasks
+  ansible.builtin.include_tasks: verify.yml
+  tags: [verification, testing]
+  when: hx_domain_join_run_tests | default(true)

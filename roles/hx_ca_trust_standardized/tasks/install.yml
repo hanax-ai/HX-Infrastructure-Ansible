@@ -1,0 +1,193 @@
+
+---
+# Installation tasks for hx_ca_trust_standardized role
+# Certificate Authority creation and installation
+
+- name: Generate CA private key
+  community.crypto.openssl_privatekey:
+    path: "{{ hx_ca_trust_ca_key_path }}"
+    size: "{{ hx_ca_trust_key_size }}"
+    type: "{{ hx_ca_trust_key_type }}"
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: "{{ hx_ca_trust_key_mode }}"
+    backup: "{{ hx_ca_trust_backup_enabled }}"
+  become: true
+  register: ca_private_key_result
+  when: not existing_ca_key.stat.exists or hx_ca_trust_force_regenerate | default(false)
+
+- name: Generate CA certificate signing request
+  community.crypto.openssl_csr:
+    path: "{{ hx_ca_trust_work_dir }}/ca.csr"
+    privatekey_path: "{{ hx_ca_trust_ca_key_path }}"
+    common_name: "{{ hx_ca_trust_ca_name }}"
+    organization_name: "{{ hx_ca_trust_ca_organization }}"
+    country_name: "{{ hx_ca_trust_ca_country }}"
+    state_or_province_name: "{{ hx_ca_trust_ca_state }}"
+    locality_name: "{{ hx_ca_trust_ca_locality }}"
+    key_usage: "{{ hx_ca_trust_key_usage }}"
+    key_usage_critical: true
+    basic_constraints: "{{ hx_ca_trust_basic_constraints }}"
+    basic_constraints_critical: true
+    extended_key_usage: "{{ hx_ca_trust_extended_key_usage }}"
+    digest: "{{ hx_ca_trust_digest }}"
+  become: true
+  register: ca_csr_result
+  when: not existing_ca_cert.stat.exists or hx_ca_trust_force_regenerate | default(false)
+
+- name: Generate self-signed CA certificate
+  community.crypto.x509_certificate:
+    path: "{{ hx_ca_trust_ca_cert_path }}"
+    privatekey_path: "{{ hx_ca_trust_ca_key_path }}"
+    csr_path: "{{ hx_ca_trust_work_dir }}/ca.csr"
+    provider: selfsigned
+    selfsigned_not_after: "+{{ hx_ca_trust_validity_days }}d"
+    selfsigned_digest: "{{ hx_ca_trust_digest }}"
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: "{{ hx_ca_trust_cert_mode }}"
+    backup: "{{ hx_ca_trust_backup_enabled }}"
+  become: true
+  register: ca_certificate_result
+  when: not existing_ca_cert.stat.exists or hx_ca_trust_force_regenerate | default(false)
+
+- name: Install CA certificate in system trust store (Debian/Ubuntu)
+  ansible.builtin.copy:
+    src: "{{ hx_ca_trust_ca_cert_path }}"
+    dest: "/usr/local/share/ca-certificates/{{ hx_ca_trust_ca_name }}.crt"
+    owner: root
+    group: root
+    mode: '0644'
+    remote_src: true
+  become: true
+  notify: update ca certificates
+  when: 
+    - ansible_os_family == "Debian"
+    - hx_ca_trust_update_system_store | default(true)
+
+- name: Install CA certificate in system trust store (RedHat/CentOS)
+  ansible.builtin.copy:
+    src: "{{ hx_ca_trust_ca_cert_path }}"
+    dest: "/etc/pki/ca-trust/source/anchors/{{ hx_ca_trust_ca_name }}.crt"
+    owner: root
+    group: root
+    mode: '0644'
+    remote_src: true
+  become: true
+  notify: update ca trust
+  when: 
+    - ansible_os_family == "RedHat"
+    - hx_ca_trust_update_system_store | default(true)
+
+- name: Generate intermediate CA certificates
+  block:
+    - name: Generate intermediate CA private keys
+      community.crypto.openssl_privatekey:
+        path: "{{ item.key_path }}"
+        size: "{{ hx_ca_trust_key_size }}"
+        type: "{{ hx_ca_trust_key_type }}"
+        owner: "{{ hx_ca_trust_file_owner }}"
+        group: "{{ hx_ca_trust_file_group }}"
+        mode: "{{ hx_ca_trust_key_mode }}"
+      become: true
+      loop: "{{ hx_ca_trust_intermediate_cas }}"
+
+    - name: Generate intermediate CA CSRs
+      community.crypto.openssl_csr:
+        path: "{{ hx_ca_trust_work_dir }}/{{ item.name }}.csr"
+        privatekey_path: "{{ item.key_path }}"
+        common_name: "{{ item.name }}"
+        organization_name: "{{ hx_ca_trust_ca_organization }}"
+        country_name: "{{ hx_ca_trust_ca_country }}"
+        state_or_province_name: "{{ hx_ca_trust_ca_state }}"
+        locality_name: "{{ hx_ca_trust_ca_locality }}"
+        key_usage: "{{ hx_ca_trust_key_usage }}"
+        key_usage_critical: true
+        basic_constraints: "CA:TRUE, pathlen:0"
+        basic_constraints_critical: true
+        extended_key_usage: "{{ hx_ca_trust_extended_key_usage }}"
+        digest: "{{ hx_ca_trust_digest }}"
+      become: true
+      loop: "{{ hx_ca_trust_intermediate_cas }}"
+
+    - name: Sign intermediate CA certificates
+      community.crypto.x509_certificate:
+        path: "{{ item.cert_path }}"
+        csr_path: "{{ hx_ca_trust_work_dir }}/{{ item.name }}.csr"
+        ownca_path: "{{ hx_ca_trust_ca_cert_path }}"
+        ownca_privatekey_path: "{{ hx_ca_trust_ca_key_path }}"
+        ownca_digest: "{{ hx_ca_trust_digest }}"
+        ownca_not_after: "+{{ (hx_ca_trust_validity_days | int * 0.8) | int }}d"
+        provider: ownca
+        owner: "{{ hx_ca_trust_file_owner }}"
+        group: "{{ hx_ca_trust_file_group }}"
+        mode: "{{ hx_ca_trust_cert_mode }}"
+      become: true
+      loop: "{{ hx_ca_trust_intermediate_cas }}"
+  when: hx_ca_trust_intermediate_cas | length > 0
+
+- name: Install CA certificate in Java keystore
+  community.general.java_cert:
+    cert_path: "{{ hx_ca_trust_ca_cert_path }}"
+    cert_alias: "{{ hx_ca_trust_ca_name }}"
+    keystore_path: "{{ hx_ca_trust_java_keystore_path }}"
+    keystore_pass: "{{ hx_ca_trust_java_keystore_password }}"
+    state: present
+  become: true
+  when: hx_ca_trust_java_keystore_update | default(false)
+
+- name: Create certificate revocation list (CRL)
+  community.crypto.x509_crl:
+    path: "{{ hx_ca_trust_crl_path }}"
+    privatekey_path: "{{ hx_ca_trust_ca_key_path }}"
+    issuer:
+      CN: "{{ hx_ca_trust_ca_name }}"
+      O: "{{ hx_ca_trust_ca_organization }}"
+      C: "{{ hx_ca_trust_ca_country }}"
+    last_update: "+0s"
+    next_update: "+30d"
+    digest: "{{ hx_ca_trust_digest }}"
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: "{{ hx_ca_trust_cert_mode }}"
+  become: true
+  when: hx_ca_trust_crl_enabled | default(false)
+
+- name: Set certificate file attributes
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: "{{ item.mode }}"
+    attributes: "{{ item.attributes | default(omit) }}"
+  loop:
+    - path: "{{ hx_ca_trust_ca_cert_path }}"
+      mode: "{{ hx_ca_trust_cert_mode }}"
+      attributes: "+i"  # Immutable attribute for extra protection
+    - path: "{{ hx_ca_trust_ca_key_path }}"
+      mode: "{{ hx_ca_trust_key_mode }}"
+      attributes: "+i"  # Immutable attribute for extra protection
+  become: true
+  when: hx_ca_trust_secure_deletion | default(true)
+
+- name: Log certificate installation
+  ansible.builtin.lineinfile:
+    path: "{{ hx_ca_trust_audit_log_path }}"
+    line: "{{ ansible_date_time.iso8601 }} - CA certificate installed: {{ hx_ca_trust_ca_cert_path }} on {{ inventory_hostname }}"
+    create: true
+  become: true
+  when: hx_ca_trust_audit_enabled | default(false)
+
+- name: Display installation summary
+  ansible.builtin.debug:
+    msg:
+      - "CA Trust installation completed successfully"
+      - "CA Name: {{ hx_ca_trust_ca_name }}"
+      - "Certificate Path: {{ hx_ca_trust_ca_cert_path }}"
+      - "Private Key Path: {{ hx_ca_trust_ca_key_path }}"
+      - "Key Size: {{ hx_ca_trust_key_size }} bits"
+      - "Validity: {{ hx_ca_trust_validity_days }} days"
+      - "Digest Algorithm: {{ hx_ca_trust_digest }}"
+      - "System Store Updated: {{ hx_ca_trust_update_system_store }}"
+      - "Java Keystore Updated: {{ hx_ca_trust_java_keystore_update }}"
+  when: hx_ca_trust_enable_logging | default(true)

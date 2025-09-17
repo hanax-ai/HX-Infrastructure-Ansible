@@ -1,0 +1,51 @@
+
+---
+# Role Metadata for hx_pg_auth_standardized
+galaxy_info:
+  role_name: hx_pg_auth_standardized
+  author: HX Infrastructure Team
+  description: Standardized role for PostgreSQL authentication and security with SOLID principles
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: "2.15"
+  
+  platforms:
+    - name: Ubuntu
+      versions:
+        - "20.04"
+        - "22.04"
+        - "24.04"
+    - name: CentOS
+      versions:
+        - "8"
+        - "9"
+    - name: RedHat
+      versions:
+        - "8"
+        - "9"
+    - name: Debian
+      versions:
+        - "11"
+        - "12"
+
+  galaxy_tags:
+    - database
+    - postgresql
+    - authentication
+    - security
+    - ssl
+    - encryption
+    - backup
+    - monitoring
+    - infrastructure
+    - hx
+
+dependencies:
+  - role: common
+    when: hx_pg_auth_use_common | default(true)
+
+collections:
+  - ansible.posix
+  - community.general
+  - community.postgresql
+  - community.crypto
