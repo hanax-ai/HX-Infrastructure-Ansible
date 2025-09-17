@@ -1,0 +1,17 @@
+---
+- name: Backup HX Infrastructure
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create backup directory
+      file:
+        path: /opt/hx-backups
+        state: directory
+        mode: '0755'
+
+    - name: Backup configuration files
+      archive:
+        path: /etc
+        dest: "/opt/hx-backups/etc-backup-{{ ansible_date_time.date }}.tar.gz"
+      tags: ['config']
