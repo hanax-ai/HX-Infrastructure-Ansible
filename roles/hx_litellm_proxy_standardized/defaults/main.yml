@@ -1,0 +1,194 @@
+
+---
+# LiteLLM Service Configuration
+hx_litellm_version: "latest"
+hx_litellm_port: 4000
+hx_litellm_host: "0.0.0.0"
+hx_litellm_workers: 4
+hx_litellm_timeout: 600
+hx_litellm_max_budget: 1000.0
+
+# Installation Configuration
+hx_litellm_install_method: "pip"  # pip, docker, source
+hx_litellm_user: "litellm"
+hx_litellm_group: "litellm"
+hx_litellm_home: "/opt/litellm"
+hx_litellm_config_dir: "/etc/litellm"
+hx_litellm_log_dir: "/var/log/litellm"
+hx_litellm_data_dir: "/var/lib/litellm"
+
+# Python Environment
+hx_litellm_python_version: "3.11"
+hx_litellm_venv_path: "{{ hx_litellm_home }}/venv"
+hx_litellm_requirements_file: "{{ hx_litellm_home }}/requirements.txt"
+
+# Database Configuration
+hx_litellm_database_enabled: true
+hx_litellm_database_type: "postgresql"  # postgresql, sqlite, mysql
+hx_litellm_database_host: "localhost"
+hx_litellm_database_port: 5432
+hx_litellm_database_name: "litellm"
+hx_litellm_database_user: "litellm"
+hx_litellm_database_password: "{{ vault_password | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_litellm_db_password | default('CHANGE_ME_VAULT_REQUIRED') }}"
+hx_litellm_database_url: "postgresql://{{ hx_litellm_database_user }}:{{ hx_litellm_database_password }}@{{ hx_litellm_database_host }}:{{ hx_litellm_database_port }}/{{ hx_litellm_database_name }}"
+hx_litellm_database_pool_size: 10
+hx_litellm_database_max_overflow: 20
+hx_litellm_database_pool_timeout: 30
+
+# Security Configuration
+hx_litellm_master_key: "{{ vault_master_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_litellm_master_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+hx_litellm_api_keys: []
+# Example:
+# hx_litellm_api_keys:
+#   - key: "sk-1234567890abcdef"
+#     models: ["gpt-4", "gpt-3.5-turbo"]
+#     max_budget: 100.0
+#     user_id: "user1"
+
+# Rate Limiting
+hx_litellm_rate_limiting_enabled: true
+hx_litellm_max_requests_per_minute: 100
+hx_litellm_max_requests_per_hour: 1000
+hx_litellm_max_requests_per_day: 10000
+
+# LLM Providers Configuration
+hx_litellm_providers:
+  openai:
+    enabled: false
+    api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_openai_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+    api_base: "https://api.openai.com/v1"
+    models:
+      - name: "gpt-4"
+        litellm_params:
+          model: "openai/gpt-4"
+          api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_openai_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+      - name: "gpt-3.5-turbo"
+        litellm_params:
+          model: "openai/gpt-3.5-turbo"
+          api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_openai_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+  
+  anthropic:
+    enabled: false
+    api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_anthropic_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+    models:
+      - name: "claude-3-opus"
+        litellm_params:
+          model: "anthropic/claude-3-opus-20240229"
+          api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_anthropic_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+      - name: "claude-3-sonnet"
+        litellm_params:
+          model: "anthropic/claude-3-sonnet-20240229"
+          api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_anthropic_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+  
+  azure:
+    enabled: false
+    api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_azure_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+    api_base: "{{ vault_azure_api_base | default('CHANGE_ME_VAULT_REQUIRED') }}"
+    api_version: "2023-12-01-preview"
+    models: []
+  
+  google:
+    enabled: false
+    api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_google_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+    models:
+      - name: "gemini-pro"
+        litellm_params:
+          model: "gemini/gemini-pro"
+          api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_google_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+
+# Load Balancing Configuration
+hx_litellm_load_balancing_enabled: true
+hx_litellm_routing_strategy: "least-busy"  # round-robin, least-busy, weighted
+hx_litellm_fallback_models: []
+hx_litellm_model_fallbacks: {}
+
+# Caching Configuration
+hx_litellm_caching_enabled: true
+hx_litellm_cache_type: "redis"  # redis, memory, disk
+hx_litellm_redis_host: "localhost"
+hx_litellm_redis_port: 6379
+hx_litellm_redis_password: "{{ vault_password | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_redis_password | default('') }}"
+hx_litellm_cache_ttl: 3600
+
+# Logging Configuration
+hx_litellm_log_level: "INFO"
+hx_litellm_log_format: "json"
+hx_litellm_access_log_enabled: true
+hx_litellm_error_log_enabled: true
+hx_litellm_audit_log_enabled: true
+
+# Monitoring Configuration
+hx_litellm_monitoring_enabled: true
+hx_litellm_metrics_port: 9090
+hx_litellm_health_check_enabled: true
+hx_litellm_health_check_path: "/health"
+
+# Performance Configuration
+hx_litellm_async_enabled: true
+hx_litellm_max_concurrent_requests: 100
+hx_litellm_request_timeout: 300
+hx_litellm_retry_attempts: 3
+hx_litellm_retry_delay: 1
+
+# SSL/TLS Configuration
+hx_litellm_ssl_enabled: false
+hx_litellm_ssl_cert_file: "/etc/ssl/certs/litellm.crt"
+hx_litellm_ssl_key_file: "/etc/ssl/private/litellm.key"
+
+# Service Configuration
+hx_litellm_service_enabled: true
+hx_litellm_service_state: "started"
+hx_litellm_auto_restart: true
+hx_litellm_restart_policy: "always"
+
+# Backup Configuration
+hx_litellm_backup_enabled: true
+hx_litellm_backup_dir: "/var/backups/litellm"
+hx_litellm_backup_retention_days: 30
+
+# Environment Variables
+hx_litellm_env_vars: {}
+# Example:
+# hx_litellm_env_vars:
+#   LITELLM_LOG: "DEBUG"
+#   LITELLM_DROP_PARAMS: "true"
+
+# Custom Configuration
+hx_litellm_custom_config: {}
+# Example:
+# hx_litellm_custom_config:
+#   general_settings:
+#     completion_model: "gpt-3.5-turbo"
+#     embedding_model: "text-embedding-ada-002"
+
+# Docker Configuration (when using Docker installation)
+hx_litellm_docker_image: "ghcr.io/berriai/litellm:main-latest"
+hx_litellm_docker_container_name: "litellm-proxy"
+hx_litellm_docker_network: "litellm-network"
+hx_litellm_docker_volumes:
+  - "{{ hx_litellm_config_dir }}:/app/config"
+  - "{{ hx_litellm_log_dir }}:/app/logs"
+  - "{{ hx_litellm_data_dir }}:/app/data"
+
+# Firewall Configuration
+hx_litellm_firewall_enabled: true
+hx_litellm_allowed_ips: []  # Empty means allow all
+hx_litellm_blocked_ips: []
+
+# Model Configuration Templates
+hx_litellm_model_templates:
+  openai_gpt4:
+    model_name: "gpt-4"
+    litellm_params:
+      model: "openai/gpt-4"
+      api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_openai_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+      max_tokens: 4096
+      temperature: 0.7
+  
+  anthropic_claude:
+    model_name: "claude-3-opus"
+    litellm_params:
+      model: "anthropic/claude-3-opus-20240229"
+      api_key: "{{ vault_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}" vault_anthropic_api_key | default('CHANGE_ME_VAULT_REQUIRED') }}"
+      max_tokens: 4096
+      temperature: 0.7

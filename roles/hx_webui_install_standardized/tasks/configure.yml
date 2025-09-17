@@ -1,0 +1,117 @@
+
+---
+- name: "Hx | Web UI | Generate main server configuration"
+  template:
+    src: "{{ hx_webui_server_type }}-site.conf.j2"
+    dest: "/etc/{{ hx_webui_server_type }}/sites-available/{{ hx_webui_server_name }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify: "restart {{ hx_webui_server_type }}"
+  tags: ['configure']
+
+- name: "Hx | Web UI | Enable site configuration"
+  file:
+    src: "/etc/{{ hx_webui_server_type }}/sites-available/{{ hx_webui_server_name }}.conf"
+    dest: "/etc/{{ hx_webui_server_type }}/sites-enabled/{{ hx_webui_server_name }}.conf"
+    state: link
+  notify: "restart {{ hx_webui_server_type }}"
+  when: hx_webui_server_type in ['nginx', 'apache']
+  tags: ['configure']
+
+- name: "Hx | Web UI | Remove default site configuration"
+  file:
+    path: "/etc/{{ hx_webui_server_type }}/sites-enabled/default"
+    state: absent
+  notify: "restart {{ hx_webui_server_type }}"
+  when: hx_webui_server_type in ['nginx', 'apache']
+  tags: ['configure']
+
+- name: "Hx | Web UI | Create custom configuration files"
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0644') }}"
+    backup: true
+  loop: "{{ hx_webui_custom_configs }}"
+  notify: "restart {{ hx_webui_server_type }}"
+  when: hx_webui_custom_configs | length > 0
+  tags: ['configure']
+
+- name: "Hx | Web UI | Configure rate limiting (Nginx)"
+  template:
+    src: nginx-rate-limit.conf.j2
+    dest: "/etc/nginx/conf.d/rate-limit.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart nginx
+  when: 
+    - hx_webui_server_type == "nginx"
+    - hx_webui_rate_limiting_enabled | default(false) | bool
+  tags: ['configure']
+
+- name: "Hx | Web UI | Configure gzip compression"
+  template:
+    src: "{{ hx_webui_server_type }}-gzip.conf.j2"
+    dest: "/etc/{{ hx_webui_server_type }}/conf.d/gzip.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: "restart {{ hx_webui_server_type }}"
+  when: hx_webui_enable_gzip | default(false) | bool
+  tags: ['configure']
+
+- name: "Hx | Web UI | Deploy default index page"
+  template:
+    src: index.html.j2
+    dest: "{{ hx_webui_root_dir }}/index.html"
+    owner: "{{ hx_webui_app_user }}"
+    group: "{{ hx_webui_app_group }}"
+    mode: "0644"
+  tags: ['configure']
+
+- name: "Hx | Web UI | Create health check endpoint"
+  template:
+    src: health.html.j2
+    dest: "{{ hx_webui_root_dir }}{{ hx_webui_health_check_path | default('/health') }}"
+    owner: "{{ hx_webui_app_user }}"
+    group: "{{ hx_webui_app_group }}"
+    mode: "0644"
+  when: hx_webui_health_check_enabled | default(false) | bool
+  tags: ['configure']
+
+- name: "Hx | Web UI | Optimize static assets"
+  shell: |
+    find {{ item.location }} -name "*.css" -exec cleancss -o {} {} \;
+    find {{ item.location }} -name "*.js" -exec uglifyjs {} -o {} \;
+  loop: "{{ hx_webui_static_dirs }}"
+  when: 
+    - hx_webui_optimize_assets | default(false) | bool
+    - hx_webui_minify_css | default(false) | bool or hx_webui_minify_js | default(false) | bool
+  changed_when: false
+  tags: ['configure']
+
+- name: "Hx | Web UI | Optimize images"
+  shell: |
+    find {{ item.location }} -name "*.png" -exec optipng -quiet {} \;
+    find {{ item.location }} -name "*.jpg" -o -name "*.jpeg" -exec jpegoptim --quiet {} \;
+  loop: "{{ hx_webui_static_dirs }}"
+  when: 
+    - hx_webui_optimize_assets | default(false) | bool
+    - hx_webui_optimize_images | default(false) | bool
+  changed_when: false
+  tags: ['configure']
+
+- name: "Hx | Web UI | Test configuration syntax"
+  command: "{{ hx_webui_test_command[hx_webui_server_type] }}"
+  vars:
+    hx_webui_test_command:
+      nginx: "nginx -t"
+      apache: "apache2ctl configtest"
+      custom: "echo 'Configuration test not available for custom server'"
+  changed_when: false
+  tags: ['configure']

@@ -1,0 +1,64 @@
+
+---
+- name: restart litellm
+  service:
+    name: litellm
+    state: restarted
+  become: true
+  listen: "restart litellm"
+  when: hx_litellm_install_method != "docker"
+
+- name: restart litellm docker
+  docker_container:
+    name: "{{ hx_litellm_docker_container_name }}"
+    state: started
+    restart: true
+  listen: "restart litellm"
+  when: hx_litellm_install_method == "docker"
+
+- name: reload systemd
+  systemd:
+    daemon_reload: true
+  become: true
+  listen: "reload systemd"
+
+- name: restart redis
+  service:
+    name: redis-server
+    state: restarted
+  become: true
+  listen: "restart redis"
+
+- name: restart fail2ban
+  service:
+    name: fail2ban
+    state: restarted
+  become: true
+  listen: "restart fail2ban"
+
+- name: validate litellm config
+  command: >
+    {{ hx_litellm_venv_path }}/bin/python -c "
+    import yaml
+    with open('{{ hx_litellm_config_dir }}/config.yaml', 'r') as f:
+        yaml.safe_load(f)
+    print('Configuration is valid')
+    "
+  become_user: "{{ hx_litellm_user }}"
+  listen: "validate litellm config"
+  changed_when: false
+  when: hx_litellm_install_method == "pip"
+
+- name: backup litellm config
+  copy:
+    src: "{{ item }}"
+    dest: "{{ hx_litellm_backup_dir }}/{{ item | basename }}.{{ ansible_date_time.epoch }}"
+    remote_src: true
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0640"
+  loop:
+    - "{{ hx_litellm_config_dir }}/config.yaml"
+    - "{{ hx_litellm_config_dir }}/models.yaml"
+  listen: "backup litellm config"
+  when: hx_litellm_backup_enabled | default(false) | bool

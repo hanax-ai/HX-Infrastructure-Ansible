@@ -1,0 +1,45 @@
+
+---
+- name: restart postgresql
+  service:
+    name: "{{ hx_pg_service_name }}"
+    state: restarted
+  become: true
+  listen: "restart postgresql"
+
+- name: reload postgresql
+  service:
+    name: "{{ hx_pg_service_name }}"
+    state: reloaded
+  become: true
+  listen: "reload postgresql"
+
+- name: restart fail2ban
+  service:
+    name: fail2ban
+    state: restarted
+  become: true
+  listen: "restart fail2ban"
+
+- name: validate postgresql config
+  command: >
+    {{ postgresql_bin_path | default('/usr/lib/postgresql/14/bin') }}/postgres
+    --config-file={{ hx_pg_config_dir }}/postgresql.conf
+    --check-config
+  become: true
+  become_user: postgres
+  listen: "validate postgresql config"
+  changed_when: false
+
+- name: backup postgresql config
+  copy:
+    src: "{{ item }}"
+    dest: "/var/backups/postgresql/{{ item | basename }}.{{ ansible_date_time.epoch }}"
+    remote_src: true
+    owner: postgres
+    group: postgres
+    mode: '0640'
+  loop:
+    - "{{ hx_pg_config_dir }}/postgresql.conf"
+    - "{{ hx_pg_config_dir }}/pg_hba.conf"
+  listen: "backup postgresql config"

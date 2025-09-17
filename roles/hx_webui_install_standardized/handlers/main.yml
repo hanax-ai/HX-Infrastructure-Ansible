@@ -1,0 +1,61 @@
+
+---
+- name: restart nginx
+  service:
+    name: nginx
+    state: restarted
+  become: true
+  listen: "restart nginx"
+
+- name: reload nginx
+  service:
+    name: nginx
+    state: reloaded
+  become: true
+  listen: "reload nginx"
+
+- name: restart apache2
+  service:
+    name: apache2
+    state: restarted
+  become: true
+  listen: "restart apache2"
+
+- name: reload apache2
+  service:
+    name: apache2
+    state: reloaded
+  become: true
+  listen: "reload apache2"
+
+- name: restart webui service
+  service:
+    name: "{{ hx_webui_app_name }}"
+    state: restarted
+  become: true
+  listen: "restart webui service"
+
+- name: reload systemd
+  systemd:
+    daemon_reload: true
+  become: true
+  listen: "reload systemd"
+
+- name: restart fail2ban
+  service:
+    name: fail2ban
+    state: restarted
+  become: true
+  listen: "restart fail2ban"
+
+- name: validate nginx config
+  command: nginx -t
+  become: true
+  listen: "validate nginx config"
+  changed_when: false
+
+- name: validate apache config
+  command: apache2ctl configtest
+  become: true
+  listen: "validate apache config"
+  changed_when: false

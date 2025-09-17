@@ -1,0 +1,59 @@
+
+---
+- name: "Hx | PostgreSQL Auth | Validate required variables"
+  assert:
+    that:
+      - hx_pg_auth_method is defined
+      - hx_pg_auth_method in ['md5', 'scram-sha-256', 'cert', 'trust']
+      - hx_pg_port is defined
+      - hx_pg_port is number
+      - hx_pg_port > 1024
+      - hx_pg_port < 65536
+    fail_msg: "Required PostgreSQL authentication variables are missing or invalid"
+    success_msg: "PostgreSQL authentication variables validated successfully"
+  tags: ['validate']
+
+- name: "Hx | PostgreSQL Auth | Validate SSL configuration"
+  assert:
+    that:
+      - hx_pg_ssl_cert_file is defined
+      - hx_pg_ssl_key_file is defined
+    fail_msg: "SSL certificate files must be defined when SSL is enabled"
+    success_msg: "SSL configuration validated successfully"
+  when: hx_pg_ssl_enabled | default(false) | bool
+  tags: ['validate']
+
+- name: "Hx | PostgreSQL Auth | Validate user configuration"
+  assert:
+    that:
+      - item.name is defined
+      - item.name | length > 0
+      - item.password is defined
+      - "'CHANGE_ME' not in item.password"
+    fail_msg: "User {{ item.name | default('undefined') }} has invalid configuration or default password"
+    success_msg: "User {{ item.name }} configuration validated"
+  loop: "{{ hx_pg_users }}"
+  when: hx_pg_users | length > 0
+  tags: ['validate']
+
+- name: "Hx | PostgreSQL Auth | Check PostgreSQL service status"
+  service_facts:
+  tags: ['validate']
+
+- name: "Hx | PostgreSQL Auth | Validate PostgreSQL is installed"
+  assert:
+    that:
+      - "'postgresql' in services or 'postgresql.service' in services"
+    fail_msg: "PostgreSQL service not found. Please install PostgreSQL first."
+    success_msg: "PostgreSQL service detected"
+  tags: ['validate']
+
+- name: "Hx | PostgreSQL Auth | Validate configuration directories exist"
+  stat:
+    path: "{{ item }}"
+  register: hx_pg_dir_check
+  failed_when: not hx_pg_dir_check.stat.exists
+  loop:
+    - "{{ hx_pg_config_dir }}"
+    - "{{ hx_pg_data_dir }}"
+  tags: ['validate']

@@ -1,0 +1,33 @@
+
+---
+- name: "Hx | PostgreSQL Authentication | Main task orchestration"
+  block:
+    - name: "Hx | Include validation tasks"
+      include_tasks: validate.yml
+      tags: ['validate', 'always']
+
+    - name: "Hx | Include preparation tasks"
+      include_tasks: prepare.yml
+      tags: ['prepare']
+
+    - name: "Hx | Include installation tasks"
+      include_tasks: install.yml
+      tags: ['install']
+
+    - name: "Hx | Include configuration tasks"
+      include_tasks: configure.yml
+      tags: ['configure']
+
+    - name: "Hx | Include security tasks"
+      include_tasks: security.yml
+      tags: ['security']
+
+    - name: "Hx | Include verification tasks"
+      include_tasks: verify.yml
+      tags: ['verify']
+
+  rescue:
+    - name: "Hx | Handle PostgreSQL authentication setup failure"
+      fail:
+        msg: "PostgreSQL authentication setup failed: {{ ansible_failed_result.msg | default('Unknown error') }}"
+      tags: ['always']
