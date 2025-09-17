@@ -1,0 +1,61 @@
+# Development Dependencies for HX Infrastructure Ansible
+# Install with: pip install -r requirements-dev.txt
+
+# Core Ansible and related tools
+ansible-core>=2.12.0,<2.16.0
+ansible-lint>=6.17.0
+yamllint>=1.32.0
+jmespath>=1.0.0
+
+# Pre-commit and code quality tools
+pre-commit>=3.3.0
+black>=23.7.0
+flake8>=6.0.0
+isort>=5.12.0
+
+# Security scanning tools
+detect-secrets>=1.4.0
+safety>=2.3.0
+bandit>=1.7.0
+
+# Documentation tools
+mkdocs>=1.5.0
+mkdocs-material>=9.1.0
+mkdocs-ansible>=0.2.0
+
+# Testing frameworks
+pytest>=7.4.0
+pytest-ansible>=4.1.0
+testinfra>=8.0.0
+molecule>=5.1.0
+molecule-plugins[docker]>=23.4.0
+
+# Utility tools
+jq>=1.6.0
+yq>=3.2.0
+requests>=2.31.0
+pyyaml>=6.0.0
+
+# Linting and formatting for various file types
+markdownlint-cli>=0.35.0
+shellcheck-py>=0.9.0
+hadolint>=2.12.0
+
+# Development utilities
+ipython>=8.14.0
+jupyter>=1.0.0
+notebook>=6.5.0
+
+# Version pinning for stability
+setuptools>=68.0.0
+wheel>=0.41.0
+pip>=23.2.0
+
+# Optional: Ansible collections for development
+# Note: These should be installed via ansible-galaxy, not pip
+# Listed here for reference only
+# community.general
+# ansible.posix
+# community.crypto
+# community.docker
+# community.postgresql
