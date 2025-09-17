@@ -1,4 +1,3 @@
-
 ---
 # Ansible Galaxy Collections
 collections:
@@ -56,7 +55,7 @@ roles:
   - name: geerlingguy.nginx
     version: "3.1.4"
   - name: geerlingguy.apache
-    version: "3.2.5"
+    version: "4.0.0"
 
   # Database Roles
   - name: geerlingguy.postgresql

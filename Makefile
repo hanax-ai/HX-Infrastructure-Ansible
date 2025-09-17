@@ -71,8 +71,8 @@ deploy-dev: ## Deploy to development environment
 deploy-staging: ## Deploy to staging environment
 	ansible-playbook -i inventory/environments/staging playbooks/site/main.yml
 
-deploy-prod: ## Deploy to production environment
-	ansible-playbook -i inventory/environments/production playbooks/site/main.yml --ask-vault-pass
+deploy-prod: ## Deploy to production environment (DRY RUN by default - use deploy-prod-confirm for actual)
+	echo "SAFETY: Running dry-run first..." && ansible-playbook -i inventory/environments/production playbooks/site/main.yml --check --diff --ask-vault-pass && echo "Dry run complete. Use make deploy-prod-confirm for actual deployment"
 
 # Maintenance
 backup: ## Run backup playbook
@@ -191,3 +191,19 @@ version: ## Show version information
 	@echo ""
 	@echo "Git Version:"
 	@git --version
+
+# Safety check target
+safety-check: ## Run comprehensive safety checks before deployment
+	@echo "Running comprehensive safety checks..."
+	@echo "1. Checking for secrets in files..."
+	@if command -v grep >/dev/null 2>&1; then \
+		grep -r "password\|secret\|key" . --exclude-dir=.git --exclude="*.md" --exclude="*.pdf" | grep -v "password_file\|key_checking\|ssh_key" || echo "No obvious secrets found"; \
+	fi
+	@echo "2. Checking ansible.cfg security settings..."
+	@grep "host_key_checking.*True" ansible.cfg >/dev/null && echo "✓ Host key checking enabled" || echo "✗ Host key checking disabled - SECURITY RISK"
+	@echo "3. Checking .gitignore for sensitive files..."
+	@grep "vault_pass\|\.pem\|\.key" .gitignore >/dev/null && echo "✓ Sensitive file patterns in .gitignore" || echo "✗ Missing sensitive file patterns in .gitignore"
+	@echo "4. Checking for SECURITY.md..."
+	@[ -f "SECURITY.md" ] && echo "✓ SECURITY.md exists" || echo "✗ SECURITY.md missing"
+	@echo "Safety check complete!"
+

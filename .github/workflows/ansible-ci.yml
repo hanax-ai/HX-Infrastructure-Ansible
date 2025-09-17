@@ -1,0 +1,88 @@
+---
+name: Ansible CI
+
+on:
+  push:
+    branches: [ main, phase-1.0-deployment, phase2-role-standardization ]
+  pull_request:
+    branches: [ main, phase-1.0-deployment, phase2-role-standardization ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint Ansible Code
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      
+      - name: Run yamllint
+        run: yamllint .
+      
+      - name: Run ansible-lint
+        run: ansible-lint
+      
+      - name: Run syntax check
+        run: |
+          if [ -d "playbooks" ]; then
+            find playbooks -name "*.yml" -exec ansible-playbook --syntax-check {} \;
+          fi
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  molecule-test:
+    runs-on: ubuntu-latest
+    name: Molecule Test
+    strategy:
+      matrix:
+        role: [common, security]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      
+      - name: Test role with molecule
+        run: |
+          if [ -d "roles/${{ matrix.role }}/molecule" ]; then
+            cd roles/${{ matrix.role }}
+            molecule test
+          else
+            echo "No molecule tests found for role ${{ matrix.role }}"
+          fi
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'

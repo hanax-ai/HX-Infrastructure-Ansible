@@ -1,0 +1,49 @@
+---
+# Security hardening tasks
+- name: Configure SSH security
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: yes
+  loop:
+    - { regexp: '^#?Port', line: 'Port {{ hx_security_ssh_port }}' }
+    - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication {{ "yes" if hx_security_ssh_password_auth else "no" }}' }
+    - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin {{ "yes" if hx_security_ssh_root_login else "no" }}' }
+    - { regexp: '^#?PermitEmptyPasswords', line: 'PermitEmptyPasswords {{ "yes" if hx_security_ssh_permit_empty_passwords else "no" }}' }
+    - { regexp: '^#?ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication {{ "yes" if hx_security_ssh_challenge_response_auth else "no" }}' }
+    - { regexp: '^#?GSSAPIAuthentication', line: 'GSSAPIAuthentication {{ "yes" if hx_security_ssh_gss_api_authentication else "no" }}' }
+    - { regexp: '^#?X11Forwarding', line: 'X11Forwarding {{ "yes" if hx_security_ssh_x11_forwarding else "no" }}' }
+  notify: restart sshd
+  become: yes
+
+- name: Install fail2ban
+  package:
+    name: fail2ban
+    state: present
+  when: hx_security_fail2ban_enabled
+  become: yes
+
+- name: Configure fail2ban
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    backup: yes
+  when: hx_security_fail2ban_enabled
+  notify: restart fail2ban
+  become: yes
+
+- name: Enable and start fail2ban
+  service:
+    name: fail2ban
+    enabled: yes
+    state: started
+  when: hx_security_fail2ban_enabled
+  become: yes
+
+- name: Configure automatic security updates
+  package:
+    name: unattended-upgrades
+    state: present
+  when: hx_security_automatic_updates and ansible_os_family == "Debian"
+  become: yes

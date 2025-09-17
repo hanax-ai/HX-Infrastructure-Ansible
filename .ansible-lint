@@ -1,0 +1,35 @@
+---
+# Ansible Lint Configuration for HX Infrastructure
+
+# Exclude paths
+exclude_paths:
+  - .cache/
+  - .github/
+  - .ansible/
+  - molecule/
+  - .molecule/
+  - venv/
+  - .venv/
+
+# Skip specific rules
+skip_list:
+  - yaml[line-length]  # Allow longer lines in some cases
+  - name[casing]       # Allow flexible naming conventions
+  - fqcn[action-core]  # Allow core module short names
+
+# Use default rules with some customizations
+use_default_rules: true
+
+# Enable offline mode for faster linting
+offline: false
+
+# Warn on unknown tags
+warn_list:
+  - experimental
+
+# Custom rules directory (if any)
+# rulesdir:
+#   - custom_rules/
+
+# Verbosity level
+verbosity: 1
