@@ -1,0 +1,94 @@
+---
+# Security role defaults with hx_ prefix standardization
+
+# Firewall configuration
+hx_security_firewall_enabled: true
+hx_security_firewall_default_policy: "deny"
+hx_security_firewall_rules:
+  - { port: "22", proto: "tcp", rule: "allow", comment: "SSH" }
+  - { port: "80", proto: "tcp", rule: "allow", comment: "HTTP" }
+  - { port: "443", proto: "tcp", rule: "allow", comment: "HTTPS" }
+
+# Fail2ban configuration
+hx_security_fail2ban_enabled: true
+hx_security_fail2ban_bantime: 3600
+hx_security_fail2ban_findtime: 600
+hx_security_fail2ban_maxretry: 3
+hx_security_fail2ban_jails:
+  - name: "sshd"
+    enabled: true
+    port: "ssh"
+    filter: "sshd"
+    logpath: "/var/log/auth.log"
+    maxretry: 3
+
+# SSH hardening
+hx_security_ssh_hardening: true
+hx_security_ssh_port: 22
+hx_security_ssh_protocol: 2
+hx_security_ssh_permit_root_login: false
+hx_security_ssh_password_authentication: false
+hx_security_ssh_permit_empty_passwords: false
+hx_security_ssh_challenge_response_auth: false
+hx_security_ssh_x11_forwarding: false
+hx_security_ssh_max_auth_tries: 3
+hx_security_ssh_client_alive_interval: 300
+hx_security_ssh_client_alive_count_max: 2
+hx_security_ssh_allowed_users: []
+hx_security_ssh_allowed_groups: ["sudo", "ssh"]
+
+# System hardening
+hx_security_kernel_hardening: true
+hx_security_network_hardening: true
+hx_security_disable_unused_filesystems: true
+hx_security_disable_unused_protocols: true
+hx_security_secure_shared_memory: true
+
+# Audit logging
+hx_security_auditd_enabled: true
+hx_security_auditd_max_log_file: 50
+hx_security_auditd_num_logs: 5
+hx_security_auditd_rules:
+  - "-w /etc/passwd -p wa -k identity"
+  - "-w /etc/group -p wa -k identity"
+  - "-w /etc/shadow -p wa -k identity"
+  - "-w /etc/sudoers -p wa -k identity"
+  - "-w /var/log/faillog -p wa -k logins"
+  - "-w /var/log/lastlog -p wa -k logins"
+  - "-w /var/log/tallylog -p wa -k logins"
+
+# File permissions
+hx_security_fix_permissions: true
+hx_security_sensitive_files:
+  - { path: "/etc/passwd", owner: "root", group: "root", mode: "0644" }
+  - { path: "/etc/group", owner: "root", group: "root", mode: "0644" }
+  - { path: "/etc/shadow", owner: "root", group: "shadow", mode: "0640" }
+  - { path: "/etc/gshadow", owner: "root", group: "shadow", mode: "0640" }
+  - { path: "/etc/ssh/sshd_config", owner: "root", group: "root", mode: "0600" }
+
+# Package security
+hx_security_unattended_upgrades: true
+hx_security_auto_remove_unused: true
+hx_security_remove_packages:
+  - telnet
+  - rsh-client
+  - rsh-redone-client
+  - talk
+  - ntalk
+
+# ClamAV antivirus
+hx_security_clamav_enabled: false
+hx_security_clamav_update_frequency: "daily"
+
+# AIDE intrusion detection
+hx_security_aide_enabled: false
+hx_security_aide_check_frequency: "weekly"
+
+# Security limits
+hx_security_limits_enabled: true
+hx_security_limits_config:
+  - { domain: "*", type: "hard", item: "core", value: "0" }
+  - { domain: "*", type: "soft", item: "nproc", value: "65536" }
+  - { domain: "*", type: "hard", item: "nproc", value: "65536" }
+  - { domain: "*", type: "soft", item: "nofile", value: "65536" }
+  - { domain: "*", type: "hard", item: "nofile", value: "65536" }

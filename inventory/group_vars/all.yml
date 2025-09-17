@@ -1,225 +1,41 @@
-
 ---
-# HX Infrastructure - Global Variables
-# These variables apply to all hosts across all environments
+# Global variables for all environments
+# This centralizes global defaults as recommended in feedback
 
-# Environment Configuration
-project_name: hx-infrastructure
-organization: hanax-ai
-maintainer: "HX Infrastructure Team"
-deployment_date: "{{ ansible_date_time.iso8601 }}"
-
-# System Configuration
-timezone: "UTC"
-locale: "en_US.UTF-8"
-keyboard_layout: "us"
-
-# Network Configuration
-dns_servers:
-  - "8.8.8.8"
-  - "8.8.4.4"
-  - "1.1.1.1"
-
-ntp_servers:
-  - "0.pool.ntp.org"
-  - "1.pool.ntp.org"
-  - "2.pool.ntp.org"
-  - "3.pool.ntp.org"
+# HX Infrastructure Global Configuration
+hx_project_name: "HX Infrastructure"
+hx_organization: "Hanax AI"
+hx_admin_email: "admin@hanax.ai"
 
 # Security Configuration
-security_enabled: true
-firewall_enabled: true
-fail2ban_enabled: true
-automatic_updates_enabled: true
+hx_security_hardening: true
+hx_fail2ban_enabled: true
+hx_firewall_enabled: true
+hx_ssh_port: 22
+hx_ssh_password_auth: false
+hx_ssh_root_login: false
 
-# SSH Configuration
-ssh_port: 22
-ssh_password_authentication: false
-ssh_permit_root_login: false
-ssh_max_auth_tries: 3
-ssh_client_alive_interval: 300
-ssh_client_alive_count_max: 2
-
-# SSL/TLS Configuration
-ssl_enabled: true
-ssl_protocols:
-  - "TLSv1.2"
-  - "TLSv1.3"
-ssl_ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384"
-ssl_prefer_server_ciphers: true
-
-# Monitoring Configuration
-monitoring_enabled: true
-log_aggregation_enabled: true
-metrics_collection_enabled: true
-alerting_enabled: true
-
-# Monitoring Retention
-metrics_retention_days: 90
-logs_retention_days: 30
-backup_retention_days: 30
-
-# Performance Tuning
-kernel_parameters:
-  - name: "vm.swappiness"
-    value: "10"
-  - name: "net.core.rmem_max"
-    value: "134217728"
-  - name: "net.core.wmem_max"
-    value: "134217728"
-  - name: "net.ipv4.tcp_rmem"
-    value: "4096 65536 134217728"
-  - name: "net.ipv4.tcp_wmem"
-    value: "4096 65536 134217728"
-
-# Package Management
-package_update_cache: true
-package_upgrade: false
-package_autoremove: true
-package_autoclean: true
-
-# Common Packages
-common_packages:
+# System Configuration
+hx_system_packages:
   - curl
   - wget
   - vim
   - htop
-  - iotop
-  - netstat-nat
-  - tcpdump
-  - rsync
-  - unzip
   - git
-  - python3
-  - python3-pip
-  - jq
-  - tree
-  - screen
-  - tmux
+  - unzip
 
-# Development Tools (optional)
-development_packages:
-  - build-essential
-  - gcc
-  - make
-  - cmake
-  - autoconf
-  - automake
-  - libtool
+# Logging Configuration
+hx_log_level: INFO
+hx_log_retention_days: 30
 
 # Backup Configuration
-backup_enabled: true
-backup_method: "rsync"
-backup_compression: true
-backup_encryption: true
-backup_schedule: "0 2 * * *"  # Daily at 2 AM
-backup_retention_policy:
-  daily: 7
-  weekly: 4
-  monthly: 12
-  yearly: 5
+hx_backup_enabled: true
+hx_backup_retention_days: 7
 
-# Log Configuration
-log_level: "info"
-log_format: "json"
-log_rotation_enabled: true
-log_rotation_size: "100M"
-log_rotation_count: 10
+# Monitoring Configuration
+hx_monitoring_enabled: true
+hx_metrics_collection: true
 
-# Application Configuration
-app_user: "appuser"
-app_group: "appgroup"
-app_home: "/opt/app"
-app_logs_dir: "/var/log/app"
-app_data_dir: "/var/lib/app"
-app_config_dir: "/etc/app"
-
-# Database Configuration
-database_backup_enabled: true
-database_backup_schedule: "0 1 * * *"  # Daily at 1 AM
-database_backup_retention: 30
-
-# Cache Configuration
-cache_enabled: true
-cache_type: "redis"
-
-# Load Balancer Configuration
-load_balancer_algorithm: "round_robin"
-load_balancer_health_check_enabled: true
-load_balancer_health_check_interval: 30
-load_balancer_health_check_timeout: 5
-
-# Web Server Configuration
-web_server_type: "nginx"
-web_server_worker_processes: "auto"
-web_server_worker_connections: 1024
-web_server_keepalive_timeout: 65
-web_server_client_max_body_size: "64m"
-web_server_gzip_enabled: true
-
-# Application Server Configuration
-app_server_port: 8080
-app_server_environment: "{{ environment | default('production') }}"
-app_server_debug: false
-app_server_log_level: "info"
-
-# Notification Configuration
-notifications_enabled: true
-notification_channels:
-  email:
-    enabled: true
-    smtp_server: "smtp.example.com"
-    smtp_port: 587
-    smtp_username: "alerts@example.com"
-    smtp_use_tls: true
-  slack:
-    enabled: false
-    webhook_url: ""
-    channel: "#alerts"
-  pagerduty:
-    enabled: false
-    integration_key: ""
-
-# Health Check Configuration
-health_checks_enabled: true
-health_check_interval: 60
-health_check_timeout: 10
-health_check_retries: 3
-
-# Maintenance Configuration
-maintenance_window:
-  enabled: true
-  start_time: "02:00"
-  end_time: "04:00"
-  timezone: "UTC"
-  days:
-    - "sunday"
-
-# Compliance Configuration
-compliance_enabled: true
-compliance_standards:
-  - "CIS"
-  - "NIST"
-audit_logging_enabled: true
-audit_log_retention_days: 365
-
-# Container Configuration (if using containers)
-container_runtime: "docker"
-container_registry: "docker.io"
-container_network: "bridge"
-
-# Version Information
-ansible_version_required: "2.15.0"
-python_version_required: "3.9"
-
-# Feature Flags
-features:
-  ssl_enabled: true
-  monitoring_enabled: true
-  backup_enabled: true
-  security_hardening_enabled: true
-  performance_tuning_enabled: true
-  log_aggregation_enabled: true
-  alerting_enabled: true
-  auto_scaling_enabled: false
-  container_support_enabled: false
+# Update Configuration
+hx_auto_updates: false
+hx_security_updates: true
