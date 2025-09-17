@@ -1,0 +1,223 @@
+---
+# HX Infrastructure - Shared FQDN Library
+# Centralized FQDN definitions for all environments
+# Reference: https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#organizing-host-and-group-variables
+
+# =============================================================================
+# PRODUCTION ENVIRONMENT FQDNS
+# =============================================================================
+fqdns:
+  production:
+    # External/Public FQDNs
+    external:
+      primary: "hx.hanax-ai.com"
+      api: "api.hx.hanax-ai.com"
+      admin: "admin.hx.hanax-ai.com"
+      monitoring: "monitoring.hx.hanax-ai.com"
+      docs: "docs.hx.hanax-ai.com"
+    
+    # Internal FQDNs
+    internal:
+      load_balancer:
+        primary: "hx-prod-lb-01.prod.hanax-ai.local"
+        secondary: "hx-prod-lb-02.prod.hanax-ai.local"
+        vip: "hx-prod-lb-vip.prod.hanax-ai.local"
+      
+      web:
+        primary: "hx-prod-web-01.prod.hanax-ai.local"
+        secondary: "hx-prod-web-02.prod.hanax-ai.local"
+        tertiary: "hx-prod-web-03.prod.hanax-ai.local"
+      
+      application:
+        primary: "hx-prod-app-01.prod.hanax-ai.local"
+        secondary: "hx-prod-app-02.prod.hanax-ai.local"
+        tertiary: "hx-prod-app-03.prod.hanax-ai.local"
+      
+      database:
+        master: "hx-prod-db-01.prod.hanax-ai.local"
+        replica1: "hx-prod-db-02.prod.hanax-ai.local"
+        replica2: "hx-prod-db-03.prod.hanax-ai.local"
+        cluster_vip: "hx-prod-db-cluster.prod.hanax-ai.local"
+      
+      cache:
+        master: "hx-prod-cache-01.prod.hanax-ai.local"
+        replica: "hx-prod-cache-02.prod.hanax-ai.local"
+        cluster_vip: "hx-prod-cache-cluster.prod.hanax-ai.local"
+      
+      monitoring:
+        prometheus: "hx-prod-prometheus.prod.hanax-ai.local"
+        grafana: "hx-prod-grafana.prod.hanax-ai.local"
+        alertmanager: "hx-prod-alertmanager.prod.hanax-ai.local"
+        elasticsearch: "hx-prod-elasticsearch.prod.hanax-ai.local"
+        kibana: "hx-prod-kibana.prod.hanax-ai.local"
+        logstash: "hx-prod-logstash.prod.hanax-ai.local"
+
+# =============================================================================
+# STAGING ENVIRONMENT FQDNS
+# =============================================================================
+  staging:
+    # External/Public FQDNs
+    external:
+      primary: "staging.hx.hanax-ai.com"
+      api: "api.staging.hx.hanax-ai.com"
+      admin: "admin.staging.hx.hanax-ai.com"
+      monitoring: "monitoring.staging.hx.hanax-ai.com"
+      docs: "docs.staging.hx.hanax-ai.com"
+    
+    # Internal FQDNs
+    internal:
+      load_balancer:
+        primary: "hx-stg-lb-01.staging.hanax-ai.local"
+        secondary: "hx-stg-lb-02.staging.hanax-ai.local"
+        vip: "hx-stg-lb-vip.staging.hanax-ai.local"
+      
+      web:
+        primary: "hx-stg-web-01.staging.hanax-ai.local"
+        secondary: "hx-stg-web-02.staging.hanax-ai.local"
+        tertiary: "hx-stg-web-03.staging.hanax-ai.local"
+      
+      application:
+        primary: "hx-stg-app-01.staging.hanax-ai.local"
+        secondary: "hx-stg-app-02.staging.hanax-ai.local"
+        tertiary: "hx-stg-app-03.staging.hanax-ai.local"
+      
+      database:
+        master: "hx-stg-db-01.staging.hanax-ai.local"
+        replica1: "hx-stg-db-02.staging.hanax-ai.local"
+        replica2: "hx-stg-db-03.staging.hanax-ai.local"
+        cluster_vip: "hx-stg-db-cluster.staging.hanax-ai.local"
+      
+      cache:
+        master: "hx-stg-cache-01.staging.hanax-ai.local"
+        replica: "hx-stg-cache-02.staging.hanax-ai.local"
+        cluster_vip: "hx-stg-cache-cluster.staging.hanax-ai.local"
+      
+      monitoring:
+        prometheus: "hx-stg-prometheus.staging.hanax-ai.local"
+        grafana: "hx-stg-grafana.staging.hanax-ai.local"
+        alertmanager: "hx-stg-alertmanager.staging.hanax-ai.local"
+        elasticsearch: "hx-stg-elasticsearch.staging.hanax-ai.local"
+        kibana: "hx-stg-kibana.staging.hanax-ai.local"
+        logstash: "hx-stg-logstash.staging.hanax-ai.local"
+
+# =============================================================================
+# DEVELOPMENT ENVIRONMENT FQDNS
+# =============================================================================
+  development:
+    # External/Public FQDNs
+    external:
+      primary: "dev.hx.hanax-ai.com"
+      api: "api.dev.hx.hanax-ai.com"
+      admin: "admin.dev.hx.hanax-ai.com"
+      monitoring: "monitoring.dev.hx.hanax-ai.com"
+      docs: "docs.dev.hx.hanax-ai.com"
+    
+    # Internal FQDNs
+    internal:
+      load_balancer:
+        primary: "hx-dev-lb-01.dev.hanax-ai.local"
+        secondary: "hx-dev-lb-02.dev.hanax-ai.local"
+        vip: "hx-dev-lb-vip.dev.hanax-ai.local"
+      
+      web:
+        primary: "hx-dev-web-01.dev.hanax-ai.local"
+        secondary: "hx-dev-web-02.dev.hanax-ai.local"
+      
+      application:
+        primary: "hx-dev-app-01.dev.hanax-ai.local"
+        secondary: "hx-dev-app-02.dev.hanax-ai.local"
+      
+      database:
+        master: "hx-dev-db-01.dev.hanax-ai.local"
+        replica: "hx-dev-db-02.dev.hanax-ai.local"
+        cluster_vip: "hx-dev-db-cluster.dev.hanax-ai.local"
+      
+      cache:
+        primary: "hx-dev-cache-01.dev.hanax-ai.local"
+        cluster_vip: "hx-dev-cache-cluster.dev.hanax-ai.local"
+      
+      monitoring:
+        prometheus: "hx-dev-prometheus.dev.hanax-ai.local"
+        grafana: "hx-dev-grafana.dev.hanax-ai.local"
+        alertmanager: "hx-dev-alertmanager.dev.hanax-ai.local"
+
+# =============================================================================
+# SHARED DOMAIN PATTERNS
+# =============================================================================
+domain_patterns:
+  external_domains:
+    production: "hanax-ai.com"
+    staging: "staging.hx.hanax-ai.com"
+    development: "dev.hx.hanax-ai.com"
+  
+  internal_domains:
+    production: "prod.hanax-ai.local"
+    staging: "staging.hanax-ai.local"
+    development: "dev.hanax-ai.local"
+  
+  service_subdomains:
+    api: "api"
+    admin: "admin"
+    monitoring: "monitoring"
+    docs: "docs"
+    cdn: "cdn"
+    assets: "assets"
+
+# =============================================================================
+# SSL CERTIFICATE DOMAINS
+# =============================================================================
+ssl_certificates:
+  production:
+    primary_cert:
+      - "hx.hanax-ai.com"
+      - "*.hx.hanax-ai.com"
+    api_cert:
+      - "api.hx.hanax-ai.com"
+    admin_cert:
+      - "admin.hx.hanax-ai.com"
+  
+  staging:
+    wildcard_cert:
+      - "*.staging.hx.hanax-ai.com"
+      - "staging.hx.hanax-ai.com"
+  
+  development:
+    wildcard_cert:
+      - "*.dev.hx.hanax-ai.com"
+      - "dev.hx.hanax-ai.com"
+
+# =============================================================================
+# DNS CONFIGURATION TEMPLATES
+# =============================================================================
+dns_records:
+  a_records:
+    production:
+      - name: "hx.hanax-ai.com"
+        target: "{{ fqdns.production.internal.load_balancer.vip }}"
+      - name: "api.hx.hanax-ai.com"
+        target: "{{ fqdns.production.internal.load_balancer.vip }}"
+    
+    staging:
+      - name: "staging.hx.hanax-ai.com"
+        target: "{{ fqdns.staging.internal.load_balancer.vip }}"
+      - name: "api.staging.hx.hanax-ai.com"
+        target: "{{ fqdns.staging.internal.load_balancer.vip }}"
+    
+    development:
+      - name: "dev.hx.hanax-ai.com"
+        target: "{{ fqdns.development.internal.load_balancer.vip }}"
+      - name: "api.dev.hx.hanax-ai.com"
+        target: "{{ fqdns.development.internal.load_balancer.vip }}"
+  
+  cname_records:
+    production:
+      - name: "www.hx.hanax-ai.com"
+        target: "hx.hanax-ai.com"
+      - name: "admin.hx.hanax-ai.com"
+        target: "hx.hanax-ai.com"
+    
+    staging:
+      - name: "www.staging.hx.hanax-ai.com"
+        target: "staging.hx.hanax-ai.com"
+      - name: "admin.staging.hx.hanax-ai.com"
+        target: "staging.hx.hanax-ai.com"

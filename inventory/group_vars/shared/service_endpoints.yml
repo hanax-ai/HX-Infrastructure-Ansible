@@ -1,0 +1,307 @@
+---
+# HX Infrastructure - Shared Service Endpoints Library
+# Centralized service endpoint definitions for all environments
+# Reference: https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#organizing-host-and-group-variables
+
+# =============================================================================
+# SERVICE ENDPOINT TEMPLATES
+# =============================================================================
+service_endpoints:
+  # Production Environment Endpoints
+  production:
+    # External/Public Endpoints
+    external:
+      web:
+        primary: "https://hx.hanax-ai.com"
+        api: "https://api.hx.hanax-ai.com"
+        admin: "https://admin.hx.hanax-ai.com"
+        docs: "https://docs.hx.hanax-ai.com"
+        cdn: "https://cdn.hx.hanax-ai.com"
+        assets: "https://assets.hx.hanax-ai.com"
+      
+      monitoring:
+        grafana: "https://monitoring.hx.hanax-ai.com"
+        prometheus: "https://prometheus.hx.hanax-ai.com"
+        alertmanager: "https://alerts.hx.hanax-ai.com"
+        kibana: "https://logs.hx.hanax-ai.com"
+    
+    # Internal Service Endpoints
+    internal:
+      load_balancer:
+        primary: "http://{{ ip_addresses.production.load_balancer.hx-prod-lb-01 }}:80"
+        secondary: "http://{{ ip_addresses.production.load_balancer.hx-prod-lb-02 }}:80"
+        vip: "http://{{ ip_addresses.production.load_balancer.vip }}:80"
+        ssl_primary: "https://{{ ip_addresses.production.load_balancer.hx-prod-lb-01 }}:443"
+        ssl_secondary: "https://{{ ip_addresses.production.load_balancer.hx-prod-lb-02 }}:443"
+        ssl_vip: "https://{{ ip_addresses.production.load_balancer.vip }}:443"
+      
+      web:
+        primary: "http://{{ ip_addresses.production.web.hx-prod-web-01 }}:{{ ports.web.http }}"
+        secondary: "http://{{ ip_addresses.production.web.hx-prod-web-02 }}:{{ ports.web.http }}"
+        tertiary: "http://{{ ip_addresses.production.web.hx-prod-web-03 }}:{{ ports.web.http }}"
+      
+      application:
+        primary: "http://{{ ip_addresses.production.application.hx-prod-app-01 }}:{{ ports.application.primary }}"
+        secondary: "http://{{ ip_addresses.production.application.hx-prod-app-02 }}:{{ ports.application.primary }}"
+        tertiary: "http://{{ ip_addresses.production.application.hx-prod-app-03 }}:{{ ports.application.primary }}"
+        management_primary: "http://{{ ip_addresses.production.application.hx-prod-app-01 }}:{{ ports.application.management }}"
+        health_primary: "http://{{ ip_addresses.production.application.hx-prod-app-01 }}:{{ ports.application.health }}"
+      
+      database:
+        master: "postgresql://{{ ip_addresses.production.database.hx-prod-db-01 }}:{{ ports.database.postgresql }}"
+        replica1: "postgresql://{{ ip_addresses.production.database.hx-prod-db-02 }}:{{ ports.database.postgresql }}"
+        replica2: "postgresql://{{ ip_addresses.production.database.hx-prod-db-03 }}:{{ ports.database.postgresql }}"
+        cluster_vip: "postgresql://{{ ip_addresses.production.database.cluster_vip }}:{{ ports.database.postgresql }}"
+      
+      cache:
+        master: "redis://{{ ip_addresses.production.cache.hx-prod-cache-01 }}:{{ ports.cache.redis }}"
+        replica: "redis://{{ ip_addresses.production.cache.hx-prod-cache-02 }}:{{ ports.cache.redis }}"
+        cluster_vip: "redis://{{ ip_addresses.production.cache.cluster_vip }}:{{ ports.cache.redis }}"
+      
+      monitoring:
+        prometheus: "http://{{ ip_addresses.production.monitoring.hx-prod-monitor-01 }}:{{ ports.monitoring.prometheus }}"
+        grafana: "http://{{ ip_addresses.production.monitoring.hx-prod-monitor-01 }}:{{ ports.monitoring.grafana }}"
+        alertmanager: "http://{{ ip_addresses.production.monitoring.hx-prod-monitor-01 }}:{{ ports.monitoring.alertmanager }}"
+        elasticsearch: "http://{{ ip_addresses.production.monitoring.hx-prod-monitor-02 }}:{{ ports.logging.elasticsearch }}"
+        kibana: "http://{{ ip_addresses.production.monitoring.hx-prod-monitor-02 }}:{{ ports.logging.kibana }}"
+
+  # Staging Environment Endpoints
+  staging:
+    # External/Public Endpoints
+    external:
+      web:
+        primary: "https://staging.hx.hanax-ai.com"
+        api: "https://api.staging.hx.hanax-ai.com"
+        admin: "https://admin.staging.hx.hanax-ai.com"
+        docs: "https://docs.staging.hx.hanax-ai.com"
+        cdn: "https://cdn.staging.hx.hanax-ai.com"
+        assets: "https://assets.staging.hx.hanax-ai.com"
+      
+      monitoring:
+        grafana: "https://monitoring.staging.hx.hanax-ai.com"
+        prometheus: "https://prometheus.staging.hx.hanax-ai.com"
+        alertmanager: "https://alerts.staging.hx.hanax-ai.com"
+        kibana: "https://logs.staging.hx.hanax-ai.com"
+    
+    # Internal Service Endpoints
+    internal:
+      load_balancer:
+        primary: "http://{{ ip_addresses.staging.load_balancer.hx-stg-lb-01 }}:80"
+        secondary: "http://{{ ip_addresses.staging.load_balancer.hx-stg-lb-02 }}:80"
+        vip: "http://{{ ip_addresses.staging.load_balancer.vip }}:80"
+        ssl_primary: "https://{{ ip_addresses.staging.load_balancer.hx-stg-lb-01 }}:443"
+        ssl_secondary: "https://{{ ip_addresses.staging.load_balancer.hx-stg-lb-02 }}:443"
+        ssl_vip: "https://{{ ip_addresses.staging.load_balancer.vip }}:443"
+      
+      web:
+        primary: "http://{{ ip_addresses.staging.web.hx-stg-web-01 }}:{{ ports.web.http }}"
+        secondary: "http://{{ ip_addresses.staging.web.hx-stg-web-02 }}:{{ ports.web.http }}"
+        tertiary: "http://{{ ip_addresses.staging.web.hx-stg-web-03 }}:{{ ports.web.http }}"
+      
+      application:
+        primary: "http://{{ ip_addresses.staging.application.hx-stg-app-01 }}:{{ ports.application.primary }}"
+        secondary: "http://{{ ip_addresses.staging.application.hx-stg-app-02 }}:{{ ports.application.primary }}"
+        tertiary: "http://{{ ip_addresses.staging.application.hx-stg-app-03 }}:{{ ports.application.primary }}"
+        management_primary: "http://{{ ip_addresses.staging.application.hx-stg-app-01 }}:{{ ports.application.management }}"
+        health_primary: "http://{{ ip_addresses.staging.application.hx-stg-app-01 }}:{{ ports.application.health }}"
+      
+      database:
+        master: "postgresql://{{ ip_addresses.staging.database.hx-stg-db-01 }}:{{ ports.database.postgresql }}"
+        replica1: "postgresql://{{ ip_addresses.staging.database.hx-stg-db-02 }}:{{ ports.database.postgresql }}"
+        replica2: "postgresql://{{ ip_addresses.staging.database.hx-stg-db-03 }}:{{ ports.database.postgresql }}"
+        cluster_vip: "postgresql://{{ ip_addresses.staging.database.cluster_vip }}:{{ ports.database.postgresql }}"
+      
+      cache:
+        master: "redis://{{ ip_addresses.staging.cache.hx-stg-cache-01 }}:{{ ports.cache.redis }}"
+        replica: "redis://{{ ip_addresses.staging.cache.hx-stg-cache-02 }}:{{ ports.cache.redis }}"
+        cluster_vip: "redis://{{ ip_addresses.staging.cache.cluster_vip }}:{{ ports.cache.redis }}"
+      
+      monitoring:
+        prometheus: "http://{{ ip_addresses.staging.monitoring.hx-stg-monitor-01 }}:{{ ports.monitoring.prometheus }}"
+        grafana: "http://{{ ip_addresses.staging.monitoring.hx-stg-monitor-01 }}:{{ ports.monitoring.grafana }}"
+        alertmanager: "http://{{ ip_addresses.staging.monitoring.hx-stg-monitor-01 }}:{{ ports.monitoring.alertmanager }}"
+        elasticsearch: "http://{{ ip_addresses.staging.monitoring.hx-stg-monitor-02 }}:{{ ports.logging.elasticsearch }}"
+        kibana: "http://{{ ip_addresses.staging.monitoring.hx-stg-monitor-02 }}:{{ ports.logging.kibana }}"
+
+  # Development Environment Endpoints
+  development:
+    # External/Public Endpoints
+    external:
+      web:
+        primary: "http://dev.hx.hanax-ai.com"
+        api: "http://api.dev.hx.hanax-ai.com"
+        admin: "http://admin.dev.hx.hanax-ai.com"
+        docs: "http://docs.dev.hx.hanax-ai.com"
+      
+      monitoring:
+        grafana: "http://monitoring.dev.hx.hanax-ai.com"
+        prometheus: "http://prometheus.dev.hx.hanax-ai.com"
+    
+    # Internal Service Endpoints
+    internal:
+      load_balancer:
+        primary: "http://{{ ip_addresses.development.load_balancer.hx-dev-lb-01 }}:80"
+        secondary: "http://{{ ip_addresses.development.load_balancer.hx-dev-lb-02 }}:80"
+        vip: "http://{{ ip_addresses.development.load_balancer.vip }}:80"
+      
+      web:
+        primary: "http://{{ ip_addresses.development.web.hx-dev-web-01 }}:{{ ports.web.http }}"
+        secondary: "http://{{ ip_addresses.development.web.hx-dev-web-02 }}:{{ ports.web.http }}"
+      
+      application:
+        primary: "http://{{ ip_addresses.development.application.hx-dev-app-01 }}:{{ ports.application.primary }}"
+        secondary: "http://{{ ip_addresses.development.application.hx-dev-app-02 }}:{{ ports.application.primary }}"
+        management_primary: "http://{{ ip_addresses.development.application.hx-dev-app-01 }}:{{ ports.application.management }}"
+        health_primary: "http://{{ ip_addresses.development.application.hx-dev-app-01 }}:{{ ports.application.health }}"
+      
+      database:
+        master: "postgresql://{{ ip_addresses.development.database.hx-dev-db-01 }}:{{ ports.database.postgresql }}"
+        replica: "postgresql://{{ ip_addresses.development.database.hx-dev-db-02 }}:{{ ports.database.postgresql }}"
+        cluster_vip: "postgresql://{{ ip_addresses.development.database.cluster_vip }}:{{ ports.database.postgresql }}"
+      
+      cache:
+        primary: "redis://{{ ip_addresses.development.cache.hx-dev-cache-01 }}:{{ ports.cache.redis }}"
+        cluster_vip: "redis://{{ ip_addresses.development.cache.cluster_vip }}:{{ ports.cache.redis }}"
+      
+      monitoring:
+        prometheus: "http://{{ ip_addresses.development.monitoring.hx-dev-monitor-01 }}:{{ ports.monitoring.prometheus }}"
+        grafana: "http://{{ ip_addresses.development.monitoring.hx-dev-monitor-01 }}:{{ ports.monitoring.grafana }}"
+
+# =============================================================================
+# HEALTH CHECK ENDPOINTS
+# =============================================================================
+health_check_endpoints:
+  production:
+    load_balancer:
+      primary: "http://{{ ip_addresses.production.load_balancer.hx-prod-lb-01 }}/health"
+      secondary: "http://{{ ip_addresses.production.load_balancer.hx-prod-lb-02 }}/health"
+    
+    web:
+      primary: "http://{{ ip_addresses.production.web.hx-prod-web-01 }}/health"
+      secondary: "http://{{ ip_addresses.production.web.hx-prod-web-02 }}/health"
+      tertiary: "http://{{ ip_addresses.production.web.hx-prod-web-03 }}/health"
+    
+    application:
+      primary: "http://{{ ip_addresses.production.application.hx-prod-app-01 }}:{{ ports.application.health }}/health"
+      secondary: "http://{{ ip_addresses.production.application.hx-prod-app-02 }}:{{ ports.application.health }}/health"
+      tertiary: "http://{{ ip_addresses.production.application.hx-prod-app-03 }}:{{ ports.application.health }}/health"
+    
+    database:
+      master: "postgresql://{{ ip_addresses.production.database.hx-prod-db-01 }}:{{ ports.database.postgresql }}/health"
+      replica1: "postgresql://{{ ip_addresses.production.database.hx-prod-db-02 }}:{{ ports.database.postgresql }}/health"
+      replica2: "postgresql://{{ ip_addresses.production.database.hx-prod-db-03 }}:{{ ports.database.postgresql }}/health"
+    
+    cache:
+      master: "redis://{{ ip_addresses.production.cache.hx-prod-cache-01 }}:{{ ports.cache.redis }}/ping"
+      replica: "redis://{{ ip_addresses.production.cache.hx-prod-cache-02 }}:{{ ports.cache.redis }}/ping"
+
+  staging:
+    load_balancer:
+      primary: "http://{{ ip_addresses.staging.load_balancer.hx-stg-lb-01 }}/health"
+      secondary: "http://{{ ip_addresses.staging.load_balancer.hx-stg-lb-02 }}/health"
+    
+    web:
+      primary: "http://{{ ip_addresses.staging.web.hx-stg-web-01 }}/health"
+      secondary: "http://{{ ip_addresses.staging.web.hx-stg-web-02 }}/health"
+      tertiary: "http://{{ ip_addresses.staging.web.hx-stg-web-03 }}/health"
+    
+    application:
+      primary: "http://{{ ip_addresses.staging.application.hx-stg-app-01 }}:{{ ports.application.health }}/health"
+      secondary: "http://{{ ip_addresses.staging.application.hx-stg-app-02 }}:{{ ports.application.health }}/health"
+      tertiary: "http://{{ ip_addresses.staging.application.hx-stg-app-03 }}:{{ ports.application.health }}/health"
+
+  development:
+    load_balancer:
+      primary: "http://{{ ip_addresses.development.load_balancer.hx-dev-lb-01 }}/health"
+      secondary: "http://{{ ip_addresses.development.load_balancer.hx-dev-lb-02 }}/health"
+    
+    web:
+      primary: "http://{{ ip_addresses.development.web.hx-dev-web-01 }}/health"
+      secondary: "http://{{ ip_addresses.development.web.hx-dev-web-02 }}/health"
+    
+    application:
+      primary: "http://{{ ip_addresses.development.application.hx-dev-app-01 }}:{{ ports.application.health }}/health"
+      secondary: "http://{{ ip_addresses.development.application.hx-dev-app-02 }}:{{ ports.application.health }}/health"
+
+# =============================================================================
+# API ENDPOINT PATTERNS
+# =============================================================================
+api_endpoints:
+  patterns:
+    rest_api: "/api/v1"
+    graphql_api: "/graphql"
+    websocket_api: "/ws"
+    admin_api: "/admin/api"
+    health_check: "/health"
+    metrics: "/metrics"
+    status: "/status"
+    version: "/version"
+  
+  versioning:
+    current: "v1"
+    supported: ["v1"]
+    deprecated: []
+  
+  authentication:
+    login: "/auth/login"
+    logout: "/auth/logout"
+    refresh: "/auth/refresh"
+    register: "/auth/register"
+    reset_password: "/auth/reset-password"
+
+# =============================================================================
+# EXTERNAL SERVICE INTEGRATIONS
+# =============================================================================
+external_integrations:
+  production:
+    payment_gateway: "https://api.stripe.com"
+    email_service: "https://api.sendgrid.com"
+    sms_service: "https://api.twilio.com"
+    cdn_service: "https://cdn.cloudflare.com"
+    monitoring_service: "https://api.datadog.com"
+    logging_service: "https://logs.papertrail.com"
+  
+  staging:
+    payment_gateway: "https://api.stripe.com"  # Test mode
+    email_service: "https://api.sendgrid.com"  # Test mode
+    sms_service: "https://api.twilio.com"      # Test mode
+    cdn_service: "https://cdn.cloudflare.com" # Test mode
+    monitoring_service: "https://api.datadog.com" # Test mode
+    logging_service: "https://logs.papertrail.com" # Test mode
+  
+  development:
+    payment_gateway: "http://localhost:3001/mock-stripe"
+    email_service: "http://localhost:3002/mock-sendgrid"
+    sms_service: "http://localhost:3003/mock-twilio"
+    cdn_service: "http://localhost:3004/mock-cdn"
+    monitoring_service: "http://localhost:3005/mock-datadog"
+    logging_service: "http://localhost:3006/mock-papertrail"
+
+# =============================================================================
+# SERVICE DISCOVERY CONFIGURATION
+# =============================================================================
+service_discovery:
+  consul:
+    production:
+      server: "http://{{ ip_addresses.production.management.ansible_controller }}:8500"
+      datacenter: "prod-dc1"
+    staging:
+      server: "http://{{ ip_addresses.staging.management.ansible_controller }}:8500"
+      datacenter: "staging-dc1"
+    development:
+      server: "http://{{ ip_addresses.development.management.ansible_controller }}:8500"
+      datacenter: "dev-dc1"
+  
+  etcd:
+    production:
+      endpoints:
+        - "http://{{ ip_addresses.production.database.hx-prod-db-01 }}:2379"
+        - "http://{{ ip_addresses.production.database.hx-prod-db-02 }}:2379"
+        - "http://{{ ip_addresses.production.database.hx-prod-db-03 }}:2379"
+    staging:
+      endpoints:
+        - "http://{{ ip_addresses.staging.database.hx-stg-db-01 }}:2379"
+        - "http://{{ ip_addresses.staging.database.hx-stg-db-02 }}:2379"
+    development:
+      endpoints:
+        - "http://{{ ip_addresses.development.database.hx-dev-db-01 }}:2379"

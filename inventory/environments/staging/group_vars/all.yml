@@ -1,0 +1,283 @@
+---
+# HX Infrastructure - Staging Environment Variables
+# Environment-specific overrides following Ansible variable precedence
+# Reference: https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable
+
+# =============================================================================
+# ENVIRONMENT CONFIGURATION
+# =============================================================================
+environment: staging
+deployment_type: staging
+environment_tier: stg
+
+# =============================================================================
+# STAGING-SPECIFIC OVERRIDES
+# =============================================================================
+# Debug and Logging (Production-like but with more verbosity)
+debug_mode: false
+log_level: info
+verbose_logging: true
+app_server_debug: false
+app_server_log_level: info
+
+# Security (Production-like)
+ssl_verification: true
+ssl_enabled: true
+firewall_enabled: true
+fail2ban_enabled: true
+automatic_updates_enabled: true
+
+# Performance (Production-like but smaller scale)
+web_server_worker_processes: 4
+web_server_worker_connections: 1024
+app_server_pool_size: 4
+
+# Resource Limits (Medium for staging)
+resource_limits:
+  cpu: "4"
+  memory: "8G"
+  disk: "100G"
+  swap: "4G"
+
+# Database Configuration (Production-like settings)
+postgresql_max_connections: 200
+postgresql_shared_buffers: "256MB"
+postgresql_work_mem: "8MB"
+postgresql_maintenance_work_mem: "128MB"
+postgresql_log_statement: "ddl"
+postgresql_log_min_duration_statement: 1000
+
+# Cache Configuration (Production-like settings)
+redis_maxmemory: "2gb"
+redis_maxmemory_policy: "allkeys-lru"
+redis_save_enabled: true
+redis_appendonly: true
+redis_appendfsync: "everysec"
+
+# Monitoring (Enhanced for staging)
+monitoring_level: enhanced
+monitoring_enabled: true
+log_aggregation_enabled: true
+metrics_collection_enabled: true
+alerting_enabled: true
+
+# Backup (Enabled for staging)
+backup_enabled: true
+database_backup_enabled: true
+backup_retention_policy:
+  daily: 7
+  weekly: 2
+  monthly: 1
+
+# Maintenance Windows (Scheduled for staging)
+maintenance_window:
+  enabled: true
+  start_time: "02:00"
+  end_time: "04:00"
+  timezone: "UTC"
+  days:
+    - "sunday"
+
+# =============================================================================
+# STAGING NETWORK CONFIGURATION
+# =============================================================================
+network_staging:
+  load_balancer_subnet: "10.2.1.0/24"
+  web_subnet: "10.2.2.0/24"
+  application_subnet: "10.2.3.0/24"
+  database_subnet: "10.2.4.0/24"
+  cache_subnet: "10.2.5.0/24"
+  monitoring_subnet: "10.2.6.0/24"
+  management_subnet: "10.2.10.0/24"
+
+# =============================================================================
+# STAGING SERVICE ENDPOINTS
+# =============================================================================
+service_endpoints:
+  load_balancer:
+    primary: "hx-stg-lb-01.staging.hanax-ai.local"
+    secondary: "hx-stg-lb-02.staging.hanax-ai.local"
+    vip: "hx-stg-lb-vip.staging.hanax-ai.local"
+  web:
+    primary: "hx-stg-web-01.staging.hanax-ai.local"
+    secondary: "hx-stg-web-02.staging.hanax-ai.local"
+    tertiary: "hx-stg-web-03.staging.hanax-ai.local"
+  application:
+    primary: "hx-stg-app-01.staging.hanax-ai.local"
+    secondary: "hx-stg-app-02.staging.hanax-ai.local"
+    tertiary: "hx-stg-app-03.staging.hanax-ai.local"
+  database:
+    master: "hx-stg-db-01.staging.hanax-ai.local"
+    replica1: "hx-stg-db-02.staging.hanax-ai.local"
+    replica2: "hx-stg-db-03.staging.hanax-ai.local"
+  cache:
+    primary: "hx-stg-cache-01.staging.hanax-ai.local"
+    replica: "hx-stg-cache-02.staging.hanax-ai.local"
+  monitoring:
+    primary: "hx-stg-monitor-01.staging.hanax-ai.local"
+    secondary: "hx-stg-monitor-02.staging.hanax-ai.local"
+
+# =============================================================================
+# STAGING FEATURE FLAGS
+# =============================================================================
+staging_features:
+  hot_reload: false
+  debug_toolbar: false
+  profiling: true
+  test_data_seeding: false
+  mock_external_services: false
+  bypass_authentication: false
+  skip_migrations: false
+  enable_swagger: true
+  cors_allow_all: false
+  performance_monitoring: true
+  load_testing: true
+
+# =============================================================================
+# STAGING TESTING CONFIGURATION
+# =============================================================================
+testing:
+  unit_tests: true
+  integration_tests: true
+  e2e_tests: true
+  performance_tests: true
+  security_tests: true
+  load_tests: true
+  test_database: "hx_staging_test"
+  test_data_fixtures: false
+  parallel_testing: true
+  smoke_tests: true
+  regression_tests: true
+
+# =============================================================================
+# STAGING QUALITY ASSURANCE
+# =============================================================================
+quality_assurance:
+  code_coverage_threshold: 80
+  performance_benchmarks: true
+  security_scanning: true
+  vulnerability_scanning: true
+  compliance_checking: true
+  accessibility_testing: true
+  browser_compatibility_testing: true
+
+# =============================================================================
+# STAGING EXTERNAL SERVICES
+# =============================================================================
+external_services:
+  email:
+    backend: "smtp"
+    debug: false
+    test_mode: true
+  storage:
+    backend: "s3"
+    bucket: "hx-staging-storage"
+    region: "us-east-1"
+  cdn:
+    enabled: true
+    provider: "cloudfront"
+    test_mode: true
+  payment:
+    backend: "stripe"
+    test_mode: true
+  analytics:
+    enabled: true
+    test_mode: true
+
+# =============================================================================
+# STAGING COMPLIANCE
+# =============================================================================
+compliance_enabled: true
+audit_logging_enabled: true
+security_scanning_enabled: true
+vulnerability_scanning_enabled: true
+compliance_standards:
+  - "CIS"
+  - "NIST"
+  - "SOC2"
+
+# =============================================================================
+# STAGING DEPLOYMENT
+# =============================================================================
+deployment_strategy: "rolling_update"
+rollback_enabled: true
+health_check_timeout: 60
+startup_timeout: 120
+shutdown_timeout: 60
+deployment_validation:
+  smoke_tests: true
+  health_checks: true
+  performance_checks: true
+
+# =============================================================================
+# STAGING ALERTING CONFIGURATION
+# =============================================================================
+alerting:
+  channels:
+    email:
+      enabled: true
+      recipients:
+        - "staging-alerts@hanax-ai.com"
+        - "devops@hanax-ai.com"
+    slack:
+      enabled: true
+      channel: "#staging-alerts"
+      webhook_url: "{{ vault_slack_webhook_staging }}"
+  thresholds:
+    cpu_usage: 80
+    memory_usage: 85
+    disk_usage: 90
+    response_time: 2000
+    error_rate: 5
+
+# =============================================================================
+# STAGING CONTAINER CONFIGURATION
+# =============================================================================
+container_config:
+  restart_policy: "unless-stopped"
+  log_driver: "json-file"
+  log_options:
+    max-size: "50m"
+    max-file: "5"
+  resource_limits:
+    cpus: "4.0"
+    memory: "8g"
+  health_check:
+    enabled: true
+    interval: "30s"
+    timeout: "10s"
+    retries: 3
+
+# =============================================================================
+# STAGING DATA MANAGEMENT
+# =============================================================================
+data_management:
+  data_retention:
+    logs: "30d"
+    metrics: "90d"
+    backups: "30d"
+  data_anonymization: true
+  data_masking: true
+  synthetic_data: false
+  data_validation: true
+
+# =============================================================================
+# STAGING PERFORMANCE CONFIGURATION
+# =============================================================================
+performance:
+  caching:
+    enabled: true
+    ttl: 3600
+    levels:
+      - "application"
+      - "database"
+      - "cdn"
+  compression:
+    enabled: true
+    algorithms:
+      - "gzip"
+      - "brotli"
+  optimization:
+    minification: true
+    bundling: true
+    lazy_loading: true
