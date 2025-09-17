@@ -1,0 +1,87 @@
+
+---
+# Ansible Galaxy Collections
+collections:
+  # Core Collections
+  - name: ansible.posix
+    version: ">=1.5.0"
+  - name: community.general
+    version: ">=7.0.0"
+  - name: community.crypto
+    version: ">=2.14.0"
+  - name: community.mysql
+    version: ">=3.7.0"
+  - name: community.postgresql
+    version: ">=3.0.0"
+  - name: community.docker
+    version: ">=3.4.0"
+
+  # Web Server Collections
+  - name: community.nginx
+    version: ">=1.0.0"
+  - name: community.apache
+    version: ">=1.0.0"
+
+  # Monitoring Collections
+  - name: community.grafana
+    version: ">=1.5.0"
+  - name: prometheus.prometheus
+    version: ">=0.12.0"
+
+  # Security Collections
+  - name: community.crypto
+    version: ">=2.14.0"
+  - name: ansible.security
+    version: ">=2.0.0"
+
+  # Cloud Collections
+  - name: amazon.aws
+    version: ">=6.0.0"
+  - name: google.cloud
+    version: ">=1.1.0"
+  - name: azure.azcollection
+    version: ">=1.16.0"
+
+# Ansible Galaxy Roles
+roles:
+  # System Roles
+  - name: geerlingguy.security
+    version: "2.0.1"
+  - name: geerlingguy.firewall
+    version: "2.6.0"
+  - name: geerlingguy.ntp
+    version: "2.3.0"
+
+  # Web Server Roles
+  - name: geerlingguy.nginx
+    version: "3.1.4"
+  - name: geerlingguy.apache
+    version: "3.2.5"
+
+  # Database Roles
+  - name: geerlingguy.postgresql
+    version: "3.4.2"
+  - name: geerlingguy.mysql
+    version: "4.3.4"
+  - name: geerlingguy.redis
+    version: "1.7.0"
+
+  # Monitoring Roles
+  - name: cloudalchemy.prometheus
+    version: "2.17.0"
+  - name: cloudalchemy.grafana
+    version: "0.22.3"
+  - name: geerlingguy.node-exporter
+    version: "1.0.1"
+
+  # SSL/TLS Roles
+  - name: geerlingguy.certbot
+    version: "4.1.0"
+
+  # Backup Roles
+  - name: arillso.restic
+    version: "1.7.1"
+
+  # Docker Roles
+  - name: geerlingguy.docker
+    version: "6.1.0"
