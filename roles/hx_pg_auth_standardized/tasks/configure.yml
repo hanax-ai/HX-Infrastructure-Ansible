@@ -1,4 +1,3 @@
-
 ---
 - name: "Hx | PostgreSQL Auth | Configure postgresql.conf"
   template:
@@ -29,13 +28,10 @@
     encoding: "{{ item.encoding | default('UTF8') }}"
     lc_collate: "{{ item.lc_collate | default('en_US.UTF-8') }}"
     lc_ctype: "{{ item.lc_ctype | default('en_US.UTF-8') }}"
-    login_host: "localhost"
-    login_user: "postgres"
-    login_password: "{{ vault_postgres_password | default('') }}"
   loop: "{{ hx_pg_databases }}"
   become: true
   become_user: postgres
-  when: hx_pg_databases | length > 0
+  when: (hx_pg_databases | default([])) | length > 0
   tags: ['configure']
 
 - name: "Hx | PostgreSQL Auth | Create database users"
@@ -44,15 +40,13 @@
     password: "{{ item.password }}"
     role_attr_flags: "{{ item.role_attr_flags | default('NOSUPERUSER') }}"
     db: "{{ item.db | default(omit) }}"
-    login_host: "localhost"
-    login_user: "postgres"
-    login_password: "{{ vault_postgres_password | default('') }}"
     expires: "{{ item.expires | default(omit) }}"
   loop: "{{ hx_pg_users }}"
   become: true
   become_user: postgres
   when: 
-    - hx_pg_users | length > 0
+    - (hx_pg_users | default([])) | length > 0
+    - item.password is defined
     - "'CHANGE_ME' not in item.password"
   no_log: true
   tags: ['configure']
@@ -80,22 +74,43 @@
     name: "{{ hx_pg_backup_user }}"
     password: "{{ hx_pg_backup_password }}"
     role_attr_flags: "NOSUPERUSER,NOCREATEDB,NOCREATEROLE,REPLICATION"
-    login_host: "localhost"
-    login_user: "postgres"
-    login_password: "{{ vault_postgres_password | default('') }}"
   become: true
   become_user: postgres
-  when: "'CHANGE_ME' not in hx_pg_backup_password"
+  when:
+    - hx_pg_backup_user is defined
+    - hx_pg_backup_password is defined
+    - "'CHANGE_ME' not in hx_pg_backup_password"
   no_log: true
   tags: ['configure']
 
-- name: "Hx | PostgreSQL Auth | Validate configuration syntax"
-  command: >
-    {{ postgresql_bin_path | default('/usr/lib/postgresql/14/bin') }}/postgres
-    --config-file={{ hx_pg_config_dir }}/postgresql.conf
-    --check-config
-  become: true
-  become_user: postgres
-  when: hx_pg_validate_config | default(true) | bool
-  changed_when: false
+- name: "Hx | PostgreSQL Auth | Reload config"\
+  community.postgresql.postgresql_query:\
+    login_db: postgres\
+    query: "SELECT pg_reload_conf();"\
+    login_unix_socket: "{{ hx_pg_unix_socket | default('/var/run/postgresql') }}"\
+  become: true\
+  become_user: postgres\
+  when: hx_pg_validate_config | default(true) | bool\
+  changed_when: false\
+  tags: ['configure']\
+\
+- name: "Hx | PostgreSQL Auth | Assert no config errors"\
+  community.postgresql.postgresql_query:\
+    login_db: postgres\
+    query: "SELECT COUNT(*)::int AS errors FROM pg_file_settings WHERE error IS NOT NULL;"\
+    login_unix_socket: "{{ hx_pg_unix_socket | default('/var/run/postgresql') }}"\
+  register: pg_conf_check\
+  become: true\
+  become_user: postgres\
+  when: hx_pg_validate_config | default(true) | bool\
+  changed_when: false\
+  tags: ['configure']\
+\
+- name: "Hx | PostgreSQL Auth | Fail if config has errors"\
+  assert:\
+    that:\
+    - pg_conf_check.query_result[0].errors | int == 0\
+    fail_msg: "PostgreSQL config has errors; see pg_file_settings."\
+    success_msg: "PostgreSQL configuration validated"\
+  when: hx_pg_validate_config | default(true) | bool\
   tags: ['configure']

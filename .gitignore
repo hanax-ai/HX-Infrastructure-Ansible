@@ -1,15 +1,9 @@
-
-# Ansible
-*.retry
-.ansible/
-ansible.log
-/tmp/
-
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
+
+# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -28,91 +22,47 @@ wheels/
 *.egg
 MANIFEST
 
-# Virtual Environments
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
-.venv/
+# PyInstaller
+*.manifest
+*.spec
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
 
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-*.log
-logs/
-/var/log/
-
-# Temporary files
-*.tmp
-*.temp
-.tmp/
-.temp/
-
-# Secrets and Sensitive Data
-secrets.yml
-vault_pass.txt
-.vault_pass
-*.pem
-*.key
-*.crt
-id_rsa*
-*.p12
-*.pfx
-
-# Backup files
-*.bak
-*.backup
-*~
-
-# Cache
-.cache/
-*.cache
-.pytest_cache/
-.coverage
+# Unit test / coverage reports
 htmlcov/
-
-# Molecule
-.molecule/
-molecule/*/molecule.yml.bak
-
-# Terraform (if used)
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
-
-# Docker
-.dockerignore
-
-# Local environment files
-.env
-.env.local
-.env.*.local
-
-# Documentation build
-site/
-docs/_build/
-
-# Test results
-test-results/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -120,18 +70,20 @@ coverage.xml
 # pyenv
 .python-version
 
-# pipenv
-Pipfile.lock
-
-# PEP 582
-__pypackages__/
-
-# Celery
+# celery beat schedule file
 celerybeat-schedule
-celerybeat.pid
 
 # SageMath parsed files
 *.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # Spyder project settings
 .spyderproject
@@ -148,5 +100,32 @@ celerybeat.pid
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
-.pyre/
+# Ansible
+*.retry
+.vault_pass
+vault_password_file
+group_vars/*/vault.yml
+host_vars/*/vault.yml
+vault/*/vault.yml
+**/vault.yml
+**/vault.yaml
+vault_*
+.vault_*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp

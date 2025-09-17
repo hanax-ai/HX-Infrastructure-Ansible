@@ -1,10 +1,15 @@
-
 ---
 - name: "Hx | PostgreSQL Auth | Ensure PostgreSQL extensions are installed"
   package:
     name:
       - postgresql-contrib
       - postgresql-client
+    state: present
+  tags: ['install']
+
+- name: "Hx | PostgreSQL Auth | Install Python driver for PostgreSQL modules"
+  package:
+    name: "{{ hx_pg_python_driver_pkg | default('python3-psycopg2') }}"
     state: present
   tags: ['install']
 
@@ -37,15 +42,15 @@
 
 - name: "Hx | PostgreSQL Auth | Create monitoring user"
   postgresql_user:
+  no_log: true
     name: "monitoring"
-    password: "{{ vault_monitoring_password | default('monitoring_change_me') }}"
+    password: "{{ vault_monitoring_password }}"
     role_attr_flags: "NOSUPERUSER,NOCREATEDB,NOCREATEROLE"
-    login_host: "localhost"
-    login_user: "postgres"
-    login_password: "{{ vault_postgres_password | default('') }}"
   become: true
   become_user: postgres
-  when: "'CHANGE_ME' not in (vault_monitoring_password | default('monitoring_change_me'))"
+  when:
+    - vault_monitoring_password is defined
+    - vault_monitoring_password not in ['monitoring_change_me', 'CHANGE_ME', '', None]
   tags: ['install']
 
 - name: "Hx | PostgreSQL Auth | Grant monitoring permissions"
@@ -54,10 +59,9 @@
     roles: "monitoring"
     privs: "CONNECT"
     type: "database"
-    login_host: "localhost"
-    login_user: "postgres"
-    login_password: "{{ vault_postgres_password | default('') }}"
   become: true
   become_user: postgres
-  when: "'CHANGE_ME' not in (vault_monitoring_password | default('monitoring_change_me'))"
+  when:
+    - vault_monitoring_password is defined
+    - vault_monitoring_password not in ['monitoring_change_me', 'CHANGE_ME', '', None]
   tags: ['install']

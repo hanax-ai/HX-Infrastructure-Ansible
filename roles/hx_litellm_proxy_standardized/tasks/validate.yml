@@ -1,4 +1,3 @@
-
 ---
 - name: "Hx | LiteLLM | Validate required variables"
   assert:
@@ -47,7 +46,6 @@
   loop: "{{ hx_litellm_providers | dict2items }}"
   when: 
     - item.value.enabled | default(false) | bool
-    - item.value.api_key is defined
   no_log: true
   tags: ['validate']
 
