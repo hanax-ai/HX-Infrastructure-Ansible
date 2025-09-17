@@ -1,0 +1,259 @@
+
+---
+# Infrastructure Services Role Defaults
+# Domain Controllers and Certificate Authorities
+
+# Windows Server Configuration
+windows:
+  domain_name: "{{ domain_name }}"
+  netbios_name: "{{ domain_name.split('.')[0] | upper }}"
+  forest_mode: "{{ windows_forest_mode | default('WinThreshold') }}"
+  domain_mode: "{{ windows_domain_mode | default('WinThreshold') }}"
+  safe_mode_password: "{{ vault_safe_mode_password }}"
+
+# Active Directory Configuration
+active_directory:
+  install_dns: "{{ ad_install_dns | default(true) }}"
+  install_dhcp: "{{ ad_install_dhcp | default(true) }}"
+  create_dns_delegation: "{{ ad_create_dns_delegation | default(false) }}"
+  database_path: "{{ ad_database_path | default('C:\\Windows\\NTDS') }}"
+  sysvol_path: "{{ ad_sysvol_path | default('C:\\Windows\\SYSVOL') }}"
+  log_path: "{{ ad_log_path | default('C:\\Windows\\NTDS') }}"
+  
+  # Organizational Units Template
+  organizational_units_template:
+    - name: "{{ organization | replace(' ', '-') }}"
+      path: "OU={{ organization | replace(' ', '-') }},DC={{ domain_name.split('.') | join(',DC=') }}"
+    - name: "Servers"
+      path: "OU=Servers,OU={{ organization | replace(' ', '-') }},DC={{ domain_name.split('.') | join(',DC=') }}"
+    - name: "Workstations"
+      path: "OU=Workstations,OU={{ organization | replace(' ', '-') }},DC={{ domain_name.split('.') | join(',DC=') }}"
+    - name: "Users"
+      path: "OU=Users,OU={{ organization | replace(' ', '-') }},DC={{ domain_name.split('.') | join(',DC=') }}"
+    - name: "Service Accounts"
+      path: "OU=Service Accounts,OU={{ organization | replace(' ', '-') }},DC={{ domain_name.split('.') | join(',DC=') }}"
+
+  # Override with custom OUs if provided
+  organizational_units: "{{ ad_organizational_units | default(organizational_units_template) }}"
+
+  # Group Policy Templates
+  group_policies_template:
+    - name: "{{ organization | replace(' ', '-') }}-Security-Policy"
+      description: "Security hardening for {{ organization }}"
+    - name: "{{ organization | replace(' ', '-') }}-Server-Policy"
+      description: "Server-specific configurations for {{ organization }}"
+
+  group_policies: "{{ ad_group_policies | default(group_policies_template) }}"
+
+# DNS Configuration
+dns:
+  forwarders: "{{ dns_forwarders | default(dns_servers) }}"
+  
+  zones_template:
+    - name: "{{ domain_name }}"
+      type: "{{ dns_primary_zone_type | default('primary') }}"
+    - name: "{{ network_subnet.split('/')[0].split('.')[0:3] | join('.') }}.in-addr.arpa"
+      type: "{{ dns_reverse_zone_type | default('primary') }}"
+
+  zones: "{{ dns_zones | default(zones_template) }}"
+
+# DHCP Configuration
+dhcp:
+  scope_name: "{{ dhcp_scope_name | default(organization + '-Scope') }}"
+  scope_description: "{{ dhcp_scope_description | default('DHCP scope for ' + organization) }}"
+  start_range: "{{ dhcp_start_range | default(network_subnet.split('/')[0].split('.')[0:3] | join('.') + '.100') }}"
+  end_range: "{{ dhcp_end_range | default(network_subnet.split('/')[0].split('.')[0:3] | join('.') + '.200') }}"
+  subnet_mask: "{{ dhcp_subnet_mask | default('255.255.255.0') }}"
+  default_gateway: "{{ dhcp_default_gateway | default(network_subnet.split('/')[0].split('.')[0:3] | join('.') + '.1') }}"
+  dns_servers: "{{ dhcp_dns_servers | default([network_subnet.split('/')[0].split('.')[0:3] | join('.') + '.10', network_subnet.split('/')[0].split('.')[0:3] | join('.') + '.11']) }}"
+  lease_duration: "{{ dhcp_lease_duration | default('8.00:00:00') }}"
+
+# Certificate Authority Configuration
+certificate_authority:
+  ca_name: "{{ ca_name | default(organization + '-CA') }}"
+  ca_description: "{{ ca_description | default(organization + ' Certificate Authority') }}"
+  key_length: "{{ ca_key_length | default(4096) }}"
+  hash_algorithm: "{{ ca_hash_algorithm | default('SHA256') }}"
+  validity_period: "{{ ca_validity_period | default('10 years') }}"
+  
+  # Certificate Templates
+  certificate_templates_default:
+    - name: "{{ organization | replace(' ', '-') }}-Server-Certificate"
+      description: "Server certificates for {{ organization }}"
+      key_usage: "{{ ca_server_key_usage | default(['Digital Signature', 'Key Encipherment']) }}"
+      enhanced_key_usage: "{{ ca_server_enhanced_key_usage | default(['Server Authentication']) }}"
+      validity_period: "{{ ca_server_validity_period | default('2 years') }}"
+    
+    - name: "{{ organization | replace(' ', '-') }}-Client-Certificate"
+      description: "Client certificates for {{ organization }}"
+      key_usage: "{{ ca_client_key_usage | default(['Digital Signature']) }}"
+      enhanced_key_usage: "{{ ca_client_enhanced_key_usage | default(['Client Authentication']) }}"
+      validity_period: "{{ ca_client_validity_period | default('1 year') }}"
+    
+    - name: "{{ organization | replace(' ', '-') }}-Code-Signing"
+      description: "Code signing certificates for {{ organization }}"
+      key_usage: "{{ ca_code_signing_key_usage | default(['Digital Signature']) }}"
+      enhanced_key_usage: "{{ ca_code_signing_enhanced_key_usage | default(['Code Signing']) }}"
+      validity_period: "{{ ca_code_signing_validity_period | default('3 years') }}"
+
+  certificate_templates: "{{ ca_certificate_templates | default(certificate_templates_default) }}"
+
+  # Certificate Revocation List
+  crl:
+    publication_interval: "{{ ca_crl_publication_interval | default('1 week') }}"
+    next_update_interval: "{{ ca_crl_next_update_interval | default('1 day') }}"
+    delta_crl_interval: "{{ ca_crl_delta_interval | default('1 day') }}"
+
+# Windows Features to Install
+windows_features_default:
+  - AD-Domain-Services
+  - DNS
+  - DHCP
+  - ADCS-Cert-Authority
+  - ADCS-Web-Enrollment
+  - RSAT-AD-Tools
+  - RSAT-DNS-Server
+  - RSAT-DHCP
+
+windows_features: "{{ infrastructure_windows_features | default(windows_features_default) }}"
+
+# Windows Services Configuration
+windows_services_default:
+  - name: "DNS"
+    state: "{{ dns_service_state | default('started') }}"
+    start_mode: "{{ dns_service_start_mode | default('auto') }}"
+  - name: "DHCP Server"
+    state: "{{ dhcp_service_state | default('started') }}"
+    start_mode: "{{ dhcp_service_start_mode | default('auto') }}"
+  - name: "Active Directory Domain Services"
+    state: "{{ ad_service_state | default('started') }}"
+    start_mode: "{{ ad_service_start_mode | default('auto') }}"
+  - name: "Certificate Services"
+    state: "{{ ca_service_state | default('started') }}"
+    start_mode: "{{ ca_service_start_mode | default('auto') }}"
+
+windows_services: "{{ infrastructure_windows_services | default(windows_services_default) }}"
+
+# Security Configuration
+security:
+  password_policy:
+    minimum_password_length: "{{ security_min_password_length | default(12) }}"
+    password_complexity: "{{ security_password_complexity | default(true) }}"
+    maximum_password_age: "{{ security_max_password_age | default(90) }}"
+    minimum_password_age: "{{ security_min_password_age | default(1) }}"
+    password_history_count: "{{ security_password_history_count | default(24) }}"
+    lockout_threshold: "{{ security_lockout_threshold | default(5) }}"
+    lockout_duration: "{{ security_lockout_duration | default(30) }}"
+    lockout_observation_window: "{{ security_lockout_observation_window | default(30) }}"
+
+  audit_policy:
+    audit_account_logon: "{{ security_audit_account_logon | default('Success,Failure') }}"
+    audit_account_management: "{{ security_audit_account_management | default('Success,Failure') }}"
+    audit_directory_service_access: "{{ security_audit_directory_service_access | default('Success,Failure') }}"
+    audit_logon_events: "{{ security_audit_logon_events | default('Success,Failure') }}"
+    audit_object_access: "{{ security_audit_object_access | default('Failure') }}"
+    audit_policy_change: "{{ security_audit_policy_change | default('Success,Failure') }}"
+    audit_privilege_use: "{{ security_audit_privilege_use | default('Failure') }}"
+    audit_process_tracking: "{{ security_audit_process_tracking | default('No Auditing') }}"
+    audit_system_events: "{{ security_audit_system_events | default('Success,Failure') }}"
+
+# Backup Configuration
+backup:
+  system_state: "{{ backup_system_state | default(true) }}"
+  active_directory: "{{ backup_active_directory | default(true) }}"
+  certificate_authority: "{{ backup_certificate_authority | default(true) }}"
+  schedule: "{{ backup_schedule | default('Daily at 2:00 AM') }}"
+  retention: "{{ backup_retention | default('30 days') }}"
+  location: "{{ backup_location | default('\\\\backup-server\\infrastructure-backups') }}"
+
+# Monitoring Configuration
+monitoring:
+  performance_counters_default:
+    - "\\Processor(_Total)\\% Processor Time"
+    - "\\Memory\\Available MBytes"
+    - "\\LogicalDisk(_Total)\\% Free Space"
+    - "\\Network Interface(*)\\Bytes Total/sec"
+    - "\\DirectoryServices(NTDS)\\LDAP Searches/sec"
+    - "\\DirectoryServices(NTDS)\\LDAP Binds/sec"
+
+  performance_counters: "{{ infrastructure_performance_counters | default(performance_counters_default) }}"
+
+  event_logs_default:
+    - Application
+    - System
+    - Security
+    - "Directory Service"
+    - "DNS Server"
+    - "DHCP Server"
+
+  event_logs: "{{ infrastructure_event_logs | default(event_logs_default) }}"
+
+# Network Configuration
+network:
+  interfaces_template:
+    - name: "{{ infrastructure_network_interface_name | default('Ethernet') }}"
+      ip_address: "{{ ansible_host }}"
+      subnet_mask: "{{ infrastructure_subnet_mask | default('255.255.255.0') }}"
+      default_gateway: "{{ infrastructure_default_gateway | default(network_subnet.split('/')[0].split('.')[0:3] | join('.') + '.1') }}"
+      dns_servers:
+        - "127.0.0.1"
+        - "{{ dns_servers[0] }}"
+
+  interfaces: "{{ infrastructure_network_interfaces | default(interfaces_template) }}"
+
+# Time Configuration
+time:
+  ntp_servers: "{{ infrastructure_ntp_servers | default(['time.windows.com', 'time.nist.gov', 'pool.ntp.org']) }}"
+  timezone: "{{ infrastructure_timezone | default(timezone) }}"
+
+# Logging Configuration
+logging:
+  log_level: "{{ infrastructure_log_level | default('Information') }}"
+  max_log_size: "{{ infrastructure_max_log_size | default('100MB') }}"
+  log_retention_days: "{{ infrastructure_log_retention_days | default(90) }}"
+  
+  # Event Log Sizes
+  event_log_sizes_default:
+    Application: "{{ infrastructure_application_log_size | default('100MB') }}"
+    System: "{{ infrastructure_system_log_size | default('100MB') }}"
+    Security: "{{ infrastructure_security_log_size | default('200MB') }}"
+    "Directory Service": "{{ infrastructure_directory_service_log_size | default('100MB') }}"
+    "DNS Server": "{{ infrastructure_dns_server_log_size | default('50MB') }}"
+    "DHCP Server": "{{ infrastructure_dhcp_server_log_size | default('50MB') }}"
+
+  event_log_sizes: "{{ infrastructure_event_log_sizes | default(event_log_sizes_default) }}"
+
+# PowerShell Configuration
+powershell:
+  execution_policy: "{{ powershell_execution_policy | default('RemoteSigned') }}"
+  script_block_logging: "{{ powershell_script_block_logging | default(true) }}"
+  module_logging: "{{ powershell_module_logging | default(true) }}"
+  transcription_logging: "{{ powershell_transcription_logging | default(true) }}"
+  transcription_output_directory: "{{ powershell_transcription_output_directory | default('C:\\PowerShell_Transcripts') }}"
+
+# Windows Update Configuration
+windows_update:
+  automatic_updates: "{{ windows_update_automatic_updates | default(true) }}"
+  install_updates_automatically: "{{ windows_update_install_updates_automatically | default(false) }}"
+  download_updates_automatically: "{{ windows_update_download_updates_automatically | default(true) }}"
+  notify_before_installation: "{{ windows_update_notify_before_installation | default(true) }}"
+  scheduled_install_day: "{{ windows_update_scheduled_install_day | default('Sunday') }}"
+  scheduled_install_time: "{{ windows_update_scheduled_install_time | default('03:00') }}"
+
+# Environment-specific Configuration Overrides
+infrastructure_environment_config:
+  development:
+    debug_mode: "{{ infrastructure_debug_mode | default(true) }}"
+    log_level: "{{ infrastructure_dev_log_level | default('DEBUG') }}"
+    security_level: "{{ infrastructure_dev_security_level | default('relaxed') }}"
+    
+  test:
+    debug_mode: "{{ infrastructure_debug_mode | default(true) }}"
+    log_level: "{{ infrastructure_test_log_level | default('INFO') }}"
+    security_level: "{{ infrastructure_test_security_level | default('standard') }}"
+    
+  production:
+    debug_mode: "{{ infrastructure_debug_mode | default(false) }}"
+    log_level: "{{ infrastructure_prod_log_level | default('WARN') }}"
+    security_level: "{{ infrastructure_prod_security_level | default('strict') }}"
+    high_availability: "{{ infrastructure_prod_high_availability | default(true) }}"

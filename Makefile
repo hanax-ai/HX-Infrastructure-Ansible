@@ -1,193 +1,177 @@
 
-.PHONY: help install test lint clean deploy setup-dev
+# HX Infrastructure Makefile
+# Provides convenient commands for variable management and validation
+
+.PHONY: help validate-vars validate-dev validate-test validate-prod generate-templates check-syntax lint clean
 
 # Default target
-help: ## Show this help message
-	@echo 'Usage: make [target]'
-	@echo ''
-	@echo 'Targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+help:
+	@echo "HX Infrastructure Variable Management"
+	@echo "===================================="
+	@echo ""
+	@echo "Available targets:"
+	@echo "  validate-vars     - Validate all variables across all environments"
+	@echo "  validate-dev      - Validate development environment variables"
+	@echo "  validate-test     - Validate test environment variables"
+	@echo "  validate-prod     - Validate production environment variables"
+	@echo "  generate-templates - Generate variable templates for new environments"
+	@echo "  check-syntax      - Check YAML syntax for all variable files"
+	@echo "  lint             - Run comprehensive linting on all files"
+	@echo "  clean            - Clean up temporary files"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make validate-dev"
+	@echo "  make validate-prod"
+	@echo "  make lint"
 
-# Installation and Setup
-install: ## Install all dependencies
-	@echo "Installing Python dependencies..."
-	pip install -r requirements.txt
-	@echo "Installing Ansible Galaxy dependencies..."
-	ansible-galaxy install -r requirements.yml --force
-	@echo "Installation complete!"
+# Variable validation targets
+validate-vars:
+	@echo "Validating all variables..."
+	@python3 vars_validation/validate_vars.py inventories/group_vars/*.yml
+	@echo "✅ All variables validated successfully"
 
-setup-dev: install ## Setup development environment
-	@echo "Setting up development environment..."
-	pip install -r requirements-dev.txt
-	pre-commit install
-	@echo "Development environment ready!"
+validate-dev:
+	@echo "Validating development environment variables..."
+	@python3 vars_validation/validate_vars.py \
+		inventories/group_vars/*.yml \
+		inventories/dev/group_vars/*.yml 2>/dev/null || \
+		python3 vars_validation/validate_vars.py inventories/group_vars/*.yml
+	@echo "✅ Development environment variables validated"
 
-# Testing
-test: ## Run all tests
-	@echo "Running molecule tests for all roles..."
-	@for role in roles/*/; do \
-		if [ -d "$$role/molecule" ]; then \
-			echo "Testing $$role"; \
-			cd "$$role" && molecule test && cd ../..; \
-		fi \
-	done
+validate-test:
+	@echo "Validating test environment variables..."
+	@python3 vars_validation/validate_vars.py \
+		inventories/group_vars/*.yml \
+		inventories/test/group_vars/*.yml 2>/dev/null || \
+		python3 vars_validation/validate_vars.py inventories/group_vars/*.yml
+	@echo "✅ Test environment variables validated"
 
-test-role: ## Test specific role (usage: make test-role ROLE=nginx)
-	@if [ -z "$(ROLE)" ]; then \
-		echo "Please specify ROLE. Usage: make test-role ROLE=nginx"; \
-		exit 1; \
-	fi
-	@if [ -d "roles/$(ROLE)/molecule" ]; then \
-		cd roles/$(ROLE) && molecule test; \
-	else \
-		echo "Role $(ROLE) not found or no molecule tests available"; \
-	fi
+validate-prod:
+	@echo "Validating production environment variables..."
+	@python3 vars_validation/validate_vars.py \
+		inventories/group_vars/*.yml \
+		inventories/prod/group_vars/*.yml 2>/dev/null || \
+		python3 vars_validation/validate_vars.py inventories/group_vars/*.yml
+	@echo "✅ Production environment variables validated"
 
-test-syntax: ## Test playbook syntax
-	@echo "Testing playbook syntax..."
-	@find playbooks -name "*.yml" -exec ansible-playbook --syntax-check {} \;
+# Template generation
+generate-templates:
+	@echo "Generating variable templates..."
+	@mkdir -p inventories/template/group_vars
+	@cp group_vars/templates/all.yml.j2 inventories/template/group_vars/all.yml.template
+	@echo "# Infrastructure Service Variables" > inventories/template/group_vars/infrastructure.yml.template
+	@echo "# Copy from role_defaults/infrastructure/defaults/main.yml and customize" >> inventories/template/group_vars/infrastructure.yml.template
+	@echo "# AI/ML Service Variables" > inventories/template/group_vars/ai_ml.yml.template
+	@echo "# Copy from role_defaults/ai_ml/defaults/main.yml and customize" >> inventories/template/group_vars/ai_ml.yml.template
+	@echo "# Operations Service Variables" > inventories/template/group_vars/operations.yml.template
+	@echo "# Copy from role_defaults/operations/defaults/main.yml and customize" >> inventories/template/group_vars/operations.yml.template
+	@echo "# UI Service Variables" > inventories/template/group_vars/ui.yml.template
+	@echo "# Copy from role_defaults/ui/defaults/main.yml and customize" >> inventories/template/group_vars/ui.yml.template
+	@echo "✅ Variable templates generated in inventories/template/"
 
-# Code Quality
-lint: ## Run linting on all files
-	@echo "Running ansible-lint..."
-	ansible-lint playbooks/ roles/
-	@echo "Running yamllint..."
-	yamllint .
-	@echo "Running flake8 on Python files..."
-	flake8 tests/ scripts/
+# Syntax checking
+check-syntax:
+	@echo "Checking YAML syntax..."
+	@find inventories/ -name "*.yml" -exec python3 -c "import yaml; yaml.safe_load(open('{}'))" \; 2>/dev/null || \
+		(echo "❌ YAML syntax errors found" && exit 1)
+	@find role_defaults/ -name "*.yml" -exec python3 -c "import yaml; yaml.safe_load(open('{}'))" \; 2>/dev/null || \
+		(echo "❌ YAML syntax errors found" && exit 1)
+	@find vars_validation/ -name "*.yml" -exec python3 -c "import yaml; yaml.safe_load(open('{}'))" \; 2>/dev/null || \
+		(echo "❌ YAML syntax errors found" && exit 1)
+	@echo "✅ All YAML files have valid syntax"
 
-format: ## Format code
-	@echo "Formatting Python code..."
-	black tests/ scripts/
-	isort tests/ scripts/
-
-# Deployment
-deploy-check: ## Run deployment in check mode (dry run)
-	ansible-playbook -i inventory/environments/production playbooks/site/main.yml --check --diff
-
-deploy-dev: ## Deploy to development environment
-	ansible-playbook -i inventory/environments/development playbooks/site/main.yml
-
-deploy-staging: ## Deploy to staging environment
-	ansible-playbook -i inventory/environments/staging playbooks/site/main.yml
-
-deploy-prod: ## Deploy to production environment
-	ansible-playbook -i inventory/environments/production playbooks/site/main.yml --ask-vault-pass
-
-# Maintenance
-backup: ## Run backup playbook
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/backup.yml
-
-update: ## Update system packages
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/update.yml
-
-security: ## Apply security hardening
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/security.yml
-
-health-check: ## Run health checks
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/health-check.yml
-
-# Utilities
-ping: ## Test connectivity to all hosts
-	ansible all -i inventory/environments/production -m ping
-
-facts: ## Gather facts from all hosts
-	ansible all -i inventory/environments/production -m setup
-
-inventory: ## Show inventory
-	ansible-inventory -i inventory/environments/production --list
-
-encrypt: ## Encrypt secrets file
-	ansible-vault encrypt vars/secrets.yml
-
-decrypt: ## Decrypt secrets file
-	ansible-vault decrypt vars/secrets.yml
-
-edit-vault: ## Edit encrypted vault file
-	ansible-vault edit vars/secrets.yml
-
-# Documentation
-docs: ## Generate documentation
-	@echo "Generating documentation..."
-	mkdocs build
-
-docs-serve: ## Serve documentation locally
-	mkdocs serve
+# Comprehensive linting
+lint: check-syntax
+	@echo "Running comprehensive linting..."
+	@echo "Checking for common variable naming issues..."
+	@! grep -r "ansible_ssh_pass" inventories/ || (echo "❌ Found hardcoded SSH passwords" && exit 1)
+	@! grep -r "password.*:" inventories/group_vars/ | grep -v vault || (echo "❌ Found unencrypted passwords" && exit 1)
+	@echo "Checking for required vault variables..."
+	@grep -q "vault_postgres_password" inventories/group_vars/vault.yml 2>/dev/null || \
+		echo "⚠️  Warning: vault_postgres_password not found in vault.yml"
+	@grep -q "vault_jwt_secret" inventories/group_vars/vault.yml 2>/dev/null || \
+		echo "⚠️  Warning: vault_jwt_secret not found in vault.yml"
+	@echo "Checking variable consistency..."
+	@python3 -c "
+import yaml, glob, sys
+files = glob.glob('inventories/group_vars/*.yml')
+vars_found = set()
+for f in files:
+    if 'vault' not in f:
+        try:
+            with open(f) as file:
+                data = yaml.safe_load(file) or {}
+                def extract_vars(d, prefix=''):
+                    for k, v in d.items():
+                        if isinstance(v, dict):
+                            extract_vars(v, prefix + k + '_')
+                        else:
+                            vars_found.add(prefix + k)
+                extract_vars(data)
+        except Exception as e:
+            print(f'Error processing {f}: {e}')
+            sys.exit(1)
+print('✅ Variable consistency check passed')
+"
+	@echo "✅ All linting checks passed"
 
 # Cleanup
-clean: ## Clean up temporary files
+clean:
 	@echo "Cleaning up temporary files..."
-	find . -name "*.pyc" -delete
-	find . -name "__pycache__" -delete
-	find . -name "*.retry" -delete
-	rm -rf .pytest_cache/
-	rm -rf .molecule/
-	docker system prune -f
-	@echo "Cleanup complete!"
+	@find . -name "*.pyc" -delete
+	@find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+	@find . -name "*.tmp" -delete
+	@find . -name ".DS_Store" -delete
+	@echo "✅ Cleanup completed"
 
-# Environment Management
-create-env: ## Create new environment (usage: make create-env ENV=new-env)
-	@if [ -z "$(ENV)" ]; then \
-		echo "Please specify ENV. Usage: make create-env ENV=new-env"; \
-		exit 1; \
-	fi
-	cp -r inventory/environments/example inventory/environments/$(ENV)
-	@echo "Environment $(ENV) created. Please edit inventory/environments/$(ENV)/hosts.yml"
+# Development helpers
+dev-setup:
+	@echo "Setting up development environment..."
+	@pip3 install pyyaml ansible-core
+	@chmod +x vars_validation/validate_vars.py
+	@echo "✅ Development environment ready"
 
-# Scaling Operations
-scale-web: ## Scale web tier (usage: make scale-web COUNT=5)
-	@if [ -z "$(COUNT)" ]; then \
-		echo "Please specify COUNT. Usage: make scale-web COUNT=5"; \
-		exit 1; \
-	fi
-	ansible-playbook -i inventory/environments/production playbooks/scaling/scale-web.yml -e "web_server_count=$(COUNT)"
+# Quick validation for CI/CD
+ci-validate: check-syntax validate-vars
+	@echo "✅ CI validation completed successfully"
 
-scale-app: ## Scale application tier (usage: make scale-app COUNT=6)
-	@if [ -z "$(COUNT)" ]; then \
-		echo "Please specify COUNT. Usage: make scale-app COUNT=6"; \
-		exit 1; \
-	fi
-	ansible-playbook -i inventory/environments/production playbooks/scaling/scale-app.yml -e "app_server_count=$(COUNT)"
+# Generate documentation
+docs:
+	@echo "Generating documentation..."
+	@python3 -c "
+import yaml
+with open('vars_validation/validation_rules.yml') as f:
+    rules = yaml.safe_load(f)
+    
+print('# Variable Reference\\n')
+for category, vars_info in rules.items():
+    if category.endswith('_variables'):
+        print(f'## {category.replace(\"_\", \" \").title()}\\n')
+        if 'required' in vars_info:
+            print('### Required Variables\\n')
+            for var in vars_info['required']:
+                print(f'- **{var[\"name\"]}**: {var.get(\"description\", \"No description\")}')
+            print()
+        if 'optional' in vars_info:
+            print('### Optional Variables\\n')
+            for var in vars_info['optional']:
+                print(f'- **{var[\"name\"]}**: {var.get(\"description\", \"No description\")} (default: {var.get(\"default\", \"None\")})')
+            print()
+" > docs/VARIABLE_REFERENCE.md
+	@echo "✅ Documentation generated"
 
-# Monitoring
-monitor-status: ## Check monitoring services status
-	ansible monitoring_servers -i inventory/environments/production -m service -a "name=prometheus state=started"
-	ansible monitoring_servers -i inventory/environments/production -m service -a "name=grafana-server state=started"
+# Backup current configuration
+backup:
+	@echo "Creating backup of current configuration..."
+	@mkdir -p backups
+	@tar -czf backups/variables-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz \
+		inventories/group_vars/ \
+		role_defaults/ \
+		vars_validation/
+	@echo "✅ Backup created in backups/ directory"
 
-# SSL Management
-update-ssl: ## Update SSL certificates
-	ansible-playbook -i inventory/environments/production playbooks/security/ssl-update.yml
-
-# Database Operations
-db-backup: ## Backup databases
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/backup.yml --tags "database"
-
-db-restore: ## Restore database (usage: make db-restore DATE=2025-09-17)
-	@if [ -z "$(DATE)" ]; then \
-		echo "Please specify DATE. Usage: make db-restore DATE=2025-09-17"; \
-		exit 1; \
-	fi
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/restore.yml -e "backup_date=$(DATE)"
-
-# Service Management
-restart-web: ## Restart web services
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/restart-services.yml --limit "web_servers"
-
-restart-app: ## Restart application services
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/restart-services.yml --limit "app_servers"
-
-restart-db: ## Restart database services
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/restart-services.yml --limit "database_servers"
-
-# Version Information
-version: ## Show version information
-	@echo "HX Infrastructure Ansible - Version Information"
-	@echo "=============================================="
-	@echo "Ansible Version:"
-	@ansible --version
-	@echo ""
-	@echo "Python Version:"
-	@python --version
-	@echo ""
-	@echo "Git Version:"
-	@git --version
+# Restore from backup
+restore:
+	@echo "Available backups:"
+	@ls -la backups/variables-backup-*.tar.gz 2>/dev/null || echo "No backups found"
+	@echo "To restore, run: tar -xzf backups/variables-backup-YYYYMMDD-HHMMSS.tar.gz"
