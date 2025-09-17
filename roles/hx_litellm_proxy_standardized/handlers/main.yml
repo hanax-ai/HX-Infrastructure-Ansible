@@ -1,0 +1,17 @@
+---
+- name: Restart litellm
+  ansible.builtin.systemd:
+    name: "{{ litellm_service_name }}"
+    state: restarted
+    daemon_reload: true
+  listen: "restart litellm"
+
+- name: Reload litellm
+  ansible.builtin.systemd:
+    name: "{{ litellm_service_name }}"
+    state: reloaded
+  listen: "reload litellm"
+
+- name: Validate litellm service
+  ansible.builtin.include_tasks: validate_service.yml
+  listen: "validate litellm"

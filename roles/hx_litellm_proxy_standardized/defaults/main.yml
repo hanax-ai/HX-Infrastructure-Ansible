@@ -1,0 +1,51 @@
+---
+# Service Configuration
+litellm_service_user: "litellm"
+litellm_service_group: "litellm"
+litellm_service_home: "/opt/litellm"
+litellm_service_shell: "/usr/sbin/nologin"
+
+# Installation Configuration
+litellm_python_version: "3.12"
+litellm_package_name: "litellm[proxy]"
+litellm_additional_packages:
+  - "psycopg2-binary"
+  - "prisma"
+  - "PyYAML"
+
+# Directory Configuration
+litellm_config_dir: "/etc/litellm"
+litellm_data_dir: "/var/lib/litellm"
+litellm_log_dir: "/var/log/litellm"
+litellm_cache_dir: "{{ litellm_service_home }}/.cache"
+
+# Service Configuration
+litellm_service_name: "litellm"
+litellm_service_port: 4000
+litellm_service_host: "0.0.0.0"
+
+# Database Configuration
+litellm_db_host: "localhost"
+litellm_db_port: 5432
+litellm_db_name: "litellm"
+litellm_db_user: "litellm"
+litellm_db_password: ""  # Should be set in vault
+litellm_db_ssl_mode: "prefer"
+
+# Environment Variables
+litellm_env_vars:
+  DATABASE_URL: "postgresql://{{ litellm_db_user }}:{{ litellm_db_password }}@{{ litellm_db_host }}:{{ litellm_db_port }}/{{ litellm_db_name }}?sslmode={{ litellm_db_ssl_mode }}"
+  LITELLM_LOG: "INFO"
+  LITELLM_PORT: "{{ litellm_service_port }}"
+  LITELLM_HOST: "{{ litellm_service_host }}"
+
+# Security Configuration
+litellm_master_key: ""  # Should be set in vault
+litellm_ui_username: "admin"
+litellm_ui_password: ""  # Should be set in vault
+
+# Validation Configuration
+litellm_validate_installation: true
+litellm_validate_service: true
+litellm_validate_database: true
+litellm_validate_ports: true

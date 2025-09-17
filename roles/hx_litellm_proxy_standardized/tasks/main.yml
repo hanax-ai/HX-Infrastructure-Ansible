@@ -1,0 +1,34 @@
+---
+- name: Include validation tasks
+  ansible.builtin.include_tasks: validate_input.yml
+  tags: [validation, litellm]
+
+- name: Include prerequisite tasks
+  ansible.builtin.include_tasks: prerequisites.yml
+  tags: [prerequisites, litellm]
+
+- name: Include user management tasks
+  ansible.builtin.include_tasks: user_management.yml
+  tags: [users, litellm]
+
+- name: Include database validation tasks
+  ansible.builtin.include_tasks: database_validation.yml
+  tags: [database, litellm]
+  when: litellm_validate_database | bool
+
+- name: Include installation tasks
+  ansible.builtin.include_tasks: installation.yml
+  tags: [installation, litellm]
+
+- name: Include configuration tasks
+  ansible.builtin.include_tasks: configuration.yml
+  tags: [configuration, litellm]
+
+- name: Include systemd service tasks
+  ansible.builtin.include_tasks: systemd.yml
+  tags: [systemd, litellm]
+
+- name: Include post-installation validation
+  ansible.builtin.include_tasks: validate_service.yml
+  when: litellm_validate_installation | bool
+  tags: [validation, litellm]

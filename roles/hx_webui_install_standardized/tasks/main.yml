@@ -1,0 +1,29 @@
+---
+- name: Include validation tasks
+  ansible.builtin.include_tasks: validate_input.yml
+  tags: [validation, webui]
+
+- name: Include prerequisite tasks
+  ansible.builtin.include_tasks: prerequisites.yml
+  tags: [prerequisites, webui]
+
+- name: Include user management tasks
+  ansible.builtin.include_tasks: user_management.yml
+  tags: [users, webui]
+
+- name: Include installation tasks
+  ansible.builtin.include_tasks: installation.yml
+  tags: [installation, webui]
+
+- name: Include configuration tasks
+  ansible.builtin.include_tasks: configuration.yml
+  tags: [configuration, webui]
+
+- name: Include systemd service tasks
+  ansible.builtin.include_tasks: systemd.yml
+  tags: [systemd, webui]
+
+- name: Include post-installation validation
+  ansible.builtin.include_tasks: validate_service.yml
+  when: webui_validate_installation | bool
+  tags: [validation, webui]
