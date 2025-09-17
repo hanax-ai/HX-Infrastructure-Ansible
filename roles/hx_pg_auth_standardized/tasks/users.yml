@@ -1,0 +1,42 @@
+---
+# PostgreSQL User Management Tasks
+- name: "Hx | PostgreSQL Auth | Create application databases"
+  postgresql_db:
+    name: "{{ item.name }}"
+    owner: "{{ item.owner | default('postgres') }}"
+    encoding: "{{ item.encoding | default('UTF8') }}"
+    lc_collate: "{{ item.lc_collate | default('en_US.UTF-8') }}"
+    lc_ctype: "{{ item.lc_ctype | default('en_US.UTF-8') }}"
+    state: present
+  become: true
+  become_user: postgres
+  loop: "{{ hx_pg_databases | default([]) }}"
+  tags: ['users', 'databases']
+
+- name: "Hx | PostgreSQL Auth | Create application users"
+  postgresql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    db: "{{ item.db | default(omit) }}"
+    priv: "{{ item.privileges | default(omit) }}"
+    role_attr_flags: "{{ item.role_flags | default('NOSUPERUSER,NOCREATEDB') }}"
+    state: present
+    encrypted: true
+  become: true
+  become_user: postgres
+  loop: "{{ hx_pg_users | default([]) }}"
+  no_log: true
+  tags: ['users']
+
+- name: "Hx | PostgreSQL Auth | Grant database privileges"
+  postgresql_privs:
+    database: "{{ item.database }}"
+    roles: "{{ item.role }}"
+    privs: "{{ item.privileges }}"
+    type: "{{ item.type | default('database') }}"
+    grant_option: "{{ item.grant_option | default(false) }}"
+    state: present
+  become: true
+  become_user: postgres
+  loop: "{{ hx_pg_privileges | default([]) }}"
+  tags: ['users', 'privileges']

@@ -1,0 +1,21 @@
+---
+profile: production
+
+exclude_paths:
+  - .cache/
+  - .github/
+  - molecule/
+  - .ansible/
+
+skip_list:
+  - yaml[line-length]
+  - name[casing]
+
+warn_list:
+  - experimental
+  - ignore-errors
+  - no-handler
+  - deprecated-module
+
+use_default_rules: true
+verbosity: 1

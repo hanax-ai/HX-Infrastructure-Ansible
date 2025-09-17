@@ -1,125 +1,241 @@
 
 ---
-# Web Server Configuration
-hx_webui_server_type: "nginx"  # nginx, apache, custom
-hx_webui_server_name: "{{ ansible_fqdn | default('localhost') }}"
-hx_webui_listen_port: 80
-hx_webui_ssl_port: 443
-hx_webui_root_dir: "/var/www/html"
-hx_webui_index_files: ["index.html", "index.htm", "index.php"]
+# Web UI Installation Role - Default Variables
+# HX Infrastructure Ansible - Enterprise Grade Configuration
 
-# Application Configuration
+#------------------------------------------------------------------------------
+# NODE.JS AND NPM CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_nodejs_version: "20"  # LTS version, not EOL
+hx_webui_nodejs_packages:
+  - "nodejs"
+  - "npm"
+  - "yarn"
+
+#------------------------------------------------------------------------------
+# WEB SERVER CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_web_server: "nginx"  # nginx or apache2
+hx_webui_web_server_port: 80
+hx_webui_web_server_ssl_port: 443
+hx_webui_enable_ssl: true
+hx_webui_ssl_cert_path: "/etc/ssl/certs/hx_webui.crt"
+hx_webui_ssl_key_path: "/etc/ssl/private/hx_webui.key"
+
+#------------------------------------------------------------------------------
+# APPLICATION CONFIGURATION
+#------------------------------------------------------------------------------
 hx_webui_app_name: "hx-webui"
+hx_webui_app_user: "hx-webui"
+hx_webui_app_group: "hx-webui"
+hx_webui_app_directory: "/opt/hx-webui"
+hx_webui_app_port: 3000
+hx_webui_app_environment: "production"
+
+# Application repository
+hx_webui_app_repo: ""  # Git repository URL
+hx_webui_app_branch: "main"
 hx_webui_app_version: "latest"
-hx_webui_app_user: "www-data"
-hx_webui_app_group: "www-data"
-hx_webui_app_home: "/opt/{{ hx_webui_app_name }}"
 
-# SSL/TLS Configuration
-hx_webui_ssl_enabled: true
-hx_webui_ssl_cert_file: "/etc/ssl/certs/{{ hx_webui_server_name }}.crt"
-hx_webui_ssl_key_file: "/etc/ssl/private/{{ hx_webui_server_name }}.key"
-hx_webui_ssl_ca_file: "/etc/ssl/certs/ca.crt"
-hx_webui_ssl_protocols: "TLSv1.2 TLSv1.3"
-hx_webui_ssl_ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384"
-hx_webui_ssl_prefer_server_ciphers: true
-
-# Security Headers
-hx_webui_security_headers:
-  - name: "X-Frame-Options"
-    value: "DENY"
-  - name: "X-Content-Type-Options"
-    value: "nosniff"
-  - name: "X-XSS-Protection"
-    value: "1; mode=block"
-  - name: "Strict-Transport-Security"
-    value: "max-age=31536000; includeSubDomains; preload"
-  - name: "Content-Security-Policy"
-    value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
-  - name: "Referrer-Policy"
-    value: "strict-origin-when-cross-origin"
-
-# Performance Configuration
-hx_webui_enable_caching: true
-hx_webui_cache_max_age: 86400
+#------------------------------------------------------------------------------
+# STATIC FILES AND ASSETS
+#------------------------------------------------------------------------------
+hx_webui_static_directory: "{{ hx_webui_app_directory }}/public"
+hx_webui_uploads_directory: "{{ hx_webui_app_directory }}/uploads"
+hx_webui_logs_directory: "/var/log/hx-webui"
 hx_webui_enable_gzip: true
-hx_webui_gzip_types: 
-  - "text/plain"
-  - "text/css"
-  - "text/xml"
-  - "text/javascript"
-  - "application/json"
-  - "application/javascript"
-  - "application/xml+rss"
-  - "application/atom+xml"
-  - "image/svg+xml"
+hx_webui_enable_caching: true
+hx_webui_cache_max_age: "1y"
 
-# Static File Configuration
-hx_webui_static_dirs:
-  - path: "/static"
-    location: "{{ hx_webui_root_dir }}/static"
-    expires: "1y"
-  - path: "/assets"
-    location: "{{ hx_webui_root_dir }}/assets"
-    expires: "1y"
-  - path: "/media"
-    location: "{{ hx_webui_root_dir }}/media"
-    expires: "1M"
+#------------------------------------------------------------------------------
+# SECURITY CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_enable_security_headers: true
+hx_webui_security_headers:
+  X-Frame-Options: "DENY"
+  X-Content-Type-Options: "nosniff"
+  X-XSS-Protection: "1; mode=block"
+  Strict-Transport-Security: "max-age=31536000; includeSubDomains"
+  Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+  Referrer-Policy: "strict-origin-when-cross-origin"
 
-# Asset Optimization
-hx_webui_optimize_assets: true
-hx_webui_minify_css: true
-hx_webui_minify_js: true
-hx_webui_optimize_images: true
-
-# Logging Configuration
-hx_webui_access_log: "/var/log/{{ hx_webui_server_type }}/{{ hx_webui_server_name }}_access.log"
-hx_webui_error_log: "/var/log/{{ hx_webui_server_type }}/{{ hx_webui_server_name }}_error.log"
-hx_webui_log_level: "warn"
-
-# Rate Limiting
-hx_webui_rate_limiting_enabled: true
-hx_webui_rate_limit: "10r/s"
+hx_webui_enable_rate_limiting: true
+hx_webui_rate_limit: "100r/m"  # 100 requests per minute
 hx_webui_rate_limit_burst: 20
 
-# Health Check Configuration
-hx_webui_health_check_enabled: true
+#------------------------------------------------------------------------------
+# DATABASE CONNECTION
+#------------------------------------------------------------------------------
+hx_webui_database_type: "postgresql"
+hx_webui_database_host: "{{ groups['database'] | default([]) | default([]) | first | default('localhost') }}"
+hx_webui_database_port: 5432
+hx_webui_database_name: "hx_webui"
+hx_webui_database_user: "hx_webui_user"
+# hx_webui_database_password: "{{ vault_hx_webui_db_password }}"  # Should be vaulted
+
+#------------------------------------------------------------------------------
+# REDIS CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_enable_redis: true
+hx_webui_redis_host: "127.0.0.1"  # Security: bind to localhost
+hx_webui_redis_port: 6379
+hx_webui_redis_database: 0
+hx_webui_redis_protected_mode: true  # Security: enable protected mode
+
+#------------------------------------------------------------------------------
+# SESSION MANAGEMENT
+#------------------------------------------------------------------------------
+hx_webui_session_secret: "{{ vault_hx_webui_session_secret | default('change-me-in-production') }}"
+hx_webui_session_timeout: 3600  # 1 hour
+hx_webui_session_store: "redis"  # redis, memory, or database
+
+#------------------------------------------------------------------------------
+# LOGGING CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_log_level: "info"
+hx_webui_log_format: "combined"
+hx_webui_enable_access_logs: true
+hx_webui_enable_error_logs: true
+hx_webui_log_rotation: true
+hx_webui_log_retention_days: 30
+
+#------------------------------------------------------------------------------
+# PERFORMANCE OPTIMIZATION
+#------------------------------------------------------------------------------
+hx_webui_enable_compression: true
+hx_webui_compression_level: 6
+hx_webui_enable_http2: true
+hx_webui_worker_processes: "auto"
+hx_webui_worker_connections: 1024
+hx_webui_keepalive_timeout: 65
+
+#------------------------------------------------------------------------------
+# MONITORING AND HEALTH CHECKS
+#------------------------------------------------------------------------------
+hx_webui_enable_health_check: true
 hx_webui_health_check_path: "/health"
 hx_webui_health_check_interval: 30
-
-# Backup Configuration
-hx_webui_backup_enabled: true
-hx_webui_backup_dir: "/var/backups/webui"
-hx_webui_backup_retention_days: 30
-
-# Service Configuration
-hx_webui_service_enabled: true
-hx_webui_service_state: "started"
-hx_webui_auto_restart: true
-
-# Firewall Configuration
-hx_webui_firewall_enabled: true
-hx_webui_allowed_ips: []  # Empty means allow all
-hx_webui_blocked_ips: []
-
-# Monitoring Configuration
-hx_webui_monitoring_enabled: true
-hx_webui_metrics_port: 9113
+hx_webui_enable_metrics: true
 hx_webui_metrics_path: "/metrics"
 
-# Environment Variables
-hx_webui_env_vars: {}
-# Example:
-# hx_webui_env_vars:
-#   NODE_ENV: "production"
-#   API_URL: "https://api.example.com"
+#------------------------------------------------------------------------------
+# BACKUP CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_enable_backup: true
+hx_webui_backup_directory: "/var/backups/hx-webui"
+hx_webui_backup_retention_days: 7
+hx_webui_backup_schedule: "0 2 * * *"  # Daily at 2 AM
 
-# Custom Configuration Files
-hx_webui_custom_configs: []
-# Example:
-# hx_webui_custom_configs:
-#   - src: "custom.conf.j2"
-#     dest: "/etc/nginx/conf.d/custom.conf"
-#     owner: "root"
-#     group: "root"
-#     mode: "0644"
+#------------------------------------------------------------------------------
+# FIREWALL CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_enable_firewall: true
+hx_webui_allowed_ips: []  # Empty means allow all, specify IPs for restriction
+hx_webui_blocked_ips: []
+
+#------------------------------------------------------------------------------
+# SYSTEMD SERVICE CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_service_name: "hx-webui"
+hx_webui_service_description: "HX Web UI Application"
+hx_webui_service_restart_policy: "always"
+hx_webui_service_restart_delay: "10s"
+
+#------------------------------------------------------------------------------
+# ENVIRONMENT VARIABLES
+#------------------------------------------------------------------------------
+hx_webui_environment_variables:
+  NODE_ENV: "{{ hx_webui_app_environment }}"
+  PORT: "{{ hx_webui_app_port }}"
+  LOG_LEVEL: "{{ hx_webui_log_level }}"
+  DATABASE_URL: "postgresql://{{ hx_webui_database_user }}:{{ hx_webui_database_password | default('') }}@{{ hx_webui_database_host }}:{{ hx_webui_database_port }}/{{ hx_webui_database_name }}"
+  REDIS_URL: "redis://{{ hx_webui_redis_host }}:{{ hx_webui_redis_port }}/{{ hx_webui_redis_database }}"
+  SESSION_SECRET: "{{ hx_webui_session_secret }}"
+
+#------------------------------------------------------------------------------
+# DEVELOPMENT SETTINGS
+#------------------------------------------------------------------------------
+hx_webui_enable_dev_mode: false
+hx_webui_enable_hot_reload: false
+hx_webui_enable_debug: false
+
+#------------------------------------------------------------------------------
+# CDN AND EXTERNAL RESOURCES
+#------------------------------------------------------------------------------
+hx_webui_enable_cdn: false
+hx_webui_cdn_url: ""
+hx_webui_external_assets: []
+
+#------------------------------------------------------------------------------
+# API CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_api_base_url: "/api/v1"
+hx_webui_api_timeout: 30000  # 30 seconds
+hx_webui_enable_api_docs: true
+hx_webui_api_docs_path: "/api-docs"
+
+#------------------------------------------------------------------------------
+# AUTHENTICATION INTEGRATION
+#------------------------------------------------------------------------------
+hx_webui_auth_provider: "local"  # local, oauth, ldap, saml
+hx_webui_enable_2fa: false
+hx_webui_jwt_secret: "{{ vault_hx_webui_jwt_secret | default('change-me-in-production') }}"
+hx_webui_jwt_expiry: "24h"
+
+#------------------------------------------------------------------------------
+# CORS CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_enable_cors: true
+hx_webui_cors_origins: ["http://localhost:3000"]
+hx_webui_cors_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+hx_webui_cors_headers: ["Content-Type", "Authorization"]
+
+#------------------------------------------------------------------------------
+# FILE UPLOAD CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_max_file_size: "10MB"
+hx_webui_allowed_file_types: [".jpg", ".jpeg", ".png", ".gif", ".pdf", ".doc", ".docx"]
+hx_webui_upload_path: "{{ hx_webui_uploads_directory }}"
+
+#------------------------------------------------------------------------------
+# MAINTENANCE MODE
+#------------------------------------------------------------------------------
+hx_webui_maintenance_mode: false
+hx_webui_maintenance_message: "System is under maintenance. Please try again later."
+hx_webui_maintenance_allowed_ips: ["127.0.0.1"]
+
+#------------------------------------------------------------------------------
+# SECURITY SCANNING
+#------------------------------------------------------------------------------
+hx_webui_enable_security_scan: true
+hx_webui_security_scan_schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+
+#------------------------------------------------------------------------------
+# PACKAGE MANAGEMENT
+#------------------------------------------------------------------------------
+hx_webui_package_manager: "npm"  # npm or yarn
+hx_webui_install_dev_dependencies: false
+hx_webui_audit_packages: true
+hx_webui_update_packages: false
+
+#------------------------------------------------------------------------------
+# BUILD CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_build_command: "npm run build"
+hx_webui_build_directory: "{{ hx_webui_app_directory }}/dist"
+hx_webui_enable_minification: true
+hx_webui_enable_source_maps: false
+
+#------------------------------------------------------------------------------
+# PROXY CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_enable_proxy: false
+hx_webui_proxy_upstream: ""
+hx_webui_proxy_timeout: 60
+
+#------------------------------------------------------------------------------
+# WEBSOCKET CONFIGURATION
+#------------------------------------------------------------------------------
+hx_webui_enable_websockets: false
+hx_webui_websocket_path: "/ws"
+hx_webui_websocket_origins: ["*"]
