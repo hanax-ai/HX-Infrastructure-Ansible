@@ -1,0 +1,445 @@
+
+# UI Services Group Variables
+# Web Interfaces and Load Balancers
+
+# Common UI Configuration
+ui_common:
+  base_path: "/opt/ui"
+  web_root: "/var/www/html"
+  config_path: "/etc/ui"
+  logs_path: "/var/log/ui"
+  user: "www-data"
+  group: "www-data"
+  uid: 33
+  gid: 33
+
+# Node.js Configuration (for WebUI)
+nodejs:
+  version: "20"
+  npm_version: "latest"
+  global_packages:
+    - pm2
+    - typescript
+    - "@types/node"
+    - eslint
+    - prettier
+
+# WebUI Configuration
+webui:
+  name: "HX Chat Interface"
+  version: "2.0.0"
+  port: 3000
+  host: "0.0.0.0"
+  
+  # Application Configuration
+  app:
+    title: "HX AI Assistant"
+    description: "Advanced AI Chat Interface"
+    favicon: "/assets/favicon.ico"
+    logo: "/assets/logo.png"
+    theme: "dark"
+    language: "en"
+    
+  # API Configuration
+  api:
+    base_url: "http://{{ groups['llm_services'][0] }}:4000"
+    timeout: 30000
+    retry_attempts: 3
+    retry_delay: 1000
+    
+  # Authentication Configuration
+  auth:
+    enabled: true
+    type: "jwt"
+    secret_key: "{{ vault_jwt_secret }}"
+    token_expiry: 86400  # 24 hours
+    refresh_token_expiry: 604800  # 7 days
+    
+    # OAuth Configuration (optional)
+    oauth:
+      enabled: false
+      providers:
+        - name: "google"
+          client_id: "{{ vault_google_oauth_client_id }}"
+          client_secret: "{{ vault_google_oauth_client_secret }}"
+        - name: "github"
+          client_id: "{{ vault_github_oauth_client_id }}"
+          client_secret: "{{ vault_github_oauth_client_secret }}"
+  
+  # Database Configuration
+  database:
+    type: "postgresql"
+    host: "{{ groups['databases'][0] }}"
+    port: 5432
+    name: "webui"
+    username: "{{ vault_webui_db_user }}"
+    password: "{{ vault_webui_db_password }}"
+    pool_size: 20
+    ssl_mode: "require"
+    
+  # Redis Configuration
+  redis:
+    host: "{{ groups['cache_services'][0] }}"
+    port: 6379
+    db: 2
+    password: "{{ vault_redis_password }}"
+    
+  # Session Configuration
+  session:
+    store: "redis"
+    secret: "{{ vault_session_secret }}"
+    max_age: 86400000  # 24 hours
+    secure: true
+    http_only: true
+    same_site: "strict"
+    
+  # File Upload Configuration
+  upload:
+    enabled: true
+    max_file_size: "10MB"
+    allowed_types:
+      - "image/jpeg"
+      - "image/png"
+      - "image/gif"
+      - "text/plain"
+      - "application/pdf"
+    storage_path: "/data/uploads"
+    
+  # Chat Configuration
+  chat:
+    max_message_length: 4000
+    max_conversation_length: 100
+    auto_save: true
+    typing_indicator: true
+    read_receipts: true
+    
+    # Model Selection
+    default_model: "gpt-4"
+    available_models:
+      - name: "gpt-4"
+        display_name: "GPT-4"
+        description: "Most capable model"
+        max_tokens: 4096
+      - name: "gpt-3.5-turbo"
+        display_name: "GPT-3.5 Turbo"
+        description: "Fast and efficient"
+        max_tokens: 4096
+      - name: "claude-3"
+        display_name: "Claude 3"
+        description: "Anthropic's latest model"
+        max_tokens: 4096
+        
+  # UI Features
+  features:
+    dark_mode: true
+    syntax_highlighting: true
+    markdown_support: true
+    code_execution: false
+    file_sharing: true
+    conversation_export: true
+    search_history: true
+    
+  # Performance Configuration
+  performance:
+    enable_compression: true
+    cache_static_assets: true
+    minify_assets: true
+    lazy_loading: true
+    virtual_scrolling: true
+    
+  # Logging Configuration
+  logging:
+    level: "info"
+    format: "combined"
+    file: "/var/log/ui/webui.log"
+    max_size: "100MB"
+    max_files: 5
+    
+  # Health Check Configuration
+  health_check:
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+
+# Nginx Configuration
+nginx:
+  version: "latest"
+  user: "www-data"
+  worker_processes: "auto"
+  worker_connections: 1024
+  
+  # Main Configuration
+  main:
+    error_log: "/var/log/nginx/error.log"
+    access_log: "/var/log/nginx/access.log"
+    pid: "/var/run/nginx.pid"
+    
+  # HTTP Configuration
+  http:
+    sendfile: true
+    tcp_nopush: true
+    tcp_nodelay: true
+    keepalive_timeout: 65
+    types_hash_max_size: 2048
+    server_tokens: false
+    
+    # Client Configuration
+    client_max_body_size: "100M"
+    client_body_timeout: 60
+    client_header_timeout: 60
+    
+    # Gzip Configuration
+    gzip: true
+    gzip_vary: true
+    gzip_proxied: "any"
+    gzip_comp_level: 6
+    gzip_types:
+      - "text/plain"
+      - "text/css"
+      - "text/xml"
+      - "text/javascript"
+      - "application/javascript"
+      - "application/xml+rss"
+      - "application/json"
+      - "image/svg+xml"
+      
+    # SSL Configuration
+    ssl_protocols:
+      - "TLSv1.2"
+      - "TLSv1.3"
+    ssl_ciphers: "ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS"
+    ssl_prefer_server_ciphers: true
+    ssl_session_cache: "shared:SSL:10m"
+    ssl_session_timeout: "10m"
+    ssl_stapling: true
+    ssl_stapling_verify: true
+    
+    # Security Headers
+    security_headers:
+      x_frame_options: "DENY"
+      x_content_type_options: "nosniff"
+      x_xss_protection: "1; mode=block"
+      referrer_policy: "strict-origin-when-cross-origin"
+      content_security_policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss:;"
+      strict_transport_security: "max-age=31536000; includeSubDomains; preload"
+      
+  # Rate Limiting
+  rate_limiting:
+    enabled: true
+    zone_name: "api"
+    zone_size: "10m"
+    rate: "10r/s"
+    burst: 20
+    nodelay: true
+    
+  # Upstream Configuration
+  upstreams:
+    - name: "webui_backend"
+      servers:
+        - "{{ groups['web_interfaces'][0] }}:3000"
+        - "{{ groups['web_interfaces'][1] }}:3000 backup"
+      method: "least_conn"
+      keepalive: 32
+      
+    - name: "api_backend"
+      servers:
+        - "{{ groups['llm_services'][0] }}:4000"
+        - "{{ groups['llm_services'][1] }}:4000 backup"
+      method: "round_robin"
+      keepalive: 32
+
+# Load Balancer Configuration
+load_balancer:
+  # Keepalived Configuration
+  keepalived:
+    router_id: "HX_LB"
+    interface: "eth0"
+    virtual_router_id: 51
+    priority: "{{ keepalived_priority | default(100) }}"
+    advert_int: 1
+    auth_type: "PASS"
+    auth_pass: "{{ vault_keepalived_password }}"
+    
+    # Virtual IP Configuration
+    virtual_ips:
+      - ip: "{{ vip_address }}"
+        interface: "eth0"
+        
+    # Health Check Scripts
+    vrrp_scripts:
+      - name: "chk_nginx"
+        script: "/usr/local/bin/check_nginx.sh"
+        interval: 2
+        weight: -2
+        fall: 3
+        rise: 2
+        
+  # HAProxy Configuration (alternative to nginx)
+  haproxy:
+    enabled: false
+    stats:
+      enabled: true
+      uri: "/stats"
+      username: "admin"
+      password: "{{ vault_haproxy_stats_password }}"
+      
+    # Global Configuration
+    global:
+      maxconn: 4096
+      log: "127.0.0.1:514 local0"
+      chroot: "/var/lib/haproxy"
+      stats_socket: "/run/haproxy/admin.sock mode 660 level admin"
+      stats_timeout: "30s"
+      user: "haproxy"
+      group: "haproxy"
+      daemon: true
+      
+    # Default Configuration
+    defaults:
+      mode: "http"
+      log: "global"
+      option: "httplog"
+      option_dontlognull: true
+      option_redispatch: true
+      retries: 3
+      timeout_connect: "5000ms"
+      timeout_client: "50000ms"
+      timeout_server: "50000ms"
+      errorfile_400: "/etc/haproxy/errors/400.http"
+      errorfile_403: "/etc/haproxy/errors/403.http"
+      errorfile_408: "/etc/haproxy/errors/408.http"
+      errorfile_500: "/etc/haproxy/errors/500.http"
+      errorfile_502: "/etc/haproxy/errors/502.http"
+      errorfile_503: "/etc/haproxy/errors/503.http"
+      errorfile_504: "/etc/haproxy/errors/504.http"
+
+# SSL Certificate Configuration
+ssl_certificates:
+  # Let's Encrypt Configuration
+  letsencrypt:
+    enabled: true
+    email: "{{ admin_email }}"
+    domains:
+      - "{{ domain_name }}"
+      - "www.{{ domain_name }}"
+      - "api.{{ domain_name }}"
+    challenge_type: "http-01"
+    
+  # Self-signed Certificate (for development)
+  self_signed:
+    enabled: "{{ environment == 'development' }}"
+    country: "US"
+    state: "California"
+    city: "San Francisco"
+    organization: "Hana-X AI"
+    organizational_unit: "IT Department"
+    common_name: "{{ domain_name }}"
+    
+# Monitoring Configuration
+monitoring:
+  # Nginx Monitoring
+  nginx_status:
+    enabled: true
+    location: "/nginx_status"
+    allow_ips:
+      - "127.0.0.1"
+      - "{{ network_subnet }}"
+      
+  # Custom Metrics
+  custom_metrics:
+    - name: "http_requests_total"
+      type: "counter"
+      description: "Total HTTP requests"
+    - name: "http_request_duration"
+      type: "histogram"
+      description: "HTTP request duration"
+    - name: "active_connections"
+      type: "gauge"
+      description: "Active connections"
+    - name: "upstream_response_time"
+      type: "histogram"
+      description: "Upstream response time"
+
+# Backup Configuration
+backup:
+  web_content:
+    enabled: true
+    schedule: "0 3 * * *"  # Daily at 3 AM
+    retention_days: 30
+    
+  configurations:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention_days: 90
+    
+  ssl_certificates:
+    enabled: true
+    schedule: "0 1 * * 0"  # Weekly on Sunday at 1 AM
+    retention_weeks: 12
+
+# Security Configuration
+security:
+  # Web Application Firewall
+  waf:
+    enabled: true
+    mode: "block"  # block, monitor, off
+    rules:
+      - "REQUEST-901-INITIALIZATION"
+      - "REQUEST-903-IP-REPUTATION"
+      - "REQUEST-905-COMMON-EXCEPTIONS"
+      - "REQUEST-911-METHOD-ENFORCEMENT"
+      - "REQUEST-913-SCANNER-DETECTION"
+      - "REQUEST-920-PROTOCOL-ENFORCEMENT"
+      - "REQUEST-921-PROTOCOL-ATTACK"
+      - "REQUEST-930-APPLICATION-ATTACK-LFI"
+      - "REQUEST-931-APPLICATION-ATTACK-RFI"
+      - "REQUEST-932-APPLICATION-ATTACK-RCE"
+      - "REQUEST-933-APPLICATION-ATTACK-PHP"
+      - "REQUEST-941-APPLICATION-ATTACK-XSS"
+      - "REQUEST-942-APPLICATION-ATTACK-SQLI"
+      - "REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION"
+      - "REQUEST-949-BLOCKING-EVALUATION"
+      - "RESPONSE-950-DATA-LEAKAGES"
+      - "RESPONSE-951-DATA-LEAKAGES-SQL"
+      - "RESPONSE-952-DATA-LEAKAGES-JAVA"
+      - "RESPONSE-953-DATA-LEAKAGES-PHP"
+      - "RESPONSE-954-DATA-LEAKAGES-IIS"
+      - "RESPONSE-959-BLOCKING-EVALUATION"
+      - "RESPONSE-980-CORRELATION"
+      
+  # DDoS Protection
+  ddos_protection:
+    enabled: true
+    rate_limit: "100r/s"
+    burst: 200
+    connection_limit: 50
+    
+  # Bot Protection
+  bot_protection:
+    enabled: true
+    challenge_mode: "js"  # js, captcha, block
+    whitelist_ips: []
+    blacklist_ips: []
+
+# Environment-specific Overrides
+environment_config:
+  development:
+    debug_mode: true
+    ssl_verification: false
+    cache_enabled: false
+    minification: false
+    
+  test:
+    debug_mode: true
+    ssl_verification: false
+    cache_enabled: true
+    minification: false
+    load_testing: true
+    
+  production:
+    debug_mode: false
+    ssl_verification: true
+    cache_enabled: true
+    minification: true
+    performance_monitoring: true
+    security_hardening: true

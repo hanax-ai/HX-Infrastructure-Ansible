@@ -1,0 +1,223 @@
+
+# Global Variables for All HX Infrastructure Environments
+# These variables apply to all hosts across all environments
+
+# Project Information
+project_name: "HX Infrastructure"
+project_version: "2.0.0"
+organization: "Hana-X AI"
+
+# Common Authentication
+default_user: agent0
+default_email: agent0@hana-x.ai
+ssh_key_type: ed25519
+
+# Common Network Configuration
+dns_servers:
+  - 8.8.8.8
+  - 8.8.4.4
+  - 1.1.1.1
+
+# Time Configuration
+timezone: UTC
+ntp_enabled: true
+chrony_enabled: true
+
+# Security Defaults
+security:
+  ssh_port: 22
+  ssh_protocol: 2
+  ssh_permit_root_login: false
+  ssh_password_authentication: false
+  ssh_pubkey_authentication: true
+  ssh_max_auth_tries: 3
+  ssh_client_alive_interval: 300
+  ssh_client_alive_count_max: 2
+
+# Firewall Configuration
+firewall:
+  enabled: true
+  default_policy: deny
+  log_denied: true
+  log_level: low
+
+# System Updates
+system_updates:
+  enabled: true
+  auto_reboot: false
+  reboot_time: "03:00"
+  security_updates_only: false
+
+# Logging Configuration
+logging:
+  syslog_enabled: true
+  log_rotation: true
+  log_retention_days: 90
+  centralized_logging: true
+
+# Monitoring Defaults
+monitoring:
+  node_exporter_enabled: true
+  node_exporter_port: 9100
+  filebeat_enabled: true
+  prometheus_scrape_interval: 15s
+  metrics_path: /metrics
+
+# Backup Configuration
+backup:
+  enabled: true
+  compression: true
+  encryption: true
+  verify_backups: true
+  cleanup_old_backups: true
+
+# Performance Tuning
+performance:
+  swappiness: 10
+  vm_dirty_ratio: 15
+  vm_dirty_background_ratio: 5
+  tcp_keepalive_time: 7200
+  tcp_keepalive_probes: 9
+  tcp_keepalive_intvl: 75
+
+# Package Management
+packages:
+  update_cache: true
+  upgrade_system: false
+  install_recommended: false
+  autoremove: true
+  autoclean: true
+
+# Service Management
+services:
+  enable_on_boot: true
+  start_immediately: true
+  restart_on_failure: true
+  restart_delay: 5
+
+# SSL/TLS Configuration
+ssl:
+  protocols:
+    - TLSv1.2
+    - TLSv1.3
+  ciphers: "ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS"
+  prefer_server_ciphers: true
+  session_cache: shared:SSL:10m
+  session_timeout: 10m
+  stapling: true
+  stapling_verify: true
+
+# Database Common Configuration
+database:
+  encoding: UTF8
+  locale: en_US.UTF-8
+  timezone: UTC
+  max_connections: 200
+  shared_buffers: "256MB"
+  effective_cache_size: "1GB"
+  maintenance_work_mem: "64MB"
+  checkpoint_completion_target: 0.9
+  wal_buffers: "16MB"
+  default_statistics_target: 100
+
+# Cache Common Configuration
+cache:
+  maxmemory_policy: allkeys-lru
+  timeout: 0
+  tcp_keepalive: 300
+  tcp_backlog: 511
+  databases: 16
+  save_enabled: true
+  rdbcompression: true
+  rdbchecksum: true
+
+# Web Server Common Configuration
+web:
+  worker_processes: auto
+  worker_connections: 1024
+  keepalive_timeout: 65
+  client_max_body_size: 100M
+  server_tokens: false
+  gzip_enabled: true
+  gzip_comp_level: 6
+  gzip_types:
+    - text/plain
+    - text/css
+    - application/json
+    - application/javascript
+    - text/xml
+    - application/xml
+    - application/xml+rss
+    - text/javascript
+
+# Load Balancer Configuration
+load_balancer:
+  algorithm: round_robin
+  health_check_interval: 5s
+  health_check_timeout: 3s
+  health_check_retries: 3
+  session_persistence: false
+  ssl_termination: true
+
+# AI/ML Common Configuration
+ai_ml:
+  model_cache_size: "10GB"
+  inference_timeout: 300
+  max_concurrent_requests: 100
+  gpu_memory_fraction: 0.9
+  model_download_timeout: 3600
+  model_validation: true
+
+# Container Configuration (if using containers)
+containers:
+  runtime: docker
+  log_driver: json-file
+  log_max_size: 10m
+  log_max_file: 3
+  restart_policy: unless-stopped
+  memory_limit: "2g"
+  cpu_limit: "1.0"
+
+# Development Tools (environment-specific override)
+development_tools:
+  install_git: true
+  install_curl: true
+  install_wget: true
+  install_vim: true
+  install_htop: true
+  install_tree: true
+  install_jq: true
+
+# Notification Configuration
+notifications:
+  email_enabled: false
+  slack_enabled: false
+  webhook_enabled: false
+  smtp_server: ""
+  smtp_port: 587
+  smtp_username: ""
+  smtp_password: ""
+
+# Compliance and Auditing
+compliance:
+  audit_enabled: true
+  audit_log_path: /var/log/audit
+  audit_max_log_file: 100
+  audit_num_logs: 5
+  audit_space_left_action: email
+  audit_admin_space_left_action: halt
+
+# Resource Limits
+limits:
+  max_open_files: 65536
+  max_processes: 32768
+  max_memory_per_process: "2GB"
+  max_cpu_per_process: "2.0"
+
+# Environment-specific overrides (these will be overridden by environment-specific vars)
+environment_overrides:
+  debug_mode: false
+  log_level: info
+  ssl_verification: true
+  performance_mode: balanced
+  security_level: standard

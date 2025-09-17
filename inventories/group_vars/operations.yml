@@ -1,0 +1,557 @@
+
+# Operations Services Group Variables
+# Databases, Cache, Monitoring, and Logging Services
+
+# Common Operations Configuration
+operations_common:
+  base_path: "/opt/operations"
+  data_path: "/data"
+  config_path: "/etc/operations"
+  logs_path: "/var/log/operations"
+  backup_path: "/backup"
+  user: "operations"
+  group: "operations"
+  uid: 3000
+  gid: 3000
+
+# PostgreSQL Configuration
+postgresql:
+  version: "15"
+  port: 5432
+  data_directory: "/data/postgresql"
+  config_directory: "/etc/postgresql"
+  log_directory: "/var/log/postgresql"
+  
+  # Cluster Configuration
+  cluster:
+    name: "hx-postgres"
+    
+  # Connection Configuration
+  connection:
+    max_connections: 200
+    shared_buffers: "256MB"
+    effective_cache_size: "1GB"
+    maintenance_work_mem: "64MB"
+    checkpoint_completion_target: 0.9
+    wal_buffers: "16MB"
+    default_statistics_target: 100
+    random_page_cost: 1.1
+    effective_io_concurrency: 200
+    
+  # Memory Configuration
+  memory:
+    shared_buffers: "{{ (ansible_memtotal_mb * 0.25) | int }}MB"
+    effective_cache_size: "{{ (ansible_memtotal_mb * 0.75) | int }}MB"
+    work_mem: "{{ ((ansible_memtotal_mb * 0.25) / 200) | int }}MB"
+    maintenance_work_mem: "{{ (ansible_memtotal_mb * 0.05) | int }}MB"
+    
+  # WAL Configuration
+  wal:
+    level: "replica"
+    sync_method: "fsync"
+    buffers: "16MB"
+    writer_delay: "200ms"
+    commit_delay: 0
+    commit_siblings: 5
+    
+  # Replication Configuration
+  replication:
+    enabled: true
+    user: "replicator"
+    password: "{{ vault_postgres_replication_password }}"
+    max_wal_senders: 10
+    wal_keep_segments: 32
+    hot_standby: true
+    hot_standby_feedback: true
+    
+  # Databases
+  databases:
+    - name: "webui"
+      owner: "{{ vault_webui_db_user }}"
+      encoding: "UTF8"
+      locale: "en_US.UTF-8"
+      template: "template0"
+    - name: "model_registry"
+      owner: "{{ vault_model_registry_user }}"
+      encoding: "UTF8"
+      locale: "en_US.UTF-8"
+      template: "template0"
+    - name: "monitoring"
+      owner: "{{ vault_monitoring_db_user }}"
+      encoding: "UTF8"
+      locale: "en_US.UTF-8"
+      template: "template0"
+      
+  # Users
+  users:
+    - name: "{{ vault_webui_db_user }}"
+      password: "{{ vault_webui_db_password }}"
+      privileges: "ALL"
+      database: "webui"
+    - name: "{{ vault_model_registry_user }}"
+      password: "{{ vault_model_registry_password }}"
+      privileges: "ALL"
+      database: "model_registry"
+    - name: "{{ vault_monitoring_db_user }}"
+      password: "{{ vault_monitoring_db_password }}"
+      privileges: "ALL"
+      database: "monitoring"
+      
+  # Backup Configuration
+  backup:
+    enabled: true
+    tool: "pg_basebackup"
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention_days: 30
+    compression: true
+    encryption: true
+    
+  # Monitoring Configuration
+  monitoring:
+    enabled: true
+    exporter_port: 9187
+    queries_config: "/etc/postgres_exporter/queries.yaml"
+    
+  # Logging Configuration
+  logging:
+    log_destination: "stderr"
+    logging_collector: true
+    log_directory: "/var/log/postgresql"
+    log_filename: "postgresql-%Y-%m-%d_%H%M%S.log"
+    log_rotation_age: "1d"
+    log_rotation_size: "100MB"
+    log_min_duration_statement: "1000ms"
+    log_checkpoints: true
+    log_connections: true
+    log_disconnections: true
+    log_lock_waits: true
+    log_temp_files: 0
+
+# Redis Configuration
+redis:
+  version: "7"
+  port: 6379
+  bind: "0.0.0.0"
+  protected_mode: false
+  password: "{{ vault_redis_password }}"
+  
+  # Memory Configuration
+  memory:
+    maxmemory: "{{ (ansible_memtotal_mb * 0.75) | int }}MB"
+    maxmemory_policy: "allkeys-lru"
+    
+  # Persistence Configuration
+  persistence:
+    save_enabled: true
+    save_rules:
+      - "900 1"    # Save after 900 sec if at least 1 key changed
+      - "300 10"   # Save after 300 sec if at least 10 keys changed
+      - "60 10000" # Save after 60 sec if at least 10000 keys changed
+    rdbcompression: true
+    rdbchecksum: true
+    dbfilename: "dump.rdb"
+    dir: "/data/redis"
+    
+    # AOF Configuration
+    appendonly: true
+    appendfilename: "appendonly.aof"
+    appendfsync: "everysec"
+    no_appendfsync_on_rewrite: false
+    auto_aof_rewrite_percentage: 100
+    auto_aof_rewrite_min_size: "64MB"
+    
+  # Replication Configuration
+  replication:
+    enabled: true
+    master_auth: "{{ vault_redis_password }}"
+    replica_read_only: true
+    replica_serve_stale_data: true
+    replica_priority: 100
+    
+  # Network Configuration
+  network:
+    tcp_keepalive: 300
+    tcp_backlog: 511
+    timeout: 0
+    
+  # Security Configuration
+  security:
+    requirepass: "{{ vault_redis_password }}"
+    rename_commands:
+      FLUSHDB: "FLUSHDB_HX_{{ ansible_date_time.epoch }}"
+      FLUSHALL: "FLUSHALL_HX_{{ ansible_date_time.epoch }}"
+      KEYS: "KEYS_HX_{{ ansible_date_time.epoch }}"
+      CONFIG: "CONFIG_HX_{{ ansible_date_time.epoch }}"
+      
+  # Logging Configuration
+  logging:
+    loglevel: "notice"
+    logfile: "/var/log/redis/redis-server.log"
+    syslog_enabled: true
+    syslog_ident: "redis"
+    
+  # Monitoring Configuration
+  monitoring:
+    enabled: true
+    exporter_port: 9121
+    
+  # Backup Configuration
+  backup:
+    enabled: true
+    schedule: "0 3 * * *"  # Daily at 3 AM
+    retention_days: 14
+    compression: true
+
+# Prometheus Configuration
+prometheus:
+  version: "latest"
+  port: 9090
+  data_directory: "/data/prometheus"
+  config_directory: "/etc/prometheus"
+  
+  # Global Configuration
+  global:
+    scrape_interval: "15s"
+    evaluation_interval: "15s"
+    external_labels:
+      cluster: "hx-infrastructure"
+      environment: "{{ environment }}"
+      
+  # Rule Files
+  rule_files:
+    - "/etc/prometheus/rules/*.yml"
+    
+  # Scrape Configurations
+  scrape_configs:
+    - job_name: "prometheus"
+      static_configs:
+        - targets: ["localhost:9090"]
+        
+    - job_name: "node-exporter"
+      static_configs:
+        - targets: "{{ groups['all'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:9100') | list }}"
+        
+    - job_name: "postgres-exporter"
+      static_configs:
+        - targets: "{{ groups['databases'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:9187') | list }}"
+        
+    - job_name: "redis-exporter"
+      static_configs:
+        - targets: "{{ groups['cache_services'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:9121') | list }}"
+        
+    - job_name: "nginx-exporter"
+      static_configs:
+        - targets: "{{ groups['web_interfaces'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:9113') | list }}"
+        
+    - job_name: "litellm"
+      static_configs:
+        - targets: "{{ groups['llm_services'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:4000') | list }}"
+      metrics_path: "/metrics"
+      
+  # Storage Configuration
+  storage:
+    retention_time: "90d"
+    retention_size: "50GB"
+    
+  # Remote Write Configuration (optional)
+  remote_write: []
+  
+  # Remote Read Configuration (optional)
+  remote_read: []
+
+# Grafana Configuration
+grafana:
+  version: "latest"
+  port: 3001
+  data_directory: "/data/grafana"
+  config_directory: "/etc/grafana"
+  
+  # Server Configuration
+  server:
+    protocol: "http"
+    http_addr: "0.0.0.0"
+    http_port: 3001
+    domain: "{{ domain_name }}"
+    root_url: "https://{{ domain_name }}/grafana/"
+    serve_from_sub_path: true
+    
+  # Database Configuration
+  database:
+    type: "postgres"
+    host: "{{ groups['databases'][0] }}:5432"
+    name: "grafana"
+    user: "{{ vault_grafana_db_user }}"
+    password: "{{ vault_grafana_db_password }}"
+    ssl_mode: "require"
+    
+  # Security Configuration
+  security:
+    admin_user: "admin"
+    admin_password: "{{ vault_grafana_admin_password }}"
+    secret_key: "{{ vault_grafana_secret_key }}"
+    
+  # Authentication Configuration
+  auth:
+    disable_login_form: false
+    disable_signout_menu: false
+    
+    # Anonymous Access
+    anonymous:
+      enabled: false
+      org_name: "Main Org."
+      org_role: "Viewer"
+      
+  # Users Configuration
+  users:
+    allow_sign_up: false
+    allow_org_create: false
+    auto_assign_org: true
+    auto_assign_org_role: "Viewer"
+    default_theme: "dark"
+    
+  # Dashboards Configuration
+  dashboards:
+    default_home_dashboard_path: "/etc/grafana/dashboards/home.json"
+    
+  # Data Sources
+  datasources:
+    - name: "Prometheus"
+      type: "prometheus"
+      url: "http://{{ groups['monitoring'][0] }}:9090"
+      access: "proxy"
+      is_default: true
+      
+  # Plugins
+  plugins:
+    - grafana-piechart-panel
+    - grafana-worldmap-panel
+    - grafana-clock-panel
+    - grafana-simple-json-datasource
+
+# Alertmanager Configuration
+alertmanager:
+  version: "latest"
+  port: 9093
+  data_directory: "/data/alertmanager"
+  config_directory: "/etc/alertmanager"
+  
+  # Global Configuration
+  global:
+    smtp_smarthost: "{{ vault_smtp_server }}:{{ vault_smtp_port }}"
+    smtp_from: "{{ vault_smtp_from }}"
+    smtp_auth_username: "{{ vault_smtp_username }}"
+    smtp_auth_password: "{{ vault_smtp_password }}"
+    
+  # Route Configuration
+  route:
+    group_by: ["alertname", "cluster", "service"]
+    group_wait: "10s"
+    group_interval: "10s"
+    repeat_interval: "1h"
+    receiver: "web.hook"
+    
+  # Receivers Configuration
+  receivers:
+    - name: "web.hook"
+      email_configs:
+        - to: "{{ admin_email }}"
+          subject: "HX Infrastructure Alert: {{ .GroupLabels.alertname }}"
+          body: |
+            {{ range .Alerts }}
+            Alert: {{ .Annotations.summary }}
+            Description: {{ .Annotations.description }}
+            {{ end }}
+
+# Elasticsearch Configuration
+elasticsearch:
+  version: "8.8"
+  port: 9200
+  data_directory: "/data/elasticsearch"
+  config_directory: "/etc/elasticsearch"
+  
+  # Cluster Configuration
+  cluster:
+    name: "hx-logging"
+    initial_master_nodes: "{{ groups['logging'] | map('extract', hostvars, 'inventory_hostname') | list }}"
+    
+  # Node Configuration
+  node:
+    name: "{{ inventory_hostname }}"
+    master: true
+    data: true
+    ingest: true
+    
+  # Network Configuration
+  network:
+    host: "0.0.0.0"
+    port: 9200
+    
+  # Discovery Configuration
+  discovery:
+    seed_hosts: "{{ groups['logging'] | map('extract', hostvars, 'ansible_host') | list }}"
+    
+  # Memory Configuration
+  memory:
+    heap_size: "{{ (ansible_memtotal_mb * 0.5) | int }}m"
+    
+  # Index Configuration
+  indices:
+    - name: "logs-*"
+      settings:
+        number_of_shards: 1
+        number_of_replicas: 1
+        refresh_interval: "5s"
+      mappings:
+        properties:
+          "@timestamp":
+            type: "date"
+          message:
+            type: "text"
+          level:
+            type: "keyword"
+          service:
+            type: "keyword"
+          host:
+            type: "keyword"
+
+# Logstash Configuration
+logstash:
+  version: "8.8"
+  port: 5044
+  config_directory: "/etc/logstash"
+  
+  # Pipeline Configuration
+  pipeline:
+    workers: "{{ ansible_processor_vcpus }}"
+    batch_size: 125
+    batch_delay: 50
+    
+  # Input Configuration
+  input:
+    beats:
+      port: 5044
+      
+  # Filter Configuration
+  filter:
+    grok:
+      patterns_dir: "/etc/logstash/patterns"
+      
+  # Output Configuration
+  output:
+    elasticsearch:
+      hosts: "{{ groups['logging'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:9200') | list }}"
+      index: "logs-%{+YYYY.MM.dd}"
+
+# Kibana Configuration
+kibana:
+  version: "8.8"
+  port: 5601
+  config_directory: "/etc/kibana"
+  
+  # Server Configuration
+  server:
+    host: "0.0.0.0"
+    port: 5601
+    name: "{{ inventory_hostname }}"
+    
+  # Elasticsearch Configuration
+  elasticsearch:
+    hosts: "{{ groups['logging'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', 'http://\\1:9200') | list }}"
+    
+  # Logging Configuration
+  logging:
+    dest: "/var/log/kibana/kibana.log"
+    silent: false
+    quiet: false
+    verbose: false
+
+# Backup Configuration
+backup:
+  # Database Backups
+  databases:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention_days: 30
+    compression: true
+    encryption: true
+    
+  # Configuration Backups
+  configurations:
+    enabled: true
+    schedule: "0 1 * * *"  # Daily at 1 AM
+    retention_days: 90
+    
+  # Log Backups
+  logs:
+    enabled: true
+    schedule: "0 4 * * 0"  # Weekly on Sunday at 4 AM
+    retention_weeks: 12
+    compression: true
+
+# Monitoring Configuration
+monitoring:
+  # System Metrics
+  node_exporter:
+    enabled: true
+    port: 9100
+    
+  # Custom Metrics
+  custom_metrics:
+    - name: "database_connections"
+      type: "gauge"
+      description: "Number of active database connections"
+    - name: "cache_hit_ratio"
+      type: "gauge"
+      description: "Cache hit ratio percentage"
+    - name: "log_ingestion_rate"
+      type: "counter"
+      description: "Log ingestion rate per second"
+    - name: "backup_success"
+      type: "gauge"
+      description: "Last backup success status"
+
+# Security Configuration
+security:
+  # Database Security
+  database_security:
+    ssl_enabled: true
+    ssl_cert_file: "/etc/ssl/certs/postgresql.crt"
+    ssl_key_file: "/etc/ssl/private/postgresql.key"
+    ssl_ca_file: "/etc/ssl/certs/ca-certificates.crt"
+    
+  # Cache Security
+  cache_security:
+    auth_enabled: true
+    ssl_enabled: false  # Redis SSL support varies
+    
+  # Monitoring Security
+  monitoring_security:
+    basic_auth_enabled: true
+    ssl_enabled: true
+    
+  # Logging Security
+  logging_security:
+    ssl_enabled: true
+    authentication_enabled: true
+
+# Environment-specific Overrides
+environment_config:
+  development:
+    debug_mode: true
+    log_level: "DEBUG"
+    retention_days: 7
+    backup_enabled: false
+    
+  test:
+    debug_mode: true
+    log_level: "INFO"
+    retention_days: 14
+    backup_enabled: true
+    
+  production:
+    debug_mode: false
+    log_level: "WARN"
+    retention_days: 90
+    backup_enabled: true
+    high_availability: true
+    performance_monitoring: true

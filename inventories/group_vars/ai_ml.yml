@@ -1,0 +1,326 @@
+
+# AI/ML Services Group Variables
+# LiteLLM, Ollama, and Model Storage Services
+
+# Common AI/ML Configuration
+ai_ml_common:
+  base_path: "/opt/ai-ml"
+  data_path: "/data/ai-ml"
+  models_path: "/data/models"
+  cache_path: "/data/cache"
+  logs_path: "/var/log/ai-ml"
+  user: "aiml"
+  group: "aiml"
+  uid: 2000
+  gid: 2000
+
+# Python Environment Configuration
+python:
+  version: "3.11"
+  venv_path: "/opt/ai-ml/venv"
+  pip_requirements:
+    - torch>=2.0.0
+    - transformers>=4.30.0
+    - accelerate>=0.20.0
+    - bitsandbytes>=0.39.0
+    - scipy>=1.10.0
+    - numpy>=1.24.0
+    - requests>=2.31.0
+    - fastapi>=0.100.0
+    - uvicorn>=0.22.0
+    - pydantic>=2.0.0
+    - aiohttp>=3.8.0
+    - redis>=4.5.0
+    - psycopg2-binary>=2.9.0
+
+# CUDA Configuration (for GPU-enabled hosts)
+cuda:
+  version: "12.1"
+  driver_version: "530"
+  toolkit_path: "/usr/local/cuda"
+  library_path: "/usr/local/cuda/lib64"
+  runtime_path: "/usr/local/cuda/bin"
+
+# LiteLLM Configuration
+litellm:
+  version: "latest"
+  port: 4000
+  host: "0.0.0.0"
+  workers: 4
+  timeout: 300
+  max_tokens: 4096
+  temperature: 0.7
+  
+  # API Configuration
+  api:
+    rate_limit: "1000/minute"
+    max_concurrent_requests: 100
+    request_timeout: 300
+    response_timeout: 300
+    
+  # Model Configuration
+  models:
+    - model_name: "gpt-4"
+      litellm_params:
+        model: "ollama/llama3.2:latest"
+        api_base: "http://{{ groups['llm_services'][0] }}:11434"
+    - model_name: "gpt-3.5-turbo"
+      litellm_params:
+        model: "ollama/llama3.2:1b"
+        api_base: "http://{{ groups['llm_services'][0] }}:11434"
+    - model_name: "claude-3"
+      litellm_params:
+        model: "ollama/phi3:mini"
+        api_base: "http://{{ groups['llm_services'][0] }}:11434"
+  
+  # Caching Configuration
+  cache:
+    type: "redis"
+    host: "{{ groups['cache_services'][0] }}"
+    port: 6379
+    db: 1
+    ttl: 3600
+    
+  # Logging Configuration
+  logging:
+    level: "INFO"
+    format: "json"
+    file: "/var/log/ai-ml/litellm.log"
+    max_size: "100MB"
+    backup_count: 5
+    
+  # Health Check Configuration
+  health_check:
+    endpoint: "/health"
+    interval: 30
+    timeout: 10
+    retries: 3
+
+# Ollama Configuration
+ollama:
+  version: "latest"
+  port: 11434
+  host: "0.0.0.0"
+  data_dir: "/data/ollama"
+  models_dir: "/data/ollama/models"
+  
+  # Server Configuration
+  server:
+    max_loaded_models: 3
+    max_queue_size: 100
+    num_parallel: 4
+    flash_attention: true
+    
+  # GPU Configuration
+  gpu:
+    enabled: "{{ gpu_enabled | default(false) }}"
+    memory_fraction: 0.9
+    layers: -1  # Use all GPU layers
+    
+  # Models to Install
+  models:
+    - name: "llama3.2:latest"
+      size: "7B"
+      quantization: "Q4_K_M"
+      priority: 1
+    - name: "llama3.2:1b"
+      size: "1B"
+      quantization: "Q4_K_M"
+      priority: 2
+    - name: "phi3:mini"
+      size: "3.8B"
+      quantization: "Q4_K_M"
+      priority: 3
+    - name: "codellama:7b"
+      size: "7B"
+      quantization: "Q4_K_M"
+      priority: 4
+    - name: "mistral:7b"
+      size: "7B"
+      quantization: "Q4_K_M"
+      priority: 5
+      
+  # Performance Configuration
+  performance:
+    context_length: 4096
+    batch_size: 512
+    threads: "{{ ansible_processor_vcpus }}"
+    use_mmap: true
+    use_mlock: true
+    
+  # Logging Configuration
+  logging:
+    level: "INFO"
+    file: "/var/log/ai-ml/ollama.log"
+    max_size: "100MB"
+    backup_count: 5
+    
+  # Health Check Configuration
+  health_check:
+    endpoint: "/api/tags"
+    interval: 30
+    timeout: 10
+    retries: 3
+
+# Model Storage Configuration
+model_storage:
+  base_path: "/data/models"
+  cache_path: "/data/model-cache"
+  registry_path: "/data/model-registry"
+  
+  # Storage Configuration
+  storage:
+    type: "filesystem"  # filesystem, s3, gcs, azure
+    compression: true
+    encryption: false
+    deduplication: true
+    
+  # Model Registry
+  registry:
+    enabled: true
+    database_url: "postgresql://{{ vault_model_registry_user }}:{{ vault_model_registry_password }}@{{ groups['databases'][0] }}:5432/model_registry"
+    
+  # Model Categories
+  categories:
+    - name: "language-models"
+      path: "language-models"
+      max_size: "50GB"
+    - name: "embedding-models"
+      path: "embedding-models"
+      max_size: "10GB"
+    - name: "fine-tuned-models"
+      path: "fine-tuned-models"
+      max_size: "100GB"
+    - name: "archived-models"
+      path: "archived-models"
+      max_size: "200GB"
+      
+  # Cleanup Configuration
+  cleanup:
+    enabled: true
+    schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+    retention_days: 90
+    min_free_space_gb: 100
+
+# Monitoring Configuration
+monitoring:
+  metrics:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+    
+  # Custom Metrics
+  custom_metrics:
+    - name: "model_inference_duration"
+      type: "histogram"
+      description: "Time taken for model inference"
+    - name: "model_memory_usage"
+      type: "gauge"
+      description: "Memory usage by loaded models"
+    - name: "active_model_count"
+      type: "gauge"
+      description: "Number of currently loaded models"
+    - name: "request_queue_size"
+      type: "gauge"
+      description: "Number of requests in queue"
+      
+  # Health Checks
+  health_checks:
+    - name: "model_availability"
+      endpoint: "/api/tags"
+      interval: 60
+    - name: "gpu_status"
+      command: "nvidia-smi"
+      interval: 30
+    - name: "disk_space"
+      path: "/data"
+      threshold: "10GB"
+      interval: 300
+
+# Security Configuration
+security:
+  api_keys:
+    enabled: true
+    storage: "redis"
+    expiry: 86400  # 24 hours
+    
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 1000
+    burst_size: 100
+    
+  cors:
+    enabled: true
+    allowed_origins:
+      - "https://{{ domain_name }}"
+      - "https://www.{{ domain_name }}"
+    allowed_methods:
+      - GET
+      - POST
+      - OPTIONS
+    allowed_headers:
+      - Content-Type
+      - Authorization
+      - X-API-Key
+
+# Backup Configuration
+backup:
+  models:
+    enabled: true
+    schedule: "0 2 * * 0"  # Weekly on Sunday at 2 AM
+    retention_weeks: 4
+    compression: true
+    
+  configurations:
+    enabled: true
+    schedule: "0 1 * * *"  # Daily at 1 AM
+    retention_days: 30
+    
+  registry:
+    enabled: true
+    schedule: "0 0 * * *"  # Daily at midnight
+    retention_days: 90
+
+# Performance Tuning
+performance:
+  # System-level optimizations
+  system:
+    swappiness: 1
+    vm_dirty_ratio: 5
+    vm_dirty_background_ratio: 2
+    transparent_hugepages: "madvise"
+    
+  # Network optimizations
+  network:
+    tcp_window_scaling: 1
+    tcp_congestion_control: "bbr"
+    net_core_rmem_max: 134217728
+    net_core_wmem_max: 134217728
+    
+  # File system optimizations
+  filesystem:
+    noatime: true
+    nodiratime: true
+    barrier: 0
+
+# Environment-specific Overrides
+environment_config:
+  development:
+    debug_mode: true
+    log_level: "DEBUG"
+    model_validation: false
+    auto_download_models: true
+    
+  test:
+    debug_mode: true
+    log_level: "DEBUG"
+    model_validation: true
+    auto_download_models: false
+    test_models_only: true
+    
+  production:
+    debug_mode: false
+    log_level: "INFO"
+    model_validation: true
+    auto_download_models: false
+    performance_monitoring: true
