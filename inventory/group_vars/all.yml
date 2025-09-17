@@ -1,20 +1,79 @@
-
 ---
 # HX Infrastructure - Global Variables
 # These variables apply to all hosts across all environments
+# Following Ansible variable precedence: https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable
 
-# Environment Configuration
+# =============================================================================
+# PROJECT INFORMATION
+# =============================================================================
+project:
+  name: "HX Infrastructure"
+  version: "1.0.0"
+  description: "Enterprise Infrastructure Automation Platform"
+  repository: "https://github.com/hanax-ai/HX-Infrastructure-Ansible"
+  documentation: "https://github.com/hanax-ai/HX-Infrastructure-Ansible/docs"
+  support_email: "support@hanax-ai.com"
+
 project_name: hx-infrastructure
 organization: hanax-ai
 maintainer: "HX Infrastructure Team"
 deployment_date: "{{ ansible_date_time.iso8601 }}"
 
-# System Configuration
-timezone: "UTC"
-locale: "en_US.UTF-8"
-keyboard_layout: "us"
+# =============================================================================
+# INFRASTRUCTURE TOPOLOGY
+# =============================================================================
+infrastructure:
+  total_servers: 15
+  tiers:
+    load_balancer:
+      count: 2
+      purpose: "Traffic distribution and SSL termination"
+      technology: "nginx + keepalived"
+    web:
+      count: 3
+      purpose: "Static content serving and reverse proxy"
+      technology: "nginx"
+    application:
+      count: 3
+      purpose: "Business logic processing"
+      technology: "Configurable runtime"
+    database:
+      count: 3
+      purpose: "Data persistence (1 master, 2 replicas)"
+      technology: "PostgreSQL 15"
+    cache:
+      count: 2
+      purpose: "High-performance caching (1 master, 1 replica)"
+      technology: "Redis 7.x"
+    monitoring:
+      count: 2
+      purpose: "System observability and logging"
+      technology: "Prometheus + Grafana + ELK"
 
-# Network Configuration
+# =============================================================================
+# NETWORK ARCHITECTURE
+# =============================================================================
+network:
+  architecture: "multi-tier"
+  zones:
+    dmz:
+      description: "Demilitarized Zone"
+      subnets:
+        load_balancer: "10.0.1.0/24"
+        web: "10.0.2.0/24"
+    private:
+      description: "Private Network"
+      subnets:
+        application: "10.0.3.0/24"
+        database: "10.0.4.0/24"
+        cache: "10.0.5.0/24"
+        monitoring: "10.0.6.0/24"
+    management:
+      description: "Management Network"
+      subnets:
+        admin: "10.0.10.0/24"
+
+# DNS and NTP Configuration
 dns_servers:
   - "8.8.8.8"
   - "8.8.4.4"
@@ -26,7 +85,102 @@ ntp_servers:
   - "2.pool.ntp.org"
   - "3.pool.ntp.org"
 
-# Security Configuration
+# =============================================================================
+# SERVICE PORTS
+# =============================================================================
+ports:
+  web:
+    http: 80
+    https: 443
+  application:
+    primary: 8080
+    management: 8081
+    health: 8082
+  database:
+    postgresql: 5432
+    postgresql_replication: 5433
+  cache:
+    redis: 6379
+    redis_sentinel: 26379
+  monitoring:
+    prometheus: 9090
+    grafana: 3000
+    alertmanager: 9093
+    node_exporter: 9100
+    postgres_exporter: 9187
+    redis_exporter: 9121
+  logging:
+    elasticsearch: 9200
+    kibana: 5601
+    logstash: 5044
+    beats: 5045
+
+# =============================================================================
+# TECHNOLOGY VERSIONS
+# =============================================================================
+versions:
+  os:
+    ubuntu: "20.04"
+    rhel: "8"
+  web:
+    nginx: "1.24"
+  application:
+    java: "17"
+    python: "3.9"
+    nodejs: "18"
+  database:
+    postgresql: "15"
+    mysql: "8.0"
+  cache:
+    redis: "7.0"
+  monitoring:
+    prometheus: "2.45"
+    grafana: "10.0"
+    elasticsearch: "8.8"
+    kibana: "8.8"
+    logstash: "8.8"
+  tools:
+    ansible: "2.15"
+    docker: "24.0"
+    kubernetes: "1.27"
+
+# =============================================================================
+# SYSTEM CONFIGURATION
+# =============================================================================
+timezone: "UTC"
+locale: "en_US.UTF-8"
+keyboard_layout: "us"
+
+# =============================================================================
+# SECURITY CONFIGURATION
+# =============================================================================
+security:
+  encryption:
+    at_rest: true
+    in_transit: true
+    algorithms:
+      - "AES-256-GCM"
+      - "ChaCha20-Poly1305"
+  authentication:
+    methods:
+      - "ssh_key"
+      - "certificate"
+    multi_factor: true
+  authorization:
+    rbac_enabled: true
+    principle: "least_privilege"
+  compliance:
+    standards:
+      - "CIS Benchmarks"
+      - "NIST Cybersecurity Framework"
+      - "SOC 2"
+      - "ISO 27001"
+  hardening:
+    os_hardening: true
+    network_hardening: true
+    application_hardening: true
+    database_hardening: true
+
 security_enabled: true
 firewall_enabled: true
 fail2ban_enabled: true
@@ -48,18 +202,37 @@ ssl_protocols:
 ssl_ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384"
 ssl_prefer_server_ciphers: true
 
-# Monitoring Configuration
-monitoring_enabled: true
-log_aggregation_enabled: true
-metrics_collection_enabled: true
-alerting_enabled: true
+# =============================================================================
+# PERFORMANCE CONFIGURATION
+# =============================================================================
+performance:
+  caching:
+    levels:
+      - "CDN"
+      - "Reverse Proxy"
+      - "Application"
+      - "Database"
+    strategies:
+      - "LRU"
+      - "LFU"
+      - "TTL"
+  load_balancing:
+    algorithms:
+      - "round_robin"
+      - "least_connections"
+      - "ip_hash"
+      - "weighted_round_robin"
+  scaling:
+    horizontal: true
+    vertical: true
+    auto_scaling: true
+    metrics:
+      - "cpu_utilization"
+      - "memory_utilization"
+      - "request_rate"
+      - "response_time"
 
-# Monitoring Retention
-metrics_retention_days: 90
-logs_retention_days: 30
-backup_retention_days: 30
-
-# Performance Tuning
+# Kernel Parameters
 kernel_parameters:
   - name: "vm.swappiness"
     value: "10"
@@ -72,7 +245,64 @@ kernel_parameters:
   - name: "net.ipv4.tcp_wmem"
     value: "4096 65536 134217728"
 
-# Package Management
+# =============================================================================
+# HIGH AVAILABILITY CONFIGURATION
+# =============================================================================
+high_availability:
+  redundancy:
+    level: "N+1"
+    cross_zone: true
+  failover:
+    automatic: true
+    detection_time: "30s"
+    recovery_time: "2m"
+  backup:
+    frequency: "daily"
+    retention: "30d"
+    testing: "weekly"
+  disaster_recovery:
+    rto: "15m"  # Recovery Time Objective
+    rpo: "5m"   # Recovery Point Objective
+
+# =============================================================================
+# MONITORING AND ALERTING
+# =============================================================================
+monitoring:
+  metrics:
+    collection_interval: "15s"
+    retention: "90d"
+    aggregation: true
+  logging:
+    centralized: true
+    structured: true
+    retention: "30d"
+  alerting:
+    channels:
+      - "email"
+      - "slack"
+      - "pagerduty"
+    severity_levels:
+      - "critical"
+      - "warning"
+      - "info"
+  dashboards:
+    infrastructure: true
+    application: true
+    business: true
+
+monitoring_enabled: true
+log_aggregation_enabled: true
+metrics_collection_enabled: true
+alerting_enabled: true
+
+# Monitoring Retention
+metrics_retention_days: 90
+logs_retention_days: 30
+backup_retention_days: 30
+
+# =============================================================================
+# PACKAGE MANAGEMENT
+# =============================================================================
 package_update_cache: true
 package_upgrade: false
 package_autoremove: true
@@ -107,7 +337,25 @@ development_packages:
   - automake
   - libtool
 
-# Backup Configuration
+# =============================================================================
+# BACKUP AND RECOVERY
+# =============================================================================
+backup:
+  types:
+    - "full"
+    - "incremental"
+    - "differential"
+  storage:
+    local: true
+    remote: true
+    cloud: true
+  encryption: true
+  compression: true
+  verification: true
+  testing:
+    frequency: "weekly"
+    automation: true
+
 backup_enabled: true
 backup_method: "rsync"
 backup_compression: true
@@ -119,14 +367,23 @@ backup_retention_policy:
   monthly: 12
   yearly: 5
 
-# Log Configuration
+# Database Backup Configuration
+database_backup_enabled: true
+database_backup_schedule: "0 1 * * *"  # Daily at 1 AM
+database_backup_retention: 30
+
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
 log_level: "info"
 log_format: "json"
 log_rotation_enabled: true
 log_rotation_size: "100M"
 log_rotation_count: 10
 
-# Application Configuration
+# =============================================================================
+# APPLICATION CONFIGURATION
+# =============================================================================
 app_user: "appuser"
 app_group: "appgroup"
 app_home: "/opt/app"
@@ -134,22 +391,29 @@ app_logs_dir: "/var/log/app"
 app_data_dir: "/var/lib/app"
 app_config_dir: "/etc/app"
 
-# Database Configuration
-database_backup_enabled: true
-database_backup_schedule: "0 1 * * *"  # Daily at 1 AM
-database_backup_retention: 30
+# Application Server Configuration
+app_server_port: 8080
+app_server_environment: "{{ environment | default('production') }}"
+app_server_debug: false
+app_server_log_level: "info"
 
-# Cache Configuration
+# =============================================================================
+# CACHE CONFIGURATION
+# =============================================================================
 cache_enabled: true
 cache_type: "redis"
 
-# Load Balancer Configuration
+# =============================================================================
+# LOAD BALANCER CONFIGURATION
+# =============================================================================
 load_balancer_algorithm: "round_robin"
 load_balancer_health_check_enabled: true
 load_balancer_health_check_interval: 30
 load_balancer_health_check_timeout: 5
 
-# Web Server Configuration
+# =============================================================================
+# WEB SERVER CONFIGURATION
+# =============================================================================
 web_server_type: "nginx"
 web_server_worker_processes: "auto"
 web_server_worker_connections: 1024
@@ -157,13 +421,60 @@ web_server_keepalive_timeout: 65
 web_server_client_max_body_size: "64m"
 web_server_gzip_enabled: true
 
-# Application Server Configuration
-app_server_port: 8080
-app_server_environment: "{{ environment | default('production') }}"
-app_server_debug: false
-app_server_log_level: "info"
+# =============================================================================
+# DEPLOYMENT CONFIGURATION
+# =============================================================================
+deployment:
+  strategies:
+    - "rolling_update"
+    - "blue_green"
+    - "canary"
+  automation:
+    ci_cd: true
+    testing: true
+    validation: true
+  environments:
+    - "development"
+    - "staging"
+    - "production"
+  rollback:
+    automatic: true
+    conditions:
+      - "health_check_failure"
+      - "error_rate_threshold"
 
-# Notification Configuration
+# =============================================================================
+# COST OPTIMIZATION
+# =============================================================================
+cost_optimization:
+  resource_rightsizing: true
+  auto_shutdown: true
+  reserved_instances: true
+  spot_instances: false
+  monitoring: true
+
+# =============================================================================
+# DEVELOPMENT AND TESTING
+# =============================================================================
+development:
+  environments:
+    local: true
+    shared: true
+    ephemeral: true
+  testing:
+    unit: true
+    integration: true
+    e2e: true
+    performance: true
+    security: true
+  ci_cd:
+    pipeline: true
+    automation: true
+    quality_gates: true
+
+# =============================================================================
+# NOTIFICATION CONFIGURATION
+# =============================================================================
 notifications_enabled: true
 notification_channels:
   email:
@@ -180,13 +491,17 @@ notification_channels:
     enabled: false
     integration_key: ""
 
-# Health Check Configuration
+# =============================================================================
+# HEALTH CHECK CONFIGURATION
+# =============================================================================
 health_checks_enabled: true
 health_check_interval: 60
 health_check_timeout: 10
 health_check_retries: 3
 
-# Maintenance Configuration
+# =============================================================================
+# MAINTENANCE CONFIGURATION
+# =============================================================================
 maintenance_window:
   enabled: true
   start_time: "02:00"
@@ -195,7 +510,41 @@ maintenance_window:
   days:
     - "sunday"
 
-# Compliance Configuration
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
+documentation:
+  architecture: true
+  runbooks: true
+  api_reference: true
+  user_guides: true
+  troubleshooting: true
+  change_logs: true
+
+# =============================================================================
+# SUPPORT AND MAINTENANCE
+# =============================================================================
+support:
+  levels:
+    - "L1: Basic Support"
+    - "L2: Advanced Support"
+    - "L3: Expert Support"
+  channels:
+    - "email"
+    - "chat"
+    - "phone"
+  sla:
+    response_time: "4h"
+    resolution_time: "24h"
+  maintenance:
+    scheduled: true
+    emergency: true
+    windows:
+      - "Sunday 02:00-04:00 UTC"
+
+# =============================================================================
+# COMPLIANCE CONFIGURATION
+# =============================================================================
 compliance_enabled: true
 compliance_standards:
   - "CIS"
@@ -203,16 +552,22 @@ compliance_standards:
 audit_logging_enabled: true
 audit_log_retention_days: 365
 
-# Container Configuration (if using containers)
+# =============================================================================
+# CONTAINER CONFIGURATION
+# =============================================================================
 container_runtime: "docker"
 container_registry: "docker.io"
 container_network: "bridge"
 
-# Version Information
+# =============================================================================
+# VERSION REQUIREMENTS
+# =============================================================================
 ansible_version_required: "2.15.0"
 python_version_required: "3.9"
 
-# Feature Flags
+# =============================================================================
+# FEATURE FLAGS
+# =============================================================================
 features:
   ssl_enabled: true
   monitoring_enabled: true
