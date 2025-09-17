@@ -1,814 +1,934 @@
 
 # HX Infrastructure Visual Documentation
 
-## 📊 Comprehensive Visual Framework
+## Comprehensive System Diagrams and Visual Architecture
 
-This document contains all the visual diagrams for the HX Infrastructure project, providing comprehensive visual documentation for architecture, workflows, and processes.
+This document provides detailed visual representations of the HX Infrastructure Ansible system architecture, workflows, and operational procedures using Mermaid diagrams.
 
-## 🏗️ Infrastructure Topology Diagram
+## Table of Contents
 
-```mermaid
-graph TB
-    subgraph "Internet"
-        INTERNET[Internet Traffic<br/>🌐 External Users]
-    end
-    
-    subgraph "DMZ - Load Balancer Tier"
-        LB1[Load Balancer 1<br/>📍 10.0.1.10<br/>🔧 nginx + keepalived<br/>🔒 SSL Termination<br/>⚡ Priority: 110 MASTER]
-        LB2[Load Balancer 2<br/>📍 10.0.1.11<br/>🔧 nginx + keepalived<br/>🔒 SSL Termination<br/>⚡ Priority: 100 BACKUP]
-        VIP[Virtual IP<br/>📍 10.0.1.100<br/>🔄 Floating IP<br/>🎯 Active Endpoint]
-    end
-    
-    subgraph "DMZ - Web Tier"
-        WEB1[Web Server 1<br/>📍 10.0.2.10<br/>🔧 nginx + static content<br/>🚀 CDN Integration<br/>📊 Auto-scaling Ready]
-        WEB2[Web Server 2<br/>📍 10.0.2.11<br/>🔧 nginx + static content<br/>🚀 CDN Integration<br/>📊 Auto-scaling Ready]
-        WEB3[Web Server 3<br/>📍 10.0.2.12<br/>🔧 nginx + static content<br/>🚀 CDN Integration<br/>📊 Auto-scaling Ready]
-    end
-    
-    subgraph "Private - Application Tier"
-        APP1[App Server 1<br/>📍 10.0.3.10<br/>🔧 Application Runtime<br/>⚡ Auto-scaling<br/>💾 4GB Memory]
-        APP2[App Server 2<br/>📍 10.0.3.11<br/>🔧 Application Runtime<br/>⚡ Auto-scaling<br/>💾 4GB Memory]
-        APP3[App Server 3<br/>📍 10.0.3.12<br/>🔧 Application Runtime<br/>⚡ Auto-scaling<br/>💾 4GB Memory]
-    end
-    
-    subgraph "Private - Database Tier"
-        DB1[Database Master<br/>📍 10.0.4.10<br/>🔧 PostgreSQL 15<br/>💾 Primary Read/Write<br/>🔄 Streaming Replication<br/>📊 16GB Memory]
-        DB2[Database Replica 1<br/>📍 10.0.4.11<br/>🔧 PostgreSQL 15<br/>📖 Read Replica<br/>🔄 Async Replication<br/>📊 16GB Memory]
-        DB3[Database Replica 2<br/>📍 10.0.4.12<br/>🔧 PostgreSQL 15<br/>📖 Read Replica<br/>🔄 Async Replication<br/>📊 16GB Memory]
-    end
-    
-    subgraph "Private - Cache Tier"
-        CACHE1[Redis Master<br/>📍 10.0.5.10<br/>🔧 Redis 7.x<br/>⚡ Session Store<br/>💾 6GB Memory<br/>🔄 Master Role]
-        CACHE2[Redis Replica<br/>📍 10.0.5.11<br/>🔧 Redis 7.x<br/>📖 Read Replica<br/>💾 6GB Memory<br/>🔄 Replica Role]
-    end
-    
-    subgraph "Private - Monitoring & Management"
-        MON1[Monitoring Server<br/>📍 10.0.6.10<br/>🔧 Prometheus + Grafana<br/>📊 Metrics & Dashboards<br/>🚨 Alertmanager<br/>📈 90-day Retention]
-        LOG1[Log Server<br/>📍 10.0.6.11<br/>🔧 ELK Stack<br/>📝 Centralized Logging<br/>🔍 Elasticsearch<br/>📊 Kibana Dashboards]
-    end
-    
-    %% Traffic Flow - Primary Path
-    INTERNET --> VIP
-    VIP --> LB1
-    VIP --> LB2
-    
-    LB1 --> WEB1
-    LB1 --> WEB2
-    LB1 --> WEB3
-    LB2 --> WEB1
-    LB2 --> WEB2
-    LB2 --> WEB3
-    
-    WEB1 --> APP1
-    WEB2 --> APP2
-    WEB3 --> APP3
-    
-    APP1 --> DB1
-    APP2 --> DB1
-    APP3 --> DB1
-    
-    %% Database Replication
-    DB1 --> DB2
-    DB1 --> DB3
-    
-    %% Cache Access
-    APP1 --> CACHE1
-    APP2 --> CACHE1
-    APP3 --> CACHE1
-    
-    %% Cache Replication
-    CACHE1 --> CACHE2
-    
-    %% Monitoring Connections (dotted lines)
-    MON1 -.-> LB1
-    MON1 -.-> LB2
-    MON1 -.-> WEB1
-    MON1 -.-> WEB2
-    MON1 -.-> WEB3
-    MON1 -.-> APP1
-    MON1 -.-> APP2
-    MON1 -.-> APP3
-    MON1 -.-> DB1
-    MON1 -.-> DB2
-    MON1 -.-> DB3
-    MON1 -.-> CACHE1
-    MON1 -.-> CACHE2
-    
-    %% Logging Connections (dotted lines)
-    LOG1 -.-> LB1
-    LOG1 -.-> LB2
-    LOG1 -.-> WEB1
-    LOG1 -.-> WEB2
-    LOG1 -.-> WEB3
-    LOG1 -.-> APP1
-    LOG1 -.-> APP2
-    LOG1 -.-> APP3
-    LOG1 -.-> DB1
-    LOG1 -.-> DB2
-    LOG1 -.-> DB3
-    LOG1 -.-> CACHE1
-    LOG1 -.-> CACHE2
-    
-    %% Styling
-    classDef internetClass fill:#e1f5fe,stroke:#01579b,stroke-width:3px
-    classDef lbClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef webClass fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef appClass fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef dbClass fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef cacheClass fill:#f1f8e9,stroke:#33691e,stroke-width:2px
-    classDef monClass fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px
-    
-    class INTERNET internetClass
-    class LB1,LB2,VIP lbClass
-    class WEB1,WEB2,WEB3 webClass
-    class APP1,APP2,APP3 appClass
-    class DB1,DB2,DB3 dbClass
-    class CACHE1,CACHE2 cacheClass
-    class MON1,LOG1 monClass
-```
+1. [System Architecture Diagrams](#system-architecture-diagrams)
+2. [Deployment Flow Diagrams](#deployment-flow-diagrams)
+3. [Security Architecture](#security-architecture)
+4. [Monitoring and Observability](#monitoring-and-observability)
+5. [Data Flow Diagrams](#data-flow-diagrams)
+6. [Network Architecture](#network-architecture)
+7. [CI/CD Pipeline Visualization](#cicd-pipeline-visualization)
+8. [Disaster Recovery Workflows](#disaster-recovery-workflows)
 
-## 🔄 Phase Development Workflow
+## System Architecture Diagrams
 
-```mermaid
-gantt
-    title HX Infrastructure Development Timeline
-    dateFormat  YYYY-MM-DD
-    section Phase 1.0 - Foundation
-    Directory Structure        :done, phase1-1, 2025-09-17, 1d
-    Documentation Framework    :done, phase1-2, 2025-09-17, 1d
-    Visual Documentation       :done, phase1-3, 2025-09-17, 1d
-    Basic Configuration        :done, phase1-4, 2025-09-17, 1d
-    Testing Framework Setup    :done, phase1-5, 2025-09-17, 1d
-    
-    section Phase 2.0 - Core Implementation
-    Common Roles Development   :phase2-1, after phase1-5, 2d
-    Web Tier Implementation    :phase2-2, after phase2-1, 2d
-    Database Tier Setup        :phase2-3, after phase2-2, 2d
-    Basic Playbooks           :phase2-4, after phase2-3, 2d
-    Integration Testing       :phase2-5, after phase2-4, 1d
-    
-    section Phase 3.0 - Advanced Features
-    Application Tier          :phase3-1, after phase2-5, 2d
-    Cache Tier Implementation :phase3-2, after phase3-1, 2d
-    Load Balancer Setup       :phase3-3, after phase3-2, 2d
-    Security Hardening        :phase3-4, after phase3-3, 2d
-    SSL/TLS Configuration     :phase3-5, after phase3-4, 1d
-    
-    section Phase 4.0 - Production Ready
-    Monitoring Stack          :phase4-1, after phase3-5, 3d
-    Logging Infrastructure    :phase4-2, after phase4-1, 2d
-    Backup & Recovery         :phase4-3, after phase4-2, 2d
-    CI/CD Pipeline           :phase4-4, after phase4-3, 2d
-    Performance Optimization  :phase4-5, after phase4-4, 2d
-    Documentation Completion  :phase4-6, after phase4-5, 1d
-```
-
-## 🌐 Variable Hierarchy Diagram
+### 1. Overall System Architecture
 
 ```mermaid
 graph TB
-    subgraph "Variable Hierarchy"
-        GLOBAL[Global Variables<br/>📁 inventory/group_vars/all.yml<br/>🌍 Applies to all hosts<br/>🔧 Base configuration]
-        
-        subgraph "Environment Level"
-            ENV_PROD[Production Variables<br/>📁 inventory/environments/production/<br/>🏭 Production-specific settings]
-            ENV_STAGE[Staging Variables<br/>📁 inventory/environments/staging/<br/>🎭 Staging-specific settings]
-            ENV_DEV[Development Variables<br/>📁 inventory/environments/development/<br/>🔧 Development-specific settings]
+    subgraph "HX Infrastructure Ansible Platform"
+        subgraph "Control Layer"
+            A[Ansible Controller]
+            B[Git Repository]
+            C[CI/CD Pipeline]
         end
         
-        subgraph "Group Level"
-            GROUP_LB[Load Balancer Group<br/>📁 inventory/group_vars/load_balancers.yml<br/>⚖️ LB-specific configuration]
-            GROUP_WEB[Web Group<br/>📁 inventory/group_vars/web_servers.yml<br/>🌐 Web-specific configuration]
-            GROUP_APP[Application Group<br/>📁 inventory/group_vars/app_servers.yml<br/>⚙️ App-specific configuration]
-            GROUP_DB[Database Group<br/>📁 inventory/group_vars/database_servers.yml<br/>🗄️ DB-specific configuration]
-            GROUP_CACHE[Cache Group<br/>📁 inventory/group_vars/cache_servers.yml<br/>⚡ Cache-specific configuration]
-            GROUP_MON[Monitoring Group<br/>📁 inventory/group_vars/monitoring_servers.yml<br/>📊 Monitoring-specific configuration]
+        subgraph "Automation Layer"
+            D[Playbooks]
+            E[Standardized Roles]
+            F[Inventories]
+            G[Variables & Vault]
         end
         
-        subgraph "Host Level"
-            HOST_SPECIFIC[Host Variables<br/>📁 inventory/host_vars/<hostname>.yml<br/>🖥️ Host-specific overrides<br/>🔧 Individual customization]
+        subgraph "Target Infrastructure"
+            H[Web Servers]
+            I[Application Servers]
+            J[Database Servers]
+            K[Load Balancers]
         end
         
-        subgraph "Role Level"
-            ROLE_DEFAULTS[Role Defaults<br/>📁 roles/*/defaults/main.yml<br/>📋 Default role values<br/>🔧 Lowest priority]
-            ROLE_VARS[Role Variables<br/>📁 roles/*/vars/main.yml<br/>📋 Role-specific values<br/>🔧 High priority]
-        end
-        
-        subgraph "Runtime Level"
-            EXTRA_VARS[Extra Variables<br/>🚀 Command line: -e "var=value"<br/>🔧 Highest priority<br/>⚡ Runtime overrides]
-        end
-        
-        subgraph "Secrets Management"
-            VAULT[Ansible Vault<br/>📁 vars/secrets.yml<br/>🔐 Encrypted secrets<br/>🔒 Sensitive data]
+        subgraph "External Systems"
+            L[Active Directory]
+            M[Certificate Authority]
+            N[Monitoring Systems]
+            O[Backup Storage]
         end
     end
     
-    %% Precedence Flow (Higher to Lower)
-    EXTRA_VARS --> ROLE_VARS
-    ROLE_VARS --> HOST_SPECIFIC
-    HOST_SPECIFIC --> GROUP_LB
-    HOST_SPECIFIC --> GROUP_WEB
-    HOST_SPECIFIC --> GROUP_APP
-    HOST_SPECIFIC --> GROUP_DB
-    HOST_SPECIFIC --> GROUP_CACHE
-    HOST_SPECIFIC --> GROUP_MON
-    GROUP_LB --> ENV_PROD
-    GROUP_WEB --> ENV_STAGE
-    GROUP_APP --> ENV_DEV
-    GROUP_DB --> GLOBAL
-    GROUP_CACHE --> GLOBAL
-    GROUP_MON --> GLOBAL
-    ENV_PROD --> GLOBAL
-    ENV_STAGE --> GLOBAL
-    ENV_DEV --> GLOBAL
-    GLOBAL --> ROLE_DEFAULTS
+    B --> A
+    C --> A
+    A --> D
+    D --> E
+    E --> F
+    F --> G
     
-    %% Vault Integration
-    VAULT -.-> HOST_SPECIFIC
-    VAULT -.-> GROUP_LB
-    VAULT -.-> GROUP_WEB
-    VAULT -.-> GROUP_APP
-    VAULT -.-> GROUP_DB
-    VAULT -.-> GROUP_CACHE
-    VAULT -.-> GROUP_MON
+    A --> H
+    A --> I
+    A --> J
+    A --> K
     
-    %% Styling
-    classDef highPriority fill:#ffcdd2,stroke:#d32f2f,stroke-width:3px
-    classDef mediumPriority fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    classDef lowPriority fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    classDef secretClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    E --> L
+    E --> M
+    H --> N
+    I --> N
+    J --> N
+    K --> N
     
-    class EXTRA_VARS highPriority
-    class ROLE_VARS,HOST_SPECIFIC mediumPriority
-    class GROUP_LB,GROUP_WEB,GROUP_APP,GROUP_DB,GROUP_CACHE,GROUP_MON mediumPriority
-    class ENV_PROD,ENV_STAGE,ENV_DEV,GLOBAL lowPriority
-    class ROLE_DEFAULTS lowPriority
-    class VAULT secretClass
+    A --> O
+    
+    style A fill:#e1f5fe
+    style E fill:#f3e5f5
+    style H fill:#e8f5e8
+    style L fill:#fff3e0
 ```
 
-## 🚀 Deployment Workflow Diagram
+### 2. Role Architecture and Dependencies
+
+```mermaid
+graph TB
+    subgraph "Standardized Roles Ecosystem"
+        subgraph "Core Infrastructure Roles"
+            A[hx_ca_trust_standardized]
+            B[hx_domain_join_standardized]
+            C[hx_pg_auth_standardized]
+        end
+        
+        subgraph "Application Roles"
+            D[hx_webui_install_standardized]
+            E[hx_litellm_proxy_standardized]
+        end
+        
+        subgraph "Supporting Roles"
+            F[common]
+            G[security_hardening]
+            H[monitoring]
+        end
+        
+        subgraph "External Dependencies"
+            I[Certificate Authority]
+            J[Active Directory]
+            K[PostgreSQL Cluster]
+            L[Web UI Components]
+            M[LiteLLM Services]
+        end
+    end
+    
+    F --> A
+    F --> B
+    F --> C
+    F --> D
+    F --> E
+    
+    A --> I
+    B --> J
+    C --> K
+    D --> L
+    E --> M
+    
+    G --> A
+    G --> B
+    G --> C
+    G --> D
+    G --> E
+    
+    H --> A
+    H --> B
+    H --> C
+    H --> D
+    H --> E
+    
+    style A fill:#ffebee
+    style B fill:#e8f5e8
+    style C fill:#e3f2fd
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+```
+
+### 3. Multi-Environment Architecture
+
+```mermaid
+graph LR
+    subgraph "Development Environment"
+        A1[Dev Web Servers]
+        A2[Dev App Servers]
+        A3[Dev Database]
+        A4[Dev Load Balancer]
+    end
+    
+    subgraph "Testing Environment"
+        B1[Test Web Servers]
+        B2[Test App Servers]
+        B3[Test Database]
+        B4[Test Load Balancer]
+    end
+    
+    subgraph "Staging Environment"
+        C1[Stage Web Servers]
+        C2[Stage App Servers]
+        C3[Stage Database]
+        C4[Stage Load Balancer]
+    end
+    
+    subgraph "Production Environment"
+        D1[Prod Web Servers]
+        D2[Prod App Servers]
+        D3[Prod Database Cluster]
+        D4[Prod Load Balancers]
+    end
+    
+    subgraph "Shared Services"
+        E1[Certificate Authority]
+        E2[Active Directory]
+        E3[Monitoring Stack]
+        E4[Backup Systems]
+    end
+    
+    A1 --> B1
+    A2 --> B2
+    A3 --> B3
+    A4 --> B4
+    
+    B1 --> C1
+    B2 --> C2
+    B3 --> C3
+    B4 --> C4
+    
+    C1 --> D1
+    C2 --> D2
+    C3 --> D3
+    C4 --> D4
+    
+    E1 --> A1
+    E1 --> B1
+    E1 --> C1
+    E1 --> D1
+    
+    E2 --> A2
+    E2 --> B2
+    E2 --> C2
+    E2 --> D2
+    
+    E3 --> A1
+    E3 --> B1
+    E3 --> C1
+    E3 --> D1
+    
+    E4 --> D3
+    
+    style A1 fill:#e8f5e8
+    style B1 fill:#fff3e0
+    style C1 fill:#e3f2fd
+    style D1 fill:#ffebee
+```
+
+## Deployment Flow Diagrams
+
+### 4. Standard Deployment Workflow
 
 ```mermaid
 sequenceDiagram
-    participant User as 👤 User/DevOps
-    participant Ansible as 🤖 Ansible Controller
-    participant Vault as 🔐 Ansible Vault
-    participant DB as 🗄️ Database Tier
-    participant Cache as ⚡ Cache Tier
-    participant App as ⚙️ Application Tier
-    participant Web as 🌐 Web Tier
-    participant LB as ⚖️ Load Balancer
-    participant Monitor as 📊 Monitoring
+    participant Dev as Developer
+    participant Git as Git Repository
+    participant CI as CI/CD Pipeline
+    participant Ansible as Ansible Controller
+    participant Staging as Staging Environment
+    participant Prod as Production Environment
+    participant Monitor as Monitoring
     
-    Note over User,Monitor: HX Infrastructure Deployment Sequence
+    Dev->>Git: Push Code Changes
+    Git->>CI: Trigger Pipeline
     
-    User->>Ansible: 1. Execute site playbook
-    Note right of User: ansible-playbook -i inventory/environments/production playbooks/site/main.yml
+    CI->>CI: Run Quality Gates
+    Note over CI: Lint, Security Scan, Tests
     
-    Ansible->>Vault: 2. Decrypt secrets
-    Vault-->>Ansible: 2a. Return decrypted secrets
+    CI->>Ansible: Deploy to Staging
+    Ansible->>Staging: Execute Playbooks
+    Staging->>Ansible: Deployment Status
     
-    Note over Ansible,Monitor: Phase 1: Database Tier
-    Ansible->>DB: 3. Deploy PostgreSQL cluster
-    DB->>DB: 3a. Configure master-replica setup
-    DB->>DB: 3b. Create application database
-    DB->>DB: 3c. Setup backup procedures
-    DB-->>Ansible: 3d. Database tier ready
+    Ansible->>CI: Staging Results
+    CI->>CI: Run Integration Tests
     
-    Note over Ansible,Monitor: Phase 2: Cache Tier
-    Ansible->>Cache: 4. Deploy Redis cluster
-    Cache->>Cache: 4a. Configure master-replica
-    Cache->>Cache: 4b. Setup persistence
-    Cache-->>Ansible: 4c. Cache tier ready
+    CI->>Dev: Request Production Approval
+    Dev->>CI: Approve Production Deploy
     
-    Note over Ansible,Monitor: Phase 3: Application Tier
-    Ansible->>App: 5. Deploy application servers
-    App->>DB: 5a. Test database connectivity
-    App->>Cache: 5b. Test cache connectivity
-    App->>App: 5c. Start application services
-    App-->>Ansible: 5d. Application tier ready
+    CI->>Ansible: Deploy to Production
+    Ansible->>Prod: Execute Playbooks
+    Prod->>Ansible: Deployment Status
     
-    Note over Ansible,Monitor: Phase 4: Web Tier
-    Ansible->>Web: 6. Deploy web servers
-    Web->>App: 6a. Configure upstream connections
-    Web->>Web: 6b. Setup SSL certificates
-    Web->>Web: 6c. Configure caching
-    Web-->>Ansible: 6d. Web tier ready
+    Ansible->>Monitor: Update Monitoring
+    Monitor->>Ansible: Health Check Results
     
-    Note over Ansible,Monitor: Phase 5: Load Balancer
-    Ansible->>LB: 7. Deploy load balancers
-    LB->>Web: 7a. Configure backend pools
-    LB->>LB: 7b. Setup keepalived (HA)
-    LB->>LB: 7c. Configure SSL termination
-    LB-->>Ansible: 7d. Load balancer ready
-    
-    Note over Ansible,Monitor: Phase 6: Monitoring
-    Ansible->>Monitor: 8. Deploy monitoring stack
-    Monitor->>DB: 8a. Setup database monitoring
-    Monitor->>Cache: 8b. Setup cache monitoring
-    Monitor->>App: 8c. Setup application monitoring
-    Monitor->>Web: 8d. Setup web monitoring
-    Monitor->>LB: 8e. Setup load balancer monitoring
-    Monitor->>Monitor: 8f. Configure dashboards & alerts
-    Monitor-->>Ansible: 8g. Monitoring active
-    
-    Note over Ansible,Monitor: Phase 7: Final Validation
-    Ansible->>LB: 9. Run health checks
-    LB->>Web: 9a. Validate web tier
-    Web->>App: 9b. Validate application tier
-    App->>DB: 9c. Validate database tier
-    App->>Cache: 9d. Validate cache tier
-    Monitor->>Monitor: 9e. Validate monitoring
-    
-    Ansible-->>User: 10. Deployment complete
-    Note right of Ansible: ✅ All 15 servers deployed<br/>🔧 All services running<br/>📊 Monitoring active
+    Ansible->>CI: Production Results
+    CI->>Dev: Deployment Complete
 ```
 
-## 🔀 Git Workflow Diagram
-
-```mermaid
-gitgraph
-    commit id: "Initial Setup"
-    branch develop
-    checkout develop
-    commit id: "Phase 1.0 Foundation"
-    
-    branch feature/phase-1-docs
-    checkout feature/phase-1-docs
-    commit id: "Add documentation"
-    commit id: "Add visual diagrams"
-    commit id: "Update README"
-    
-    checkout develop
-    merge feature/phase-1-docs
-    commit id: "Merge Phase 1 docs"
-    
-    branch feature/phase-2-core
-    checkout feature/phase-2-core
-    commit id: "Add common roles"
-    commit id: "Add web tier"
-    commit id: "Add database tier"
-    commit id: "Add basic playbooks"
-    
-    checkout develop
-    merge feature/phase-2-core
-    commit id: "Merge Phase 2 core"
-    
-    branch feature/phase-3-advanced
-    checkout feature/phase-3-advanced
-    commit id: "Add app tier"
-    commit id: "Add cache tier"
-    commit id: "Add load balancer"
-    commit id: "Add security hardening"
-    
-    checkout develop
-    merge feature/phase-3-advanced
-    commit id: "Merge Phase 3 advanced"
-    
-    branch feature/phase-4-production
-    checkout feature/phase-4-production
-    commit id: "Add monitoring stack"
-    commit id: "Add logging infrastructure"
-    commit id: "Add backup & recovery"
-    commit id: "Add CI/CD pipeline"
-    
-    checkout develop
-    merge feature/phase-4-production
-    commit id: "Merge Phase 4 production"
-    
-    checkout main
-    merge develop
-    commit id: "Release v1.0.0"
-    tag: "v1.0.0"
-    
-    checkout develop
-    branch hotfix/security-patch
-    checkout hotfix/security-patch
-    commit id: "Security patch"
-    
-    checkout main
-    merge hotfix/security-patch
-    commit id: "Hotfix v1.0.1"
-    tag: "v1.0.1"
-    
-    checkout develop
-    merge hotfix/security-patch
-    commit id: "Merge hotfix to develop"
-```
-
-## 🔄 CI/CD Pipeline Diagram
+### 5. Blue-Green Deployment Process
 
 ```mermaid
 graph TB
-    subgraph "Source Control"
-        GIT[Git Repository<br/>📁 GitHub<br/>🔄 Branch Protection<br/>📋 Pull Requests]
+    subgraph "Load Balancer"
+        A[Traffic Router]
     end
     
-    subgraph "Continuous Integration"
-        TRIGGER[Pipeline Trigger<br/>🔄 Push/PR Events<br/>⚡ Webhook Integration]
-        
-        subgraph "Code Quality Stage"
-            LINT[Linting<br/>📝 ansible-lint<br/>📄 yamllint<br/>🐍 flake8]
-            SYNTAX[Syntax Check<br/>✅ Playbook validation<br/>🔍 YAML validation]
-            SECURITY[Security Scan<br/>🔒 Vulnerability check<br/>🛡️ Secret detection]
-        end
-        
-        subgraph "Testing Stage"
-            UNIT[Unit Tests<br/>🧪 Molecule tests<br/>🔬 Role validation]
-            INTEGRATION[Integration Tests<br/>🔗 Multi-role testing<br/>🧪 Testinfra validation]
-            SMOKE[Smoke Tests<br/>💨 Basic functionality<br/>⚡ Quick validation]
-        end
-        
-        subgraph "Build Stage"
-            BUILD[Build Artifacts<br/>📦 Package creation<br/>🏗️ Asset preparation]
-            VALIDATE[Validation<br/>✅ Artifact integrity<br/>🔍 Dependency check]
-        end
+    subgraph "Blue Environment (Current)"
+        B1[Blue Web Server 1]
+        B2[Blue Web Server 2]
+        B3[Blue App Server 1]
+        B4[Blue App Server 2]
+        B5[Blue Database]
     end
     
-    subgraph "Continuous Deployment"
-        subgraph "Development Environment"
-            DEV_DEPLOY[Deploy to Dev<br/>🔧 Development servers<br/>🧪 Feature testing]
-            DEV_TEST[Dev Testing<br/>🔍 Functional tests<br/>📊 Performance baseline]
-        end
-        
-        subgraph "Staging Environment"
-            STAGE_DEPLOY[Deploy to Staging<br/>🎭 Pre-production<br/>🔄 Production mirror]
-            STAGE_TEST[Staging Testing<br/>🧪 E2E tests<br/>📊 Load testing<br/>🔒 Security testing]
-            UAT[User Acceptance<br/>👥 Stakeholder approval<br/>✅ Business validation]
-        end
-        
-        subgraph "Production Environment"
-            PROD_APPROVAL[Production Approval<br/>👤 Manual gate<br/>📋 Change management]
-            PROD_DEPLOY[Deploy to Production<br/>🏭 Live environment<br/>🔄 Rolling deployment]
-            PROD_VALIDATE[Production Validation<br/>📊 Health checks<br/>🚨 Monitoring alerts]
-        end
+    subgraph "Green Environment (New)"
+        G1[Green Web Server 1]
+        G2[Green Web Server 2]
+        G3[Green App Server 1]
+        G4[Green App Server 2]
+        G5[Green Database]
     end
     
-    subgraph "Monitoring & Feedback"
-        MONITOR[Monitoring<br/>📊 Prometheus metrics<br/>📈 Grafana dashboards]
-        ALERTS[Alerting<br/>🚨 Alert manager<br/>📧 Notifications]
-        LOGS[Logging<br/>📝 ELK stack<br/>🔍 Log analysis]
-        FEEDBACK[Feedback Loop<br/>🔄 Continuous improvement<br/>📊 Performance metrics]
+    subgraph "Deployment Process"
+        D1[Deploy to Green]
+        D2[Health Check Green]
+        D3[Switch Traffic]
+        D4[Monitor Green]
+        D5[Decommission Blue]
     end
     
-    %% Flow Connections
-    GIT --> TRIGGER
-    TRIGGER --> LINT
-    TRIGGER --> SYNTAX
-    TRIGGER --> SECURITY
+    A -->|100% Traffic| B1
+    A -->|100% Traffic| B2
     
-    LINT --> UNIT
-    SYNTAX --> UNIT
-    SECURITY --> UNIT
+    D1 --> G1
+    D1 --> G2
+    D1 --> G3
+    D1 --> G4
     
-    UNIT --> INTEGRATION
-    INTEGRATION --> SMOKE
+    D2 --> G1
+    D2 --> G2
     
-    SMOKE --> BUILD
-    BUILD --> VALIDATE
+    D3 --> A
+    A -.->|Switch to| G1
+    A -.->|Switch to| G2
     
-    VALIDATE --> DEV_DEPLOY
-    DEV_DEPLOY --> DEV_TEST
+    D4 --> G1
+    D4 --> G2
     
-    DEV_TEST --> STAGE_DEPLOY
-    STAGE_DEPLOY --> STAGE_TEST
-    STAGE_TEST --> UAT
+    D5 --> B1
+    D5 --> B2
     
-    UAT --> PROD_APPROVAL
-    PROD_APPROVAL --> PROD_DEPLOY
-    PROD_DEPLOY --> PROD_VALIDATE
-    
-    PROD_VALIDATE --> MONITOR
-    MONITOR --> ALERTS
-    MONITOR --> LOGS
-    ALERTS --> FEEDBACK
-    LOGS --> FEEDBACK
-    FEEDBACK --> GIT
-    
-    %% Styling
-    classDef sourceClass fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef ciClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef cdClass fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    classDef monitorClass fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
-    class GIT sourceClass
-    class TRIGGER,LINT,SYNTAX,SECURITY,UNIT,INTEGRATION,SMOKE,BUILD,VALIDATE ciClass
-    class DEV_DEPLOY,DEV_TEST,STAGE_DEPLOY,STAGE_TEST,UAT,PROD_APPROVAL,PROD_DEPLOY,PROD_VALIDATE cdClass
-    class MONITOR,ALERTS,LOGS,FEEDBACK monitorClass
+    style B1 fill:#e3f2fd
+    style B2 fill:#e3f2fd
+    style G1 fill:#e8f5e8
+    style G2 fill:#e8f5e8
+    style A fill:#fff3e0
 ```
 
-## 🔐 Secrets Management Diagram
+### 6. Rolling Deployment Strategy
 
 ```mermaid
 graph TB
-    subgraph "Secret Sources"
-        VAULT_FILE[Ansible Vault Files<br/>📁 vars/secrets.yml<br/>🔐 Encrypted at rest<br/>🔑 Vault password protected]
-        
-        EXTERNAL_VAULT[External Vault<br/>🏛️ HashiCorp Vault<br/>🔐 Centralized secrets<br/>🔄 Dynamic secrets]
-        
-        ENV_VARS[Environment Variables<br/>🌍 Runtime secrets<br/>⚡ Temporary access<br/>🔒 Process isolation]
-        
-        KEY_MGMT[Key Management<br/>🔑 SSH keys<br/>📜 SSL certificates<br/>🎫 API tokens]
+    subgraph "Rolling Deployment Process"
+        A[Start Deployment]
+        B[Select First Batch]
+        C[Remove from Load Balancer]
+        D[Deploy New Version]
+        E[Health Check]
+        F{Health Check Pass?}
+        G[Add to Load Balancer]
+        H{More Batches?}
+        I[Select Next Batch]
+        J[Deployment Complete]
+        K[Rollback Previous Batch]
+        L[Alert Operations]
     end
     
-    subgraph "Secret Processing"
-        DECRYPT[Decryption Process<br/>🔓 Vault password<br/>🔐 AES-256 encryption<br/>⚡ Runtime decryption]
-        
-        INJECT[Secret Injection<br/>💉 Template rendering<br/>🔧 Variable substitution<br/>🎯 Target-specific]
-        
-        VALIDATE[Validation<br/>✅ Secret format check<br/>🔍 Expiration validation<br/>🛡️ Access control]
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F -->|Yes| G
+    F -->|No| K
+    G --> H
+    H -->|Yes| I
+    H -->|No| J
+    I --> C
+    K --> L
+    
+    subgraph "Server Batches"
+        S1[Server 1]
+        S2[Server 2]
+        S3[Server 3]
+        S4[Server 4]
+        S5[Server 5]
+        S6[Server 6]
     end
     
-    subgraph "Secret Distribution"
-        PLAYBOOK[Playbook Execution<br/>📋 Ansible playbooks<br/>🎯 Target hosts<br/>🔒 Secure transport]
-        
-        TEMPLATE[Template Rendering<br/>📄 Jinja2 templates<br/>🔧 Configuration files<br/>🎨 Dynamic content]
-        
-        SERVICE_CONFIG[Service Configuration<br/>⚙️ Application configs<br/>🗄️ Database credentials<br/>🔑 API keys]
-    end
+    B -.-> S1
+    I -.-> S2
+    I -.-> S3
+    I -.-> S4
     
-    subgraph "Security Controls"
-        ENCRYPTION[Encryption in Transit<br/>🔐 SSH/TLS encryption<br/>🛡️ Secure channels<br/>🔒 End-to-end security]
-        
-        ACCESS_CONTROL[Access Control<br/>👤 RBAC implementation<br/>🔐 Principle of least privilege<br/>📋 Audit logging]
-        
-        ROTATION[Secret Rotation<br/>🔄 Automated rotation<br/>⏰ Scheduled updates<br/>🔄 Zero-downtime rotation]
-        
-        AUDIT[Audit & Compliance<br/>📊 Access logging<br/>🔍 Usage tracking<br/>📋 Compliance reporting]
-    end
-    
-    subgraph "Target Systems"
-        DATABASES[Database Systems<br/>🗄️ PostgreSQL<br/>🔑 Connection credentials<br/>🔐 Encrypted connections]
-        
-        APPLICATIONS[Applications<br/>⚙️ App servers<br/>🔑 API keys<br/>🎫 Service tokens]
-        
-        LOAD_BALANCERS[Load Balancers<br/>⚖️ SSL certificates<br/>🔐 TLS termination<br/>🔒 Secure backends]
-        
-        MONITORING[Monitoring Systems<br/>📊 Metrics collection<br/>🔑 Service accounts<br/>🚨 Alert credentials]
-    end
-    
-    %% Flow Connections
-    VAULT_FILE --> DECRYPT
-    EXTERNAL_VAULT --> DECRYPT
-    ENV_VARS --> INJECT
-    KEY_MGMT --> VALIDATE
-    
-    DECRYPT --> INJECT
-    INJECT --> VALIDATE
-    
-    VALIDATE --> PLAYBOOK
-    PLAYBOOK --> TEMPLATE
-    TEMPLATE --> SERVICE_CONFIG
-    
-    SERVICE_CONFIG --> ENCRYPTION
-    ENCRYPTION --> ACCESS_CONTROL
-    ACCESS_CONTROL --> ROTATION
-    ROTATION --> AUDIT
-    
-    ENCRYPTION --> DATABASES
-    ENCRYPTION --> APPLICATIONS
-    ENCRYPTION --> LOAD_BALANCERS
-    ENCRYPTION --> MONITORING
-    
-    %% Security Feedback Loops
-    AUDIT -.-> ACCESS_CONTROL
-    ROTATION -.-> VAULT_FILE
-    ROTATION -.-> EXTERNAL_VAULT
-    
-    %% Styling
-    classDef sourceClass fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef processClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef distributionClass fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    classDef securityClass fill:#ffebee,stroke:#d32f2f,stroke-width:2px
-    classDef targetClass fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
-    class VAULT_FILE,EXTERNAL_VAULT,ENV_VARS,KEY_MGMT sourceClass
-    class DECRYPT,INJECT,VALIDATE processClass
-    class PLAYBOOK,TEMPLATE,SERVICE_CONFIG distributionClass
-    class ENCRYPTION,ACCESS_CONTROL,ROTATION,AUDIT securityClass
-    class DATABASES,APPLICATIONS,LOAD_BALANCERS,MONITORING targetClass
+    style A fill:#e8f5e8
+    style J fill:#e8f5e8
+    style K fill:#ffebee
+    style L fill:#ffebee
 ```
 
-## 📊 Monitoring Architecture Diagram
+## Security Architecture
+
+### 7. Defense in Depth Security Model
+
+```mermaid
+graph TB
+    subgraph "Security Layers"
+        subgraph "Perimeter Security"
+            A1[Firewall Rules]
+            A2[DDoS Protection]
+            A3[WAF]
+        end
+        
+        subgraph "Network Security"
+            B1[Network Segmentation]
+            B2[VPN Access]
+            B3[Network Monitoring]
+            B4[Intrusion Detection]
+        end
+        
+        subgraph "Host Security"
+            C1[OS Hardening]
+            C2[Endpoint Protection]
+            C3[Patch Management]
+            C4[Access Controls]
+        end
+        
+        subgraph "Application Security"
+            D1[Authentication]
+            D2[Authorization]
+            D3[Input Validation]
+            D4[Session Management]
+        end
+        
+        subgraph "Data Security"
+            E1[Encryption at Rest]
+            E2[Encryption in Transit]
+            E3[Key Management]
+            E4[Data Classification]
+        end
+        
+        subgraph "Monitoring & Response"
+            F1[SIEM]
+            F2[Log Analysis]
+            F3[Incident Response]
+            F4[Forensics]
+        end
+    end
+    
+    A1 --> B1
+    A2 --> B2
+    A3 --> B3
+    
+    B1 --> C1
+    B2 --> C2
+    B3 --> C3
+    B4 --> C4
+    
+    C1 --> D1
+    C2 --> D2
+    C3 --> D3
+    C4 --> D4
+    
+    D1 --> E1
+    D2 --> E2
+    D3 --> E3
+    D4 --> E4
+    
+    E1 --> F1
+    E2 --> F2
+    E3 --> F3
+    E4 --> F4
+    
+    style A1 fill:#ffebee
+    style B1 fill:#fff3e0
+    style C1 fill:#e8f5e8
+    style D1 fill:#e3f2fd
+    style E1 fill:#f3e5f5
+    style F1 fill:#fce4ec
+```
+
+### 8. Certificate Management Workflow
+
+```mermaid
+sequenceDiagram
+    participant CA as Certificate Authority
+    participant Ansible as Ansible Controller
+    participant Vault as Ansible Vault
+    participant Target as Target Servers
+    participant Monitor as Certificate Monitor
+    
+    Note over CA,Monitor: Certificate Lifecycle Management
+    
+    CA->>Ansible: Generate Certificate
+    Ansible->>Vault: Store Certificate Securely
+    
+    Ansible->>Target: Deploy Certificate
+    Target->>Ansible: Confirm Installation
+    
+    Ansible->>Monitor: Register Certificate
+    Monitor->>Monitor: Track Expiration
+    
+    Monitor->>Ansible: Certificate Expiring (30 days)
+    Ansible->>CA: Request Renewal
+    CA->>Ansible: New Certificate
+    
+    Ansible->>Vault: Update Certificate
+    Ansible->>Target: Deploy New Certificate
+    Target->>Ansible: Confirm Update
+    
+    Ansible->>Monitor: Update Certificate Info
+    
+    Note over CA,Monitor: Automated Renewal Complete
+```
+
+## Monitoring and Observability
+
+### 9. Monitoring Architecture
 
 ```mermaid
 graph TB
     subgraph "Data Collection Layer"
-        subgraph "System Metrics"
-            NODE_EXP[Node Exporter<br/>📊 System metrics<br/>💾 CPU, Memory, Disk<br/>🌐 Network statistics<br/>📈 Host-level monitoring]
-            
-            PROCESS_EXP[Process Exporter<br/>⚙️ Process metrics<br/>📊 Resource usage<br/>🔍 Process monitoring]
-        end
-        
-        subgraph "Application Metrics"
-            APP_METRICS[Application Metrics<br/>📈 Custom metrics<br/>🎯 Business KPIs<br/>⚡ Performance counters<br/>🔍 Error tracking]
-            
-            JVM_METRICS[JVM Metrics<br/>☕ Java applications<br/>💾 Heap usage<br/>🗑️ Garbage collection<br/>🧵 Thread pools]
-        end
-        
-        subgraph "Infrastructure Metrics"
-            POSTGRES_EXP[PostgreSQL Exporter<br/>🗄️ Database metrics<br/>📊 Query performance<br/>🔄 Replication status<br/>💾 Storage usage]
-            
-            REDIS_EXP[Redis Exporter<br/>⚡ Cache metrics<br/>📊 Hit/miss ratios<br/>💾 Memory usage<br/>🔄 Replication lag]
-            
-            NGINX_EXP[Nginx Exporter<br/>🌐 Web server metrics<br/>📊 Request rates<br/>⏱️ Response times<br/>🔍 Error rates]
-        end
-        
-        subgraph "Log Collection"
-            FILEBEAT[Filebeat<br/>📝 Log shipping<br/>📁 File monitoring<br/>🔄 Real-time streaming<br/>🎯 Multi-line parsing]
-            
-            LOGSTASH[Logstash<br/>🔄 Log processing<br/>🎨 Data transformation<br/>📊 Enrichment<br/>🎯 Routing]
-        end
+        A1[System Metrics]
+        A2[Application Metrics]
+        A3[Log Collection]
+        A4[Trace Collection]
+        A5[Security Events]
     end
     
-    subgraph "Data Storage Layer"
-        PROMETHEUS[Prometheus<br/>📊 Time series database<br/>⏰ Metrics storage<br/>🔍 Query engine<br/>📈 90-day retention]
-        
-        ELASTICSEARCH[Elasticsearch<br/>📝 Log storage<br/>🔍 Full-text search<br/>📊 Aggregations<br/>📈 30-day retention]
+    subgraph "Processing Layer"
+        B1[Prometheus]
+        B2[Elasticsearch]
+        B3[Jaeger]
+        B4[SIEM]
+    end
+    
+    subgraph "Storage Layer"
+        C1[Time Series DB]
+        C2[Log Storage]
+        C3[Trace Storage]
+        C4[Event Storage]
     end
     
     subgraph "Visualization Layer"
-        GRAFANA[Grafana<br/>📈 Dashboards<br/>📊 Visualization<br/>🎨 Custom panels<br/>👥 Multi-tenancy]
-        
-        KIBANA[Kibana<br/>📊 Log analysis<br/>🔍 Search interface<br/>📈 Visualizations<br/>🎯 Discover & analyze]
+        D1[Grafana Dashboards]
+        D2[Kibana]
+        D3[Jaeger UI]
+        D4[Security Dashboard]
     end
     
     subgraph "Alerting Layer"
-        ALERTMANAGER[Alertmanager<br/>🚨 Alert routing<br/>📧 Notifications<br/>🔕 Silencing<br/>👥 Team routing]
-        
-        subgraph "Notification Channels"
-            EMAIL[Email Notifications<br/>📧 SMTP delivery<br/>👥 Team distribution<br/>📋 Alert details]
-            
-            SLACK[Slack Integration<br/>💬 Team channels<br/>🤖 Bot notifications<br/>🎯 Channel routing]
-            
-            PAGERDUTY[PagerDuty<br/>📱 Incident management<br/>🚨 Escalation policies<br/>📞 On-call rotation]
-        end
+        E1[AlertManager]
+        E2[PagerDuty]
+        E3[Slack]
+        E4[Email]
     end
     
-    subgraph "Target Infrastructure"
-        LB_TARGETS[Load Balancers<br/>⚖️ lb-01, lb-02<br/>📊 Traffic metrics<br/>🔍 Health status]
-        
-        WEB_TARGETS[Web Servers<br/>🌐 web-01, web-02, web-03<br/>📊 Request metrics<br/>⏱️ Response times]
-        
-        APP_TARGETS[App Servers<br/>⚙️ app-01, app-02, app-03<br/>📊 Application metrics<br/>💾 Resource usage]
-        
-        DB_TARGETS[Database Servers<br/>🗄️ db-01, db-02, db-03<br/>📊 Query metrics<br/>🔄 Replication status]
-        
-        CACHE_TARGETS[Cache Servers<br/>⚡ cache-01, cache-02<br/>📊 Cache metrics<br/>💾 Memory usage]
-    end
+    A1 --> B1 --> C1 --> D1
+    A2 --> B1 --> C1 --> D1
+    A3 --> B2 --> C2 --> D2
+    A4 --> B3 --> C3 --> D3
+    A5 --> B4 --> C4 --> D4
     
-    %% Data Flow - Metrics
-    LB_TARGETS --> NODE_EXP
-    LB_TARGETS --> NGINX_EXP
-    WEB_TARGETS --> NODE_EXP
-    WEB_TARGETS --> NGINX_EXP
-    APP_TARGETS --> NODE_EXP
-    APP_TARGETS --> APP_METRICS
-    APP_TARGETS --> JVM_METRICS
-    DB_TARGETS --> NODE_EXP
-    DB_TARGETS --> POSTGRES_EXP
-    CACHE_TARGETS --> NODE_EXP
-    CACHE_TARGETS --> REDIS_EXP
+    B1 --> E1
+    B2 --> E1
+    B4 --> E1
     
-    NODE_EXP --> PROMETHEUS
-    PROCESS_EXP --> PROMETHEUS
-    APP_METRICS --> PROMETHEUS
-    JVM_METRICS --> PROMETHEUS
-    POSTGRES_EXP --> PROMETHEUS
-    REDIS_EXP --> PROMETHEUS
-    NGINX_EXP --> PROMETHEUS
+    E1 --> E2
+    E1 --> E3
+    E1 --> E4
     
-    %% Data Flow - Logs
-    LB_TARGETS --> FILEBEAT
-    WEB_TARGETS --> FILEBEAT
-    APP_TARGETS --> FILEBEAT
-    DB_TARGETS --> FILEBEAT
-    CACHE_TARGETS --> FILEBEAT
-    
-    FILEBEAT --> LOGSTASH
-    LOGSTASH --> ELASTICSEARCH
-    
-    %% Visualization
-    PROMETHEUS --> GRAFANA
-    ELASTICSEARCH --> KIBANA
-    
-    %% Alerting
-    PROMETHEUS --> ALERTMANAGER
-    ALERTMANAGER --> EMAIL
-    ALERTMANAGER --> SLACK
-    ALERTMANAGER --> PAGERDUTY
-    
-    %% Styling
-    classDef collectionClass fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef storageClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef visualClass fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    classDef alertClass fill:#ffebee,stroke:#d32f2f,stroke-width:2px
-    classDef targetClass fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    
-    class NODE_EXP,PROCESS_EXP,APP_METRICS,JVM_METRICS,POSTGRES_EXP,REDIS_EXP,NGINX_EXP,FILEBEAT,LOGSTASH collectionClass
-    class PROMETHEUS,ELASTICSEARCH storageClass
-    class GRAFANA,KIBANA visualClass
-    class ALERTMANAGER,EMAIL,SLACK,PAGERDUTY alertClass
-    class LB_TARGETS,WEB_TARGETS,APP_TARGETS,DB_TARGETS,CACHE_TARGETS targetClass
+    style A1 fill:#e8f5e8
+    style B1 fill:#e3f2fd
+    style C1 fill:#fff3e0
+    style D1 fill:#f3e5f5
+    style E1 fill:#ffebee
 ```
 
-## 🔄 Service Orchestration Diagram
+### 10. Alerting and Escalation Flow
+
+```mermaid
+graph TB
+    A[Metric Threshold Exceeded] --> B{Severity Level}
+    
+    B -->|Low| C[Log Alert]
+    B -->|Medium| D[Email Notification]
+    B -->|High| E[Slack Alert]
+    B -->|Critical| F[PagerDuty Alert]
+    
+    C --> G[Alert Dashboard]
+    D --> H[Team Email List]
+    E --> I[Operations Channel]
+    F --> J[On-Call Engineer]
+    
+    J --> K{Acknowledged?}
+    K -->|No| L[Escalate to Manager]
+    K -->|Yes| M[Investigation Started]
+    
+    L --> N[Manager Notification]
+    N --> O[Executive Escalation]
+    
+    M --> P{Issue Resolved?}
+    P -->|No| Q[Continue Investigation]
+    P -->|Yes| R[Close Alert]
+    
+    Q --> S[Update Status]
+    S --> P
+    
+    R --> T[Post-Incident Review]
+    
+    style A fill:#ffebee
+    style F fill:#ffebee
+    style J fill:#fff3e0
+    style R fill:#e8f5e8
+```
+
+## Data Flow Diagrams
+
+### 11. Configuration Data Flow
+
+```mermaid
+graph LR
+    subgraph "Source Control"
+        A[Git Repository]
+        B[Branch Protection]
+        C[Code Review]
+    end
+    
+    subgraph "CI/CD Pipeline"
+        D[Quality Gates]
+        E[Security Scan]
+        F[Testing]
+    end
+    
+    subgraph "Ansible Controller"
+        G[Playbook Execution]
+        H[Variable Processing]
+        I[Template Rendering]
+    end
+    
+    subgraph "Target Systems"
+        J[Configuration Files]
+        K[Service Restart]
+        L[Validation]
+    end
+    
+    subgraph "Monitoring"
+        M[Configuration Drift]
+        N[Compliance Check]
+        O[Audit Logging]
+    end
+    
+    A --> D
+    B --> D
+    C --> D
+    
+    D --> G
+    E --> G
+    F --> G
+    
+    G --> J
+    H --> J
+    I --> J
+    
+    J --> M
+    K --> N
+    L --> O
+    
+    M --> A
+    N --> A
+    O --> A
+    
+    style A fill:#e8f5e8
+    style G fill:#e3f2fd
+    style J fill:#fff3e0
+    style M fill:#f3e5f5
+```
+
+### 12. Secrets Management Flow
 
 ```mermaid
 sequenceDiagram
-    participant User as 👤 End User
-    participant CDN as 🌐 CDN/Edge
-    participant LB as ⚖️ Load Balancer
-    participant Web as 🌐 Web Server
-    participant App as ⚙️ Application
-    participant Cache as ⚡ Redis Cache
-    participant DB as 🗄️ Database
-    participant Monitor as 📊 Monitoring
+    participant Dev as Developer
+    participant Vault as Ansible Vault
+    participant Controller as Ansible Controller
+    participant Target as Target System
+    participant HSM as Hardware Security Module
     
-    Note over User,Monitor: Request Processing Flow
+    Dev->>Vault: Encrypt Secret
+    Note over Vault: AES-256 Encryption
     
-    User->>CDN: 1. HTTP/HTTPS Request
-    Note right of User: GET /api/data
+    Vault->>Controller: Store Encrypted Secret
+    Controller->>HSM: Request Decryption Key
+    HSM->>Controller: Provide Key
     
-    CDN->>CDN: 2. Check edge cache
-    alt Cache Hit
-        CDN-->>User: 2a. Return cached content
-    else Cache Miss
-        CDN->>LB: 2b. Forward to origin
-    end
+    Controller->>Controller: Decrypt Secret in Memory
+    Note over Controller: Temporary Decryption
     
-    LB->>LB: 3. Health check backends
-    LB->>LB: 4. Apply load balancing algorithm
-    Note right of LB: Round-robin selection
+    Controller->>Target: Deploy Secret (Encrypted Transit)
+    Target->>Target: Store Secret Securely
     
-    LB->>Web: 5. Route to web server
-    Note right of LB: Selected: web-02
+    Controller->>Controller: Clear Memory
+    Note over Controller: Security Cleanup
     
-    Web->>Web: 6. Check local cache
-    alt Static Content
-        Web-->>LB: 6a. Serve static files
-    else Dynamic Content
-        Web->>App: 6b. Proxy to application
-    end
-    
-    App->>Cache: 7. Check Redis cache
-    Note right of App: GET user:123:profile
-    
-    alt Cache Hit
-        Cache-->>App: 7a. Return cached data
-        Note right of Cache: Cache hit - fast response
-    else Cache Miss
-        App->>DB: 7b. Query database
-        Note right of App: SELECT * FROM users WHERE id=123
-        
-        DB->>DB: 7c. Execute query
-        alt Master Query (Write)
-            Note right of DB: Route to master: db-01
-        else Read Query
-            Note right of DB: Route to replica: db-02/db-03
-        end
-        
-        DB-->>App: 7d. Return query results
-        
-        App->>Cache: 7e. Store in cache
-        Note right of App: SET user:123:profile TTL=3600
-        Cache-->>App: 7f. Cache stored
-    end
-    
-    App->>App: 8. Process business logic
-    App->>App: 9. Generate response
-    
-    App-->>Web: 10. Return processed data
-    Web-->>LB: 11. Return response
-    LB-->>CDN: 12. Return to CDN
-    CDN->>CDN: 13. Cache response (if cacheable)
-    CDN-->>User: 14. Final response
-    
-    Note over User,Monitor: Monitoring & Logging
-    
-    par Metrics Collection
-        LB->>Monitor: Load balancer metrics
-        Web->>Monitor: Web server metrics
-        App->>Monitor: Application metrics
-        Cache->>Monitor: Cache metrics
-        DB->>Monitor: Database metrics
-    and Log Aggregation
-        LB->>Monitor: Access logs
-        Web->>Monitor: Access & error logs
-        App->>Monitor: Application logs
-        DB->>Monitor: Query logs
-    end
-    
-    Monitor->>Monitor: Process metrics & logs
-    
-    alt Alert Condition
-        Monitor->>Monitor: Trigger alert
-        Note right of Monitor: High response time detected
-    end
-    
-    Note over User,Monitor: End-to-End Request Complete
+    Target->>Controller: Confirm Deployment
+    Controller->>Dev: Deployment Complete
 ```
 
----
+## Network Architecture
 
-This comprehensive visual documentation provides detailed diagrams for all aspects of the HX Infrastructure project, enabling clear understanding of architecture, workflows, and processes.
+### 13. Network Topology
+
+```mermaid
+graph TB
+    subgraph "Internet"
+        A[External Users]
+        B[External APIs]
+    end
+    
+    subgraph "DMZ"
+        C[Load Balancer]
+        D[Web Application Firewall]
+        E[Reverse Proxy]
+    end
+    
+    subgraph "Application Tier"
+        F[Web Server 1]
+        G[Web Server 2]
+        H[App Server 1]
+        I[App Server 2]
+    end
+    
+    subgraph "Data Tier"
+        J[Primary Database]
+        K[Secondary Database]
+        L[Cache Cluster]
+    end
+    
+    subgraph "Management Network"
+        M[Ansible Controller]
+        N[Monitoring Server]
+        O[Backup Server]
+    end
+    
+    subgraph "Security Services"
+        P[Certificate Authority]
+        Q[Active Directory]
+        R[SIEM]
+    end
+    
+    A --> C
+    B --> D
+    C --> E
+    D --> E
+    
+    E --> F
+    E --> G
+    F --> H
+    G --> I
+    
+    H --> J
+    I --> K
+    H --> L
+    I --> L
+    
+    M --> F
+    M --> G
+    M --> H
+    M --> I
+    M --> J
+    M --> K
+    
+    N --> F
+    N --> G
+    N --> H
+    N --> I
+    
+    O --> J
+    O --> K
+    
+    P --> F
+    P --> G
+    Q --> H
+    Q --> I
+    R --> N
+    
+    style C fill:#ffebee
+    style M fill:#e3f2fd
+    style J fill:#e8f5e8
+    style P fill:#fff3e0
+```
+
+## CI/CD Pipeline Visualization
+
+### 14. Complete CI/CD Pipeline
+
+```mermaid
+graph TB
+    subgraph "Source Control"
+        A[Developer Commit]
+        B[Pull Request]
+        C[Code Review]
+        D[Merge to Main]
+    end
+    
+    subgraph "Build Stage"
+        E[Syntax Check]
+        F[Lint Validation]
+        G[Security Scan]
+        H[Unit Tests]
+    end
+    
+    subgraph "Test Stage"
+        I[Integration Tests]
+        J[Security Tests]
+        K[Performance Tests]
+        L[Compliance Tests]
+    end
+    
+    subgraph "Deploy Stage"
+        M[Deploy to Dev]
+        N[Deploy to Test]
+        O[Deploy to Staging]
+        P[Deploy to Production]
+    end
+    
+    subgraph "Validation Stage"
+        Q[Health Checks]
+        R[Smoke Tests]
+        S[Monitoring Setup]
+        T[Rollback if Failed]
+    end
+    
+    A --> B
+    B --> C
+    C --> D
+    
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    
+    H --> I
+    I --> J
+    J --> K
+    K --> L
+    
+    L --> M
+    M --> N
+    N --> O
+    O --> P
+    
+    P --> Q
+    Q --> R
+    R --> S
+    S --> T
+    
+    T -.->|Rollback| O
+    T -.->|Rollback| N
+    T -.->|Rollback| M
+    
+    style A fill:#e8f5e8
+    style P fill:#ffebee
+    style T fill:#fff3e0
+```
+
+## Disaster Recovery Workflows
+
+### 15. Disaster Recovery Process
+
+```mermaid
+graph TB
+    A[Disaster Detected] --> B{Severity Assessment}
+    
+    B -->|Low| C[Automated Recovery]
+    B -->|Medium| D[Guided Recovery]
+    B -->|High| E[Manual Recovery]
+    B -->|Critical| F[Emergency Procedures]
+    
+    C --> G[Service Restart]
+    D --> H[Partial Restore]
+    E --> I[Full System Restore]
+    F --> J[Disaster Declaration]
+    
+    G --> K[Health Check]
+    H --> L[Data Validation]
+    I --> M[System Validation]
+    J --> N[Activate DR Site]
+    
+    K --> O{Recovery Successful?}
+    L --> O
+    M --> O
+    N --> P[Failover Complete]
+    
+    O -->|Yes| Q[Resume Operations]
+    O -->|No| R[Escalate Recovery]
+    
+    R --> S[Expert Team]
+    S --> T[Advanced Recovery]
+    T --> O
+    
+    Q --> U[Post-Incident Review]
+    P --> V[Primary Site Recovery]
+    
+    V --> W[Failback Planning]
+    W --> X[Failback Execution]
+    X --> U
+    
+    style A fill:#ffebee
+    style F fill:#ffebee
+    style Q fill:#e8f5e8
+    style U fill:#e3f2fd
+```
+
+### 16. Backup and Restore Workflow
+
+```mermaid
+sequenceDiagram
+    participant Scheduler as Backup Scheduler
+    participant Ansible as Ansible Controller
+    participant DB as Database Server
+    participant App as Application Server
+    participant Storage as Backup Storage
+    participant Monitor as Monitoring
+    
+    Note over Scheduler,Monitor: Daily Backup Process
+    
+    Scheduler->>Ansible: Trigger Backup Job
+    Ansible->>DB: Create Database Backup
+    DB->>Ansible: Backup Complete
+    
+    Ansible->>App: Create Application Backup
+    App->>Ansible: Backup Complete
+    
+    Ansible->>Storage: Store Backups
+    Storage->>Ansible: Storage Confirmed
+    
+    Ansible->>Monitor: Update Backup Status
+    Monitor->>Monitor: Validate Backup Integrity
+    
+    Note over Scheduler,Monitor: Restore Process (When Needed)
+    
+    Ansible->>Storage: Retrieve Backup
+    Storage->>Ansible: Backup Retrieved
+    
+    Ansible->>DB: Stop Database Service
+    Ansible->>DB: Restore Database
+    DB->>Ansible: Restore Complete
+    
+    Ansible->>App: Stop Application
+    Ansible->>App: Restore Application
+    App->>Ansible: Restore Complete
+    
+    Ansible->>DB: Start Database Service
+    Ansible->>App: Start Application
+    
+    Ansible->>Monitor: Validate Restore
+    Monitor->>Ansible: Validation Results
+```
+
+This comprehensive visual documentation provides detailed diagrams for understanding the HX Infrastructure Ansible system architecture, workflows, and operational procedures. Each diagram serves as a reference for system design, troubleshooting, and operational planning.
