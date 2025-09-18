@@ -69,6 +69,7 @@
     job: "/var/lib/backup/scripts/backup-health-check.sh"
     minute: "*/30"
     state: present
+  become: yes
 
 - name: Schedule backup status report
   cron:
@@ -78,6 +79,7 @@
     minute: "0"
     hour: "8"
     state: present
+  become: yes
 
 - name: Create backup monitoring service
   template:
@@ -163,10 +165,11 @@
   cron:
     name: "Backup Log Analysis"
     user: backup
-    job: "/var/lib/backup/scripts/analyze-backup-logs.py"
+    job: "/usr/bin/python3 /var/lib/backup/scripts/analyze-backup-logs.py"
     minute: "0"
     hour: "6"
     state: present
+  become: yes
 
 - name: Create backup performance monitoring script
   template:
@@ -192,6 +195,7 @@
     minute: "0"
     hour: "*/4"
     state: present
+  become: yes
 
 - name: Create backup trend analysis script
   template:
@@ -205,11 +209,12 @@
   cron:
     name: "Weekly Backup Trend Analysis"
     user: backup
-    job: "/var/lib/backup/scripts/backup-trend-analysis.py"
+    job: "/usr/bin/python3 /var/lib/backup/scripts/backup-trend-analysis.py"
     minute: "0"
     hour: "9"
     weekday: "1"
     state: present
+  become: yes
 
 - name: Create backup monitoring configuration
   template:

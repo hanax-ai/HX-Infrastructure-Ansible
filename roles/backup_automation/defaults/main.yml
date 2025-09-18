@@ -20,6 +20,7 @@ backup_automation:
     enabled: true
     algorithm: "AES-256-GCM"
     key_file: "/etc/hx-backup/encryption.key"
+    pbkdf2_iterations: 20000
     
   # Compression settings
   compression:
@@ -39,6 +40,7 @@ backup_automation:
   monitoring:
     prometheus_metrics: true
     metrics_port: 9798
+    bind_address: "127.0.0.1"
     health_check_endpoint: "/backup-health"
 
 # Database backup configuration

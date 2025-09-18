@@ -8,7 +8,7 @@
   
   vars:
     # Override default configurations if needed
-    backup_automation_custom:
+    backup_automation:
       enabled: true
       base_directory: "/opt/hx-backups"
       retention:
@@ -27,7 +27,7 @@
         success_msg: "Host validation passed"
 
     - name: Check available disk space
-      shell: df {{ backup_automation.base_directory | dirname }} | tail -1 | awk '{print $4}'
+      shell: df -kP "{{ backup_automation.base_directory | dirname }}" | awk 'NR==2 {print $4}'
       register: available_space
       changed_when: false
 
@@ -74,10 +74,13 @@
   vars:
     database_backup_enabled: true
     
+  collections:
+    - community.postgresql
+  
   tasks:
     - name: Ensure PostgreSQL client tools are installed
       package:
-        name: postgresql-client
+        name: "{{ 'postgresql-client' if ansible_os_family == 'Debian' else 'postgresql' }}"
         state: present
       when: database_backup.databases.postgresql.enabled
 
@@ -138,20 +141,31 @@
       notify: reload prometheus
       when: backup_automation.monitoring.prometheus_metrics
 
+    - name: Read Grafana dashboard JSON (remote)
+      slurp:
+        src: "{{ backup_automation.base_directory }}/monitoring/backup-grafana-dashboard.json"
+      register: grafana_dash
+      when:
+        - backup_automation.monitoring.prometheus_metrics
+        - grafana_api_key is defined
+
     - name: Import Grafana backup dashboard
       uri:
-        url: "http://localhost:3000/api/dashboards/db"
+        url: "{{ grafana_url | default('https://localhost:3000') }}/api/dashboards/db"
         method: POST
         body_format: json
         body:
-          dashboard: "{{ lookup('file', backup_automation.base_directory + '/monitoring/backup-grafana-dashboard.json') | from_json }}"
+          dashboard: "{{ grafana_dash.content | b64decode | from_json }}"
           overwrite: true
         headers:
-          Authorization: "Bearer {{ grafana_api_key | default('admin:admin') }}"
+          Authorization: "Bearer {{ grafana_api_key }}"
+          Content-Type: "application/json"
         status_code: [200, 412]
+        validate_certs: "{{ grafana_validate_certs | default(true) }}"
       when: 
         - backup_automation.monitoring.prometheus_metrics
         - grafana_api_key is defined
+        - grafana_dash is defined
 
   handlers:
     - name: reload prometheus

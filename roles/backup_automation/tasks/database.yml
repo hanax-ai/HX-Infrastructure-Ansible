@@ -13,6 +13,7 @@
     - "{{ backup_automation.base_directory }}/database/redis"
     - "{{ backup_automation.temp_directory }}/database"
     - "/var/lib/backup/scripts"
+  become: yes
 
 - name: Create PostgreSQL backup script
   template:

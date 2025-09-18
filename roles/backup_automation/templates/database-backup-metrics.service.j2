@@ -1,3 +1,5 @@
+#!/bin/bash
+umask 0077
 
 [Unit]
 Description=Database Backup Metrics Collection Service
@@ -8,6 +10,7 @@ Wants=network.target
 Type=simple
 User=backup
 Group=backup
+ExecStartPre=/usr/bin/test -x /usr/bin/python3
 ExecStart=/usr/bin/python3 /var/lib/backup/scripts/collect-database-backup-metrics.py
 Restart=always
 RestartSec=10
@@ -25,6 +28,12 @@ ProtectKernelModules=true
 ProtectControlGroups=true
 RestrictRealtime=true
 RestrictSUIDSGID=true
+PrivateDevices=true
+ProtectClock=true
+ProtectHostname=true
+LockPersonality=true
+RestrictNamespaces=true
+CapabilityBoundingSet=
 
 # Resource limits
 MemoryLimit=256M

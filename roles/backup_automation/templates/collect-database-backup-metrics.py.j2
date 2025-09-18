@@ -1,3 +1,5 @@
+#!/bin/bash
+umask 0077
 
 #!/usr/bin/env python3
 """
@@ -13,11 +15,13 @@ import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from collections import deque
 
 # Configuration
 BACKUP_BASE = Path("{{ backup_automation.base_directory }}/database")
 LOG_FILE = Path("{{ backup_automation.log_directory }}/backup-metrics.log")
 METRICS_PORT = {{ backup_automation.monitoring.metrics_port }}
+BIND_ADDRESS = "{{ backup_automation.monitoring.bind_address | default('127.0.0.1') }}"
 METRICS_FILE = Path("/var/lib/backup/metrics/backup-status.txt")
 
 # Setup logging
@@ -124,7 +128,7 @@ class BackupMetrics:
         for log_file in log_dir.glob("*.log"):
             try:
                 with open(log_file, 'r') as f:
-                    lines = f.readlines()[-100:]  # Last 100 lines
+                    lines = list(deque(f, maxlen=200))  # Tail last 200 lines efficiently
                     
                 for line in lines:
                     if "completed successfully" in line.lower():
@@ -206,6 +210,10 @@ class MetricsHandler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'text/plain; charset=utf-8')
             self.end_headers()
             self.wfile.write(metrics_text.encode('utf-8'))
+            try:
+                METRICS_FILE.write_text(metrics_text)
+            except Exception:
+                logger.warning("Failed to write metrics file", exc_info=True)
             
         elif self.path == "{{ backup_automation.monitoring.health_check_endpoint }}":
             # Health check endpoint
@@ -241,7 +249,7 @@ def main():
     def handler(*args, **kwargs):
         return MetricsHandler(backup_metrics, *args, **kwargs)
         
-    server = HTTPServer(('0.0.0.0', METRICS_PORT), handler)
+    server = HTTPServer((BIND_ADDRESS, METRICS_PORT), handler)
     
     logger.info(f"Metrics server listening on port {METRICS_PORT}")
     logger.info(f"Metrics endpoint: http://localhost:{METRICS_PORT}/metrics")

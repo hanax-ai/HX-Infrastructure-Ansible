@@ -98,9 +98,9 @@
 - name: Set backup facts
   set_fact:
     backup_hostname: "{{ ansible_hostname }}"
-    backup_timestamp: "{{ ansible_date_time.epoch }}"
-    backup_date: "{{ ansible_date_time.date }}"
-    backup_time: "{{ ansible_date_time.time }}"
+    backup_timestamp: "{{ ansible_date_time.epoch | default(lookup('pipe','date +%s')) }}"
+    backup_date: "{{ ansible_date_time.date | default(lookup('pipe','date +%F')) }}"
+    backup_time: "{{ ansible_date_time.time | default(lookup('pipe','date +%T')) }}"
 
 - name: Ensure backup log directory exists
   file:
@@ -116,15 +116,15 @@
     line: "{{ ansible_date_time.iso8601 }} [INFO] Backup automation preparation started on {{ ansible_hostname }}"
     create: yes
     mode: '0640'
-    owner: backup
-    group: backup
+    owner: "{{ backup_security.owner }}"
+    group: "{{ backup_security.group }}"
   ignore_errors: yes
 
 - name: Check system resources
   shell: |
     echo "CPU Cores: $(nproc)"
     echo "Memory: $(free -h | grep '^Mem:' | awk '{print $2}')"
-    echo "Disk Space: $(df -h "{{ backup_automation.base_directory | dirname }}" | tail -1 | awk '{print $4}')"
+    echo "Disk Space: $(df -h "{{ backup_automation.base_directory | dirname | replace('"','\"') }}" | tail -1 | awk '{print $4}')"
   register: system_resources
   changed_when: false
 
@@ -149,6 +149,7 @@
   debug:
     msg: "Connectivity to {{ item.item }}: {{ 'OK' if item.status == 200 else 'FAILED' }}"
   loop: "{{ connectivity_check.results }}"
-  when: 
-    - remote_storage.enabled
+  when:
+    - remote_storage is defined
+    - remote_storage.enabled | default(false)
     - connectivity_check is defined
