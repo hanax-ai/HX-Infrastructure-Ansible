@@ -1,0 +1,20 @@
+roles/production_ops/defaults/main.yml:25:service_registry_url: "http://consul:8500"
+roles/production_ops/tasks/traffic_switch.yml:27:    url: "http://{{ ansible_default_ipv4.address }}/health"
+roles/production_ops/tasks/service_discovery.yml:32:    url: "http://{{ consul_host | default('localhost') }}:8500/v1/agent/service/register"
+roles/production_ops/tasks/service_discovery.yml:42:        HTTP: "http://{{ ansible_default_ipv4.address }}:{{ item.port }}{{ item.health_endpoint | default('/health') }}"
+roles/production_ops/tasks/service_discovery.yml:50:    url: "http://{{ consul_host | default('localhost') }}:8500/v1/health/service/{{ item }}"
+roles/production_ops/tasks/blue_green_deployment.yml:23:    url: "http://{{ ansible_default_ipv4.address }}:{{ green_port | default(8081) }}/health"
+roles/production_ops/tasks/canary_deployment.yml:22:    url: "http://{{ item }}:{{ canary_port | default(8082) }}/health"
+roles/production_ops/tasks/canary_deployment.yml:43:    url: "http://{{ item }}:{{ canary_port | default(8082) }}/metrics"
+roles/production_ops/templates/nginx_upstream.conf.j2:24:        proxy_pass http://hx_infrastructure_backend/health;
+roles/production_ops/templates/nginx_upstream.conf.j2:37:        proxy_pass http://hx_infrastructure_backend;
+roles/production_ops/templates/canary_routing.conf.j2:32:            proxy_pass http://hx_infrastructure_canary;
+roles/production_ops/templates/canary_routing.conf.j2:34:        proxy_pass http://hx_infrastructure_production;
+roles/production_ops/templates/canary_routing.conf.j2:51:            proxy_pass http://hx_infrastructure_canary/health;
+roles/production_ops/templates/canary_routing.conf.j2:53:        proxy_pass http://hx_infrastructure_production/health;
+roles/production_ops/templates/canary_routing.conf.j2:63:        proxy_pass http://hx_infrastructure_canary/metrics;
+roles/incident_response/defaults/main.yml:16:  - "http://localhost/health"
+roles/incident_response/defaults/main.yml:17:  - "http://localhost/api/status"
+roles/incident_response/tasks/detect_incidents.yml:50:  loop: "{{ application_endpoints | default(['http://localhost/health']) }}"
+roles/backup_automation/templates/collect-database-backup-metrics.py.j2:255:    logger.info(f"Metrics endpoint: http://localhost:{METRICS_PORT}/metrics")
+roles/backup_automation/templates/collect-database-backup-metrics.py.j2:256:    logger.info(f"Health check endpoint: http://localhost:{METRICS_PORT}{{ backup_automation.monitoring.health_check_endpoint }}")

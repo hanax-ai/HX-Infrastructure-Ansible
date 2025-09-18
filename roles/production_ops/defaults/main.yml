@@ -22,7 +22,7 @@ canary_success_threshold: 95
 
 # Service Discovery
 service_discovery_enabled: true
-service_registry_url: "http://consul:8500"
+service_registry_url: "https://consul:8500"
 
 # Auto Recovery
 auto_recovery_enabled: true

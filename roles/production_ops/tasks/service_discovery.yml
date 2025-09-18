@@ -29,7 +29,7 @@
 
 - name: Register services with Consul
   uri:
-    url: "http://{{ consul_host | default('localhost') }}:8500/v1/agent/service/register"
+    url: "https://{{ consul_host | default('localhost') }}:8500/v1/agent/service/register"
     method: PUT
     body_format: json
     body:
@@ -39,7 +39,7 @@
       Address: "{{ ansible_default_ipv4.address }}"
       Port: "{{ item.port }}"
       Check:
-        HTTP: "http://{{ ansible_default_ipv4.address }}:{{ item.port }}{{ item.health_endpoint | default('/health') }}"
+        HTTP: "https://{{ ansible_default_ipv4.address }}:{{ item.port }}{{ item.health_endpoint | default('/health') }}"
         Interval: "{{ item.check_interval | default('30s') }}"
         Timeout: "{{ item.check_timeout | default('10s') }}"
   loop: "{{ services_to_register | default([]) }}"
@@ -47,7 +47,7 @@
 
 - name: Query service health from Consul
   uri:
-    url: "http://{{ consul_host | default('localhost') }}:8500/v1/health/service/{{ item }}"
+    url: "https://{{ consul_host | default('localhost') }}:8500/v1/health/service/{{ item }}"
     method: GET
   register: service_health_query
   loop: "{{ services_to_monitor | default([]) }}"

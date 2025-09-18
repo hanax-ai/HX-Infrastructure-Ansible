@@ -19,7 +19,7 @@
 
 - name: Wait for canary instances to be ready
   uri:
-    url: "http://{{ item }}:{{ canary_port | default(8082) }}/health"
+    url: "https://{{ item }}:{{ canary_port | default(8082) }}/health"
     method: GET
     timeout: 30
   register: canary_health_check
@@ -40,7 +40,7 @@
 
 - name: Monitor canary performance
   uri:
-    url: "http://{{ item }}:{{ canary_port | default(8082) }}/metrics"
+    url: "https://{{ item }}:{{ canary_port | default(8082) }}/metrics"
     method: GET
     timeout: 10
   register: canary_metrics

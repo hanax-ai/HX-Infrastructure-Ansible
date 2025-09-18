@@ -47,7 +47,7 @@
     timeout: 10
   register: endpoint_check
   failed_when: false
-  loop: "{{ application_endpoints | default(['http://localhost/health']) }}"
+  loop: "{{ application_endpoints | default(['https://localhost/health']) }}"
 
 - name: Detect endpoint failures
   set_fact:

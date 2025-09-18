@@ -252,8 +252,8 @@ def main():
     server = HTTPServer((BIND_ADDRESS, METRICS_PORT), handler)
     
     logger.info(f"Metrics server listening on port {METRICS_PORT}")
-    logger.info(f"Metrics endpoint: http://localhost:{METRICS_PORT}/metrics")
-    logger.info(f"Health check endpoint: http://localhost:{METRICS_PORT}{{ backup_automation.monitoring.health_check_endpoint }}")
+    logger.info(f"Metrics endpoint: https://localhost:{METRICS_PORT}/metrics")
+    logger.info(f"Health check endpoint: https://localhost:{METRICS_PORT}{{ backup_automation.monitoring.health_check_endpoint }}")
     
     try:
         server.serve_forever()
