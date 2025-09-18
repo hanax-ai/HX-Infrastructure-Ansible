@@ -1,0 +1,68 @@
+
+---
+# Auto-Recovery Implementation
+- name: Check for failed services
+  systemd:
+    name: "{{ item }}"
+  register: service_status
+  failed_when: false
+  loop: "{{ critical_services | default(['nginx', 'postgresql', 'docker']) }}"
+
+- name: Identify failed services
+  set_fact:
+    failed_services: "{{ failed_services | default([]) + [item.item] }}"
+  loop: "{{ service_status.results }}"
+  when: item.status.ActiveState != "active"
+
+- name: Attempt service recovery
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  register: recovery_attempt
+  loop: "{{ failed_services | default([]) }}"
+  when: 
+    - auto_recovery_enabled | default(true)
+    - failed_services is defined
+    - failed_services | length > 0
+
+- name: Wait for service recovery
+  systemd:
+    name: "{{ item }}"
+  register: recovery_status
+  until: recovery_status.status.ActiveState == "active"
+  retries: "{{ max_recovery_attempts | default(3) }}"
+  delay: "{{ recovery_delay | default(60) }}"
+  loop: "{{ failed_services | default([]) }}"
+  when: recovery_attempt is succeeded
+
+- name: Log recovery attempts
+  copy:
+    content: |
+      {
+        "timestamp": "{{ ansible_date_time.iso8601 }}",
+        "hostname": "{{ inventory_hostname }}",
+        "failed_services": {{ failed_services | default([]) | to_json }},
+        "recovery_attempts": {{ recovery_attempt.results | default([]) | length }},
+        "successful_recoveries": {{ recovery_status.results | default([]) | selectattr('status.ActiveState', 'equalto', 'active') | list | length }}
+      }
+    dest: "/var/log/hx-infrastructure/auto-recovery-{{ ansible_date_time.epoch }}.json"
+  when: failed_services is defined and failed_services | length > 0
+
+- name: Send recovery alerts
+  include_tasks: send_alert.yml
+  vars:
+    alert_type: "auto_recovery"
+    alert_message: "Auto-recovery attempted for services: {{ failed_services | join(', ') }}"
+    alert_severity: "warning"
+  when: 
+    - failed_services is defined 
+    - failed_services | length > 0
+    - alerting_enabled | default(true)
+
+- name: Set auto-recovery status
+  set_fact:
+    auto_recovery_status:
+      enabled: "{{ auto_recovery_enabled | default(true) }}"
+      failed_services_count: "{{ failed_services | default([]) | length }}"
+      recovery_success_rate: "{{ ((recovery_status.results | default([]) | selectattr('status.ActiveState', 'equalto', 'active') | list | length) / (failed_services | default([]) | length) * 100) if failed_services | default([]) | length > 0 else 100 }}"
+      timestamp: "{{ ansible_date_time.iso8601 }}"

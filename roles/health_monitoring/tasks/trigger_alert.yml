@@ -1,0 +1,95 @@
+
+---
+# Trigger Alert Task
+- name: Create alert payload
+  set_fact:
+    alert_payload:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      hostname: "{{ inventory_hostname }}"
+      alert_type: "{{ alert_type }}"
+      message: "{{ alert_message }}"
+      severity: "{{ alert_severity | default('warning') }}"
+      data: "{{ alert_data | default({}) }}"
+      environment: "{{ target_environment | default('production') }}"
+
+- name: Log alert
+  copy:
+    content: "{{ alert_payload | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/alerts/alert-{{ ansible_date_time.epoch }}.json"
+  delegate_to: localhost
+
+- name: Send email alert
+  mail:
+    to: "{{ alert_email_recipients | default(['admin@hx-infrastructure.local']) }}"
+    subject: "[{{ alert_severity | upper }}] HX Infrastructure Alert - {{ alert_type }}"
+    body: |
+      Alert Details:
+      - Hostname: {{ inventory_hostname }}
+      - Type: {{ alert_type }}
+      - Severity: {{ alert_severity | default('warning') }}
+      - Message: {{ alert_message }}
+      - Timestamp: {{ ansible_date_time.iso8601 }}
+      
+      Additional Data:
+      {{ alert_data | default({}) | to_nice_json }}
+  when: 
+    - email_alerts_enabled | default(false)
+    - alert_email_recipients is defined
+
+- name: Send Slack notification
+  uri:
+    url: "{{ slack_webhook_url }}"
+    method: POST
+    body_format: json
+    body:
+      channel: "{{ slack_channel | default('#alerts') }}"
+      username: "HX Infrastructure Monitor"
+      icon_emoji: ":warning:"
+      text: |
+        *{{ alert_severity | upper }} Alert*
+        *Host:* {{ inventory_hostname }}
+        *Type:* {{ alert_type }}
+        *Message:* {{ alert_message }}
+        *Time:* {{ ansible_date_time.iso8601 }}
+  when: 
+    - slack_alerts_enabled | default(false)
+    - slack_webhook_url is defined
+
+- name: Send PagerDuty alert
+  uri:
+    url: "https://events.pagerduty.com/v2/enqueue"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      routing_key: "{{ pagerduty_routing_key }}"
+      event_action: "trigger"
+      payload:
+        summary: "{{ alert_message }}"
+        source: "{{ inventory_hostname }}"
+        severity: "{{ alert_severity | default('warning') }}"
+        component: "hx-infrastructure"
+        group: "{{ alert_type }}"
+        class: "system"
+        custom_details: "{{ alert_data | default({}) }}"
+  when: 
+    - pagerduty_alerts_enabled | default(false)
+    - pagerduty_routing_key is defined
+    - alert_severity in ['critical', 'error']
+
+- name: Update alert statistics
+  shell: |
+    alert_stats_file="/var/log/hx-infrastructure/alert_statistics.json"
+    if [ ! -f "$alert_stats_file" ]; then
+      echo '{"total_alerts": 0, "by_type": {}, "by_severity": {}}' > "$alert_stats_file"
+    fi
+    
+    # Update statistics using jq
+    jq --arg type "{{ alert_type }}" --arg severity "{{ alert_severity | default('warning') }}" '
+      .total_alerts += 1 |
+      .by_type[$type] = (.by_type[$type] // 0) + 1 |
+      .by_severity[$severity] = (.by_severity[$severity] // 0) + 1 |
+      .last_updated = "{{ ansible_date_time.iso8601 }}"
+    ' "$alert_stats_file" > "${alert_stats_file}.tmp" && mv "${alert_stats_file}.tmp" "$alert_stats_file"
+  delegate_to: localhost

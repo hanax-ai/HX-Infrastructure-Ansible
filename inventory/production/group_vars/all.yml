@@ -1,0 +1,191 @@
+
+---
+# Global Production Variables
+# Phase 3.4 - Production Operations and Maintenance Automation
+
+# Environment Configuration
+target_environment: production
+ansible_user: ubuntu
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+ansible_python_interpreter: /usr/bin/python3
+
+# Production Operations Configuration
+production_ops:
+  enabled: true
+  deployment_strategy: blue_green
+  health_check_timeout: 300
+  rollback_enabled: true
+  auto_recovery_enabled: true
+  max_recovery_attempts: 3
+  recovery_delay: 60
+
+# Blue-Green Deployment Configuration
+blue_green:
+  blue_port: 8080
+  green_port: 8081
+  health_check_endpoint: "/health"
+  traffic_switch_delay: 30
+
+# Canary Deployment Configuration
+canary:
+  traffic_percentage: 10
+  monitoring_time: 600
+  success_threshold: 95
+  port: 8082
+
+# Health Monitoring Configuration
+health_monitoring:
+  enabled: true
+  interval: 60
+  timeout: 30
+  apm_enabled: true
+  predictive_monitoring_enabled: true
+  log_health_status: true
+  
+  # Alert Thresholds
+  thresholds:
+    cpu_usage: 80
+    memory_usage: 85
+    disk_usage: 90
+    response_time: 2000
+    error_rate: 5
+    system_load: 5.0
+  
+  # SLA Targets
+  sla_targets:
+    availability: 99.9
+    response_time: 1000
+    error_rate: 1
+
+# Maintenance Automation Configuration
+maintenance:
+  enabled: true
+  window_start: 2
+  window_end: 6
+  enforce_window: true
+  duration: 120
+  
+  # Security Patching
+  security_patching:
+    enabled: true
+    security_only: false
+    auto_reboot: false
+    create_snapshot: true
+  
+  # Database Maintenance
+  database:
+    perform_reindex: true
+    cleanup_old_logs: true
+    perform_vacuum: true
+    log_retention_days: 30
+
+# Incident Response Configuration
+incident_response:
+  enabled: true
+  auto_remediation_enabled: true
+  escalation_enabled: true
+  escalation_timeout: 300
+  documentation_enabled: true
+  post_incident_analysis: true
+  
+  # Notification Channels
+  notifications:
+    email_enabled: false
+    slack_enabled: false
+    pagerduty_enabled: false
+
+# Service Configuration
+services:
+  critical:
+    - nginx
+    - postgresql
+    - docker
+    - ssh
+    - consul
+  
+  non_critical:
+    - apache2
+    - httpd
+  
+  auto_remediable:
+    - nginx
+    - docker
+
+# Database Configuration
+database:
+  name: hx_infrastructure
+  host: "{{ groups['production'] | selectattr('server_role', 'equalto', 'database') | map('extract', hostvars, 'ansible_host') | first | default('localhost') }}"
+  user: postgres
+  port: 5432
+
+# Service Discovery Configuration
+service_discovery:
+  enabled: true
+  consul_datacenter: dc1
+  registry_url: "http://consul:8500"
+
+# Monitoring Stack Configuration
+monitoring:
+  grafana_url: "http://{{ groups['monitoring'][0] | default('localhost') }}:3000"
+  prometheus_url: "http://{{ groups['monitoring'][0] | default('localhost') }}:9090"
+  alertmanager_url: "http://{{ groups['monitoring'][0] | default('localhost') }}:9093"
+
+# Load Balancer Configuration
+load_balancer:
+  type: nginx
+  upstream_servers: "{{ groups['production'] | selectattr('server_role', 'equalto', 'application') | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:8080') | list }}"
+
+# Application Configuration
+application:
+  endpoints:
+    - "http://{{ ansible_default_ipv4.address }}/health"
+    - "http://{{ ansible_default_ipv4.address }}/api/status"
+    - "http://{{ ansible_default_ipv4.address }}/metrics"
+  
+  health_check_paths:
+    - "/health"
+    - "/api/status"
+
+# Logging Configuration
+logging:
+  retention_days: 30
+  log_level: INFO
+  log_format: json
+  centralized_logging: true
+  
+  # Log Paths
+  paths:
+    application: "/var/log/hx-infrastructure/application.log"
+    health_checks: "/var/log/hx-infrastructure/health-checks/"
+    incidents: "/var/log/hx-infrastructure/incidents/"
+    maintenance: "/var/log/hx-infrastructure/maintenance-reports/"
+
+# Backup Configuration
+backup:
+  enabled: true
+  retention_days: 30
+  verification_enabled: true
+  
+# Security Configuration
+security:
+  hardening_enabled: true
+  compliance_validation: true
+  audit_logging: true
+  vulnerability_scanning: true
+
+# Reporting Configuration
+reporting:
+  enabled: true
+  formats:
+    - json
+    - html
+  destinations:
+    - "/var/log/hx-infrastructure/reports/"
+    - "/var/www/html/reports/"
+  
+  # Report Types
+  types:
+    - health_monitoring
+    - maintenance
+    - incident_response
+    - sla_compliance

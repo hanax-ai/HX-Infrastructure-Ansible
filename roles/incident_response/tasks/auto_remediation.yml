@@ -1,0 +1,184 @@
+
+---
+# Automated Incident Remediation
+- name: Initialize remediation tracking
+  set_fact:
+    remediation_attempts: []
+    remediation_results: []
+
+- name: Auto-restart failed critical services
+  systemd:
+    name: "{{ item.service }}"
+    state: restarted
+  register: service_restart_result
+  loop: "{{ classified_incidents | selectattr('type', 'equalto', 'service_failure') | selectattr('auto_remediation', 'equalto', true) | list }}"
+  when: 
+    - auto_remediation_enabled | default(true)
+    - classified_incidents is defined
+
+- name: Track service restart attempts
+  set_fact:
+    remediation_attempts: "{{ remediation_attempts + [remediation_item] }}"
+  vars:
+    remediation_item:
+      type: "service_restart"
+      target: "{{ item.item.service }}"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      success: "{{ item is succeeded }}"
+      attempt_number: 1
+  loop: "{{ service_restart_result.results | default([]) }}"
+  when: service_restart_result is defined
+
+- name: Clear system caches for memory issues
+  shell: |
+    sync
+    echo 1 > /proc/sys/vm/drop_caches
+    echo "Memory cache cleared at $(date)"
+  register: memory_remediation
+  when: 
+    - auto_remediation_enabled | default(true)
+    - "'high_memory_usage' in resource_incidents | default([])"
+
+- name: Track memory remediation
+  set_fact:
+    remediation_attempts: "{{ remediation_attempts + [remediation_item] }}"
+  vars:
+    remediation_item:
+      type: "memory_cache_clear"
+      target: "system_memory"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      success: "{{ memory_remediation is succeeded }}"
+      attempt_number: 1
+  when: memory_remediation is defined
+
+- name: Kill high CPU processes
+  shell: |
+    # Find and kill processes using more than 80% CPU
+    ps aux | awk '$3 > 80 {print $2}' | head -5 | xargs -r kill -TERM
+    sleep 5
+    ps aux | awk '$3 > 80 {print $2}' | head -5 | xargs -r kill -KILL
+  register: cpu_remediation
+  when: 
+    - auto_remediation_enabled | default(true)
+    - "'high_cpu_usage' in resource_incidents | default([])"
+    - kill_high_cpu_processes | default(false)
+
+- name: Track CPU remediation
+  set_fact:
+    remediation_attempts: "{{ remediation_attempts + [remediation_item] }}"
+  vars:
+    remediation_item:
+      type: "high_cpu_process_kill"
+      target: "system_cpu"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      success: "{{ cpu_remediation is succeeded }}"
+      attempt_number: 1
+  when: cpu_remediation is defined
+
+- name: Clean temporary files for disk space
+  shell: |
+    # Clean /tmp and /var/tmp
+    find /tmp -type f -atime +1 -delete 2>/dev/null || true
+    find /var/tmp -type f -atime +1 -delete 2>/dev/null || true
+    # Clean old log files
+    find /var/log -name "*.log" -size +100M -mtime +7 -exec truncate -s 0 {} \;
+    # Clean package cache
+    if command -v apt-get >/dev/null 2>&1; then
+      apt-get clean
+    elif command -v yum >/dev/null 2>&1; then
+      yum clean all
+    fi
+  register: disk_remediation
+  when: 
+    - auto_remediation_enabled | default(true)
+    - "'high_disk_usage' in resource_incidents | default([])"
+
+- name: Track disk remediation
+  set_fact:
+    remediation_attempts: "{{ remediation_attempts + [remediation_item] }}"
+  vars:
+    remediation_item:
+      type: "disk_cleanup"
+      target: "system_disk"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      success: "{{ disk_remediation is succeeded }}"
+      attempt_number: 1
+  when: disk_remediation is defined
+
+- name: Restart nginx for endpoint failures
+  systemd:
+    name: nginx
+    state: restarted
+  register: nginx_restart_result
+  when: 
+    - auto_remediation_enabled | default(true)
+    - failed_endpoints is defined
+    - failed_endpoints | length > 0
+
+- name: Track nginx restart
+  set_fact:
+    remediation_attempts: "{{ remediation_attempts + [remediation_item] }}"
+  vars:
+    remediation_item:
+      type: "nginx_restart"
+      target: "nginx_service"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      success: "{{ nginx_restart_result is succeeded }}"
+      attempt_number: 1
+  when: nginx_restart_result is defined
+
+- name: Wait for remediation to take effect
+  wait_for:
+    timeout: 30
+  when: remediation_attempts | length > 0
+
+- name: Verify remediation effectiveness
+  include_role:
+    name: incident_response
+    tasks_from: detect_incidents
+  when: remediation_attempts | length > 0
+
+- name: Compare incident counts
+  set_fact:
+    remediation_effectiveness:
+      before_remediation: "{{ detected_incidents.total_incidents if detected_incidents is defined else 0 }}"
+      after_remediation: "{{ detected_incidents.total_incidents if detected_incidents is defined else 0 }}"
+      remediation_successful: "{{ (detected_incidents.total_incidents | default(0)) < (original_incident_count | default(999)) }}"
+      attempts_made: "{{ remediation_attempts | length }}"
+      successful_attempts: "{{ remediation_attempts | selectattr('success', 'equalto', true) | list | length }}"
+
+- name: Create remediation report
+  set_fact:
+    remediation_report:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      hostname: "{{ inventory_hostname }}"
+      auto_remediation_enabled: "{{ auto_remediation_enabled | default(true) }}"
+      remediation_attempts: "{{ remediation_attempts }}"
+      effectiveness: "{{ remediation_effectiveness }}"
+      remaining_incidents: "{{ detected_incidents.total_incidents if detected_incidents is defined else 0 }}"
+      escalation_required: "{{ (detected_incidents.total_incidents | default(0)) > 0 }}"
+
+- name: Log remediation report
+  copy:
+    content: "{{ remediation_report | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/incidents/remediation-{{ ansible_date_time.epoch }}.json"
+  when: remediation_attempts | length > 0
+
+- name: Send remediation notification
+  include_role:
+    name: health_monitoring
+    tasks_from: trigger_alert
+  vars:
+    alert_type: "auto_remediation"
+    alert_message: "Auto-remediation completed on {{ inventory_hostname }}. {{ remediation_attempts | length }} attempts made, {{ remediation_attempts | selectattr('success', 'equalto', true) | list | length }} successful"
+    alert_data: "{{ remediation_report }}"
+    alert_severity: "{{ 'info' if remediation_effectiveness.remediation_successful else 'warning' }}"
+  when: 
+    - remediation_attempts | length > 0
+    - send_remediation_notifications | default(true)
+
+- name: Set remediation status
+  set_fact:
+    auto_remediation_completed: true
+    remediation_successful: "{{ remediation_effectiveness.remediation_successful if remediation_effectiveness is defined else false }}"
+    remediation_timestamp: "{{ ansible_date_time.iso8601 }}"

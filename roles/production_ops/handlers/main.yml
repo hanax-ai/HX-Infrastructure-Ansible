@@ -1,0 +1,37 @@
+
+---
+# Production Operations Role Handlers
+- name: restart consul
+  systemd:
+    name: consul
+    state: restarted
+  become: yes
+
+- name: reload nginx
+  systemd:
+    name: nginx
+    state: reloaded
+  become: yes
+
+- name: restart docker
+  systemd:
+    name: docker
+    state: restarted
+  become: yes
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+  become: yes
+
+- name: restart prometheus
+  systemd:
+    name: prometheus
+    state: restarted
+  become: yes
+
+- name: restart grafana
+  systemd:
+    name: grafana-server
+    state: restarted
+  become: yes

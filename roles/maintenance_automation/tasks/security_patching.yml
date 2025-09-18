@@ -1,0 +1,137 @@
+
+---
+# Security Patching Automation
+- name: Update package repositories
+  shell: |
+    if command -v apt-get >/dev/null 2>&1; then
+      apt-get update
+    elif command -v yum >/dev/null 2>&1; then
+      yum check-update || true
+    elif command -v dnf >/dev/null 2>&1; then
+      dnf check-update || true
+    fi
+  register: repo_update
+  changed_when: false
+
+- name: Check for security updates
+  shell: |
+    if command -v apt-get >/dev/null 2>&1; then
+      apt list --upgradable 2>/dev/null | grep -i security | wc -l
+    elif command -v yum >/dev/null 2>&1; then
+      yum --security check-update 2>/dev/null | grep -v "Loaded plugins" | wc -l
+    elif command -v dnf >/dev/null 2>&1; then
+      dnf --security check-update 2>/dev/null | wc -l
+    else
+      echo 0
+    fi
+  register: security_updates_count
+  changed_when: false
+
+- name: List available security updates
+  shell: |
+    if command -v apt-get >/dev/null 2>&1; then
+      apt list --upgradable 2>/dev/null | grep -i security
+    elif command -v yum >/dev/null 2>&1; then
+      yum --security list updates 2>/dev/null
+    elif command -v dnf >/dev/null 2>&1; then
+      dnf --security list updates 2>/dev/null
+    fi
+  register: security_updates_list
+  changed_when: false
+  when: (security_updates_count.stdout | int) > 0
+
+- name: Create pre-patch system snapshot
+  shell: |
+    # Create a simple system state snapshot
+    dpkg -l > /var/backups/pre-patch-packages-$(date +%Y%m%d-%H%M%S).list 2>/dev/null || \
+    rpm -qa > /var/backups/pre-patch-packages-$(date +%Y%m%d-%H%M%S).list 2>/dev/null || \
+    echo "Package list creation failed"
+  when: create_patch_snapshot | default(true)
+
+- name: Apply security updates
+  shell: |
+    if command -v apt-get >/dev/null 2>&1; then
+      DEBIAN_FRONTEND=noninteractive apt-get -y upgrade
+    elif command -v yum >/dev/null 2>&1; then
+      yum -y --security update
+    elif command -v dnf >/dev/null 2>&1; then
+      dnf -y --security update
+    fi
+  register: security_patch_result
+  when: 
+    - (security_updates_count.stdout | int) > 0
+    - apply_security_patches | default(true)
+
+- name: Check if reboot is required
+  stat:
+    path: /var/run/reboot-required
+  register: reboot_required_file
+
+- name: Set reboot required fact
+  set_fact:
+    reboot_required: "{{ reboot_required_file.stat.exists or (security_patch_result is changed and 'kernel' in security_patch_result.stdout) }}"
+
+- name: Schedule reboot if required
+  shell: |
+    if [ "{{ auto_reboot | default(false) }}" = "true" ]; then
+      shutdown -r +5 "System reboot required for security updates"
+      echo "Reboot scheduled in 5 minutes"
+    else
+      echo "Reboot required but auto_reboot is disabled"
+    fi
+  register: reboot_schedule
+  when: 
+    - reboot_required | default(false)
+    - reboot_required_check | default(true)
+
+- name: Verify patch installation
+  shell: |
+    if command -v apt-get >/dev/null 2>&1; then
+      apt list --upgradable 2>/dev/null | grep -i security | wc -l
+    elif command -v yum >/dev/null 2>&1; then
+      yum --security check-update 2>/dev/null | grep -v "Loaded plugins" | wc -l
+    elif command -v dnf >/dev/null 2>&1; then
+      dnf --security check-update 2>/dev/null | wc -l
+    else
+      echo 0
+    fi
+  register: remaining_security_updates
+  changed_when: false
+  when: security_patch_result is changed
+
+- name: Create security patching report
+  set_fact:
+    security_patch_report:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      hostname: "{{ inventory_hostname }}"
+      security_updates_available: "{{ security_updates_count.stdout | int }}"
+      security_updates_applied: "{{ security_patch_result is changed }}"
+      remaining_updates: "{{ remaining_security_updates.stdout | default(0) | int }}"
+      reboot_required: "{{ reboot_required | default(false) }}"
+      reboot_scheduled: "{{ reboot_schedule is defined and reboot_schedule is changed }}"
+      patch_details: "{{ security_updates_list.stdout_lines | default([]) }}"
+      patch_result: "{{ security_patch_result.stdout | default('No patches applied') }}"
+
+- name: Log security patching report
+  copy:
+    content: "{{ security_patch_report | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/security-patch-{{ ansible_date_time.epoch }}.json"
+
+- name: Send security patch notification
+  include_role:
+    name: health_monitoring
+    tasks_from: trigger_alert
+  vars:
+    alert_type: "security_patching"
+    alert_message: "Security patching completed on {{ inventory_hostname }}. {{ security_updates_count.stdout }} updates available, {{ 'applied' if security_patch_result is changed else 'not applied' }}"
+    alert_data: "{{ security_patch_report }}"
+    alert_severity: "{{ 'warning' if reboot_required else 'info' }}"
+  when: 
+    - send_patch_notifications | default(true)
+    - (security_updates_count.stdout | int) > 0
+
+- name: Set security patching status
+  set_fact:
+    security_patching_completed: true
+    security_patches_applied: "{{ security_patch_result is changed }}"
+    security_reboot_required: "{{ reboot_required | default(false) }}"

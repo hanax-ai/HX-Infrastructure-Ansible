@@ -1,0 +1,136 @@
+
+---
+# SLA Monitoring and Reporting
+- name: Calculate availability metrics
+  shell: |
+    # Calculate uptime percentage over last 24 hours
+    uptime_seconds=$(awk '{print $1}' /proc/uptime)
+    uptime_hours=$(echo "scale=2; $uptime_seconds / 3600" | bc)
+    if [ $(echo "$uptime_hours >= 24" | bc) -eq 1 ]; then
+      availability=99.99
+    else
+      availability=$(echo "scale=2; ($uptime_hours / 24) * 100" | bc)
+    fi
+    echo $availability
+  register: availability_calculation
+  changed_when: false
+
+- name: Check service availability
+  uri:
+    url: "{{ item }}"
+    method: GET
+    timeout: 10
+  register: service_availability_check
+  failed_when: false
+  loop: "{{ sla_endpoints | default(['http://localhost/health']) }}"
+
+- name: Calculate service availability percentage
+  set_fact:
+    service_availability: "{{ ((service_availability_check.results | selectattr('status', 'equalto', 200) | list | length) / (service_availability_check.results | length) * 100) | round(2) }}"
+
+- name: Measure response time SLA
+  shell: |
+    # Average response time over last hour from access logs
+    if [ -f /var/log/nginx/access.log ]; then
+      awk -v hour_ago="$(date -d '1 hour ago' '+%d/%b/%Y:%H')" '
+        $4 ~ hour_ago {
+          if ($NF ~ /^[0-9.]+$/) {
+            sum += $NF; count++
+          }
+        } 
+        END {
+          if (count > 0) print sum/count*1000; else print 0
+        }' /var/log/nginx/access.log
+    else
+      echo 0
+    fi
+  register: avg_response_time_sla
+  changed_when: false
+
+- name: Calculate error rate SLA
+  shell: |
+    # Error rate over last hour
+    if [ -f /var/log/nginx/access.log ]; then
+      awk -v hour_ago="$(date -d '1 hour ago' '+%d/%b/%Y:%H')" '
+        $4 ~ hour_ago {
+          total++; 
+          if ($9 >= 400) errors++
+        } 
+        END {
+          if (total > 0) print (errors+0)/total*100; else print 0
+        }' /var/log/nginx/access.log
+    else
+      echo 0
+    fi
+  register: error_rate_sla
+  changed_when: false
+
+- name: Create SLA metrics summary
+  set_fact:
+    sla_metrics:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      period: "last_hour"
+      availability:
+        current: "{{ service_availability }}"
+        target: "{{ sla_targets.availability | default(99.9) }}"
+        status: "{{ 'met' if (service_availability | float) >= (sla_targets.availability | default(99.9)) else 'violated' }}"
+        system_uptime: "{{ availability_calculation.stdout | float }}"
+      response_time:
+        current: "{{ avg_response_time_sla.stdout | float }}"
+        target: "{{ sla_targets.response_time | default(1000) }}"
+        status: "{{ 'met' if (avg_response_time_sla.stdout | float) <= (sla_targets.response_time | default(1000)) else 'violated' }}"
+        unit: "milliseconds"
+      error_rate:
+        current: "{{ error_rate_sla.stdout | float }}"
+        target: "{{ sla_targets.error_rate | default(1) }}"
+        status: "{{ 'met' if (error_rate_sla.stdout | float) <= (sla_targets.error_rate | default(1)) else 'violated' }}"
+        unit: "percentage"
+
+- name: Determine overall SLA status
+  set_fact:
+    overall_sla_status: "{{ 'met' if (sla_metrics.availability.status == 'met' and sla_metrics.response_time.status == 'met' and sla_metrics.error_rate.status == 'met') else 'violated' }}"
+
+- name: Update SLA metrics with overall status
+  set_fact:
+    sla_metrics: "{{ sla_metrics | combine({'overall_status': overall_sla_status}) }}"
+
+- name: Log SLA metrics
+  copy:
+    content: "{{ sla_metrics | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/sla-metrics-{{ ansible_date_time.epoch }}.json"
+  when: log_sla_metrics | default(true)
+
+- name: Generate SLA report
+  template:
+    src: sla_report.html.j2
+    dest: "/var/www/html/sla-report-{{ ansible_date_time.date }}.html"
+    mode: '0644'
+  vars:
+    report_date: "{{ ansible_date_time.date }}"
+    metrics: "{{ sla_metrics }}"
+  when: generate_sla_reports | default(true)
+
+- name: Send SLA violation alerts
+  include_tasks: trigger_alert.yml
+  vars:
+    alert_type: "sla_violation"
+    alert_message: "SLA violation detected on {{ inventory_hostname }}"
+    alert_data: "{{ sla_metrics }}"
+    alert_severity: "critical"
+  when: 
+    - overall_sla_status == 'violated'
+    - alerting_enabled | default(true)
+
+- name: Archive old SLA reports
+  find:
+    paths: "/var/log/hx-infrastructure/"
+    patterns: "sla-metrics-*.json"
+    age: "{{ sla_retention_days | default(30) }}d"
+  register: old_sla_files
+
+- name: Remove old SLA reports
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ old_sla_files.files }}"
+  when: old_sla_files.files | length > 0
