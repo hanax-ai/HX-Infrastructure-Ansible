@@ -1,0 +1,141 @@
+# CodeRabbit Configuration for HX Infrastructure Ansible
+# Comprehensive code review and quality assurance
+
+# Language and framework configuration
+language: yaml
+framework: ansible
+
+# Review configuration
+reviews:
+  # Enable comprehensive reviews
+  auto_review: true
+  
+  # Review scope
+  review_level: comprehensive
+  
+  # File patterns to review
+  path_filters:
+    include:
+      - "**/*.yml"
+      - "**/*.yaml" 
+      - "**/*.j2"
+      - "**/*.py"
+      - "**/*.sh"
+      - "**/Dockerfile*"
+      - "**/*.md"
+    exclude:
+      - ".git/**"
+      - "**/.ansible/**"
+      - "**/molecule/**/.*"
+      - "**/__pycache__/**"
+      - "**/*.pyc"
+
+# Quality gates
+quality_gates:
+  # Security checks
+  security:
+    enabled: true
+    severity_threshold: medium
+    checks:
+      - secrets_detection
+      - vulnerability_scanning
+      - security_best_practices
+      - credential_exposure
+      - hardcoded_passwords
+      
+  # Code quality checks  
+  code_quality:
+    enabled: true
+    severity_threshold: medium
+    checks:
+      - ansible_lint
+      - yaml_lint
+      - syntax_validation
+      - best_practices
+      - complexity_analysis
+      - maintainability
+
+# Ansible-specific configuration
+ansible:
+  # Linting configuration
+  lint:
+    enabled: true
+    config_file: ".ansible-lint"
+    rules:
+      - yaml
+      - braces
+      - brackets
+      - colons
+      - commas
+      - comments
+      - comments-indentation
+      - document-start
+      - empty-lines
+      - hyphens
+      - indentation
+      - key-duplicates
+      - line-length
+      - new-line-at-end-of-file
+      - trailing-spaces
+      - truthy
+      
+  # Role validation
+  roles:
+    validate_structure: true
+    required_directories:
+      - tasks
+      - defaults
+      - handlers
+      - templates
+      - meta
+    required_files:
+      - tasks/main.yml
+      - defaults/main.yml
+      - handlers/main.yml
+      - meta/main.yml
+
+# Security scanning
+security:
+  # Secret scanning
+  secrets:
+    enabled: true
+    patterns:
+      - password
+      - secret
+      - key
+      - token
+      - credential
+    exclude_patterns:
+      - "# Example:"
+      - "# TODO:"
+      - "# FIXME:"
+
+# Custom rules for HX Infrastructure
+custom_rules:
+  # Naming conventions
+  naming:
+    roles:
+      pattern: "^hx_[a-z_]+$"
+      message: "Role names must start with 'hx_' and use snake_case"
+    variables:
+      pattern: "^[a-z][a-z0-9_]*$"
+      message: "Variables must use snake_case"
+    tasks:
+      require_name: true
+      message: "All tasks must have descriptive names"
+
+# Reporting configuration
+reporting:
+  # Report format
+  format: detailed
+  
+  # Include metrics
+  include_metrics: true
+  
+  # Severity levels
+  severity_levels:
+    critical: 0
+    high: 2
+    medium: 5
+    low: 10
+    info: unlimited

@@ -1,0 +1,40 @@
+---
+# Service Configuration
+webui_service_user: "openwebui"
+webui_service_group: "openwebui"
+webui_service_home: "/home/{{ webui_service_user }}"
+webui_service_shell: "/usr/sbin/nologin"
+
+# Installation Configuration
+webui_python_version: "3.11"
+webui_uv_installer_url: "https://astral.sh/uv/install.sh"
+webui_uv_checksum_url: "https://astral.sh/uv/install.sh.sha256"
+webui_package_name: "open-webui"
+
+# Directory Configuration
+webui_config_dir: "/etc/open-webui"
+webui_data_dir: "/var/lib/open-webui"
+webui_log_dir: "/var/log/open-webui"
+webui_bin_path: "/usr/local/bin/open-webui"
+
+# Service Configuration
+webui_service_name: "open-webui"
+webui_service_port: 8080
+webui_service_host: "0.0.0.0"
+
+# Environment Variables
+webui_env_vars:
+  WEBUI_SECRET_KEY: "{{ webui_secret_key | default('') }}"
+  DATA_DIR: "{{ webui_data_dir }}"
+  ENABLE_SIGNUP: "{{ webui_enable_signup | default('false') }}"
+  DEFAULT_USER_ROLE: "{{ webui_default_user_role | default('pending') }}"
+
+# Security Configuration
+webui_enable_signup: false
+webui_default_user_role: "pending"
+webui_secret_key: ""  # Should be set in vault
+
+# Validation Configuration
+webui_validate_installation: true
+webui_validate_service: true
+webui_validate_ports: true

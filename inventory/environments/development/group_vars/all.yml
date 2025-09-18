@@ -1,0 +1,202 @@
+---
+# HX Infrastructure - Development Environment Variables
+# Environment-specific overrides following Ansible variable precedence
+# Reference: https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html#variable-precedence-where-should-i-put-a-variable
+
+# =============================================================================
+# ENVIRONMENT CONFIGURATION
+# =============================================================================
+environment: development
+deployment_type: development
+environment_tier: dev
+
+# =============================================================================
+# DEVELOPMENT-SPECIFIC OVERRIDES
+# =============================================================================
+# Debug and Logging
+debug_mode: true
+log_level: debug
+verbose_logging: true
+app_server_debug: true
+app_server_log_level: debug
+
+# Security (Relaxed for development)
+ssl_verification: false
+ssl_enabled: false
+firewall_enabled: false
+fail2ban_enabled: false
+automatic_updates_enabled: false
+
+# Performance (Reduced for development)
+web_server_worker_processes: 2
+web_server_worker_connections: 512
+app_server_pool_size: 2
+
+# Resource Limits (Smaller for development)
+resource_limits:
+  cpu: "2"
+  memory: "4G"
+  disk: "50G"
+  swap: "2G"
+
+# Database Configuration (Development settings)
+postgresql_max_connections: 50
+postgresql_shared_buffers: "128MB"
+postgresql_work_mem: "4MB"
+postgresql_maintenance_work_mem: "64MB"
+postgresql_log_statement: "all"
+postgresql_log_min_duration_statement: 0
+
+# Cache Configuration (Development settings)
+redis_maxmemory: "512mb"
+redis_maxmemory_policy: "allkeys-lru"
+redis_save_enabled: false
+redis_appendonly: false
+
+# Monitoring (Basic for development)
+monitoring_level: basic
+monitoring_enabled: false
+log_aggregation_enabled: false
+metrics_collection_enabled: false
+alerting_enabled: false
+
+# Backup (Disabled for development)
+backup_enabled: false
+database_backup_enabled: false
+
+# Maintenance Windows (More flexible for development)
+maintenance_window:
+  enabled: false
+  start_time: "01:00"
+  end_time: "06:00"
+  timezone: "UTC"
+  days:
+    - "saturday"
+    - "sunday"
+
+# =============================================================================
+# DEVELOPMENT NETWORK CONFIGURATION
+# =============================================================================
+network_dev:
+  load_balancer_subnet: "10.1.1.0/24"
+  web_subnet: "10.1.2.0/24"
+  application_subnet: "10.1.3.0/24"
+  database_subnet: "10.1.4.0/24"
+  cache_subnet: "10.1.5.0/24"
+  monitoring_subnet: "10.1.6.0/24"
+  management_subnet: "10.1.10.0/24"
+
+# =============================================================================
+# DEVELOPMENT SERVICE ENDPOINTS
+# =============================================================================
+service_endpoints:
+  load_balancer:
+    primary: "hx-dev-lb-01.dev.hanax-ai.local"
+    secondary: "hx-dev-lb-02.dev.hanax-ai.local"
+    vip: "hx-dev-lb-vip.dev.hanax-ai.local"
+  web:
+    primary: "hx-dev-web-01.dev.hanax-ai.local"
+    secondary: "hx-dev-web-02.dev.hanax-ai.local"
+  application:
+    primary: "hx-dev-app-01.dev.hanax-ai.local"
+    secondary: "hx-dev-app-02.dev.hanax-ai.local"
+  database:
+    master: "hx-dev-db-01.dev.hanax-ai.local"
+    replica: "hx-dev-db-02.dev.hanax-ai.local"
+  cache:
+    primary: "hx-dev-cache-01.dev.hanax-ai.local"
+  monitoring:
+    primary: "hx-dev-monitor-01.dev.hanax-ai.local"
+
+# =============================================================================
+# DEVELOPMENT FEATURE FLAGS
+# =============================================================================
+dev_features:
+  hot_reload: true
+  debug_toolbar: true
+  profiling: true
+  test_data_seeding: true
+  mock_external_services: true
+  bypass_authentication: false
+  skip_migrations: false
+  enable_swagger: true
+  cors_allow_all: true
+
+# =============================================================================
+# DEVELOPMENT TESTING CONFIGURATION
+# =============================================================================
+testing:
+  unit_tests: true
+  integration_tests: true
+  e2e_tests: false
+  performance_tests: false
+  security_tests: false
+  test_database: "hx_dev_test"
+  test_data_fixtures: true
+  parallel_testing: false
+
+# =============================================================================
+# DEVELOPMENT TOOLS
+# =============================================================================
+development_tools:
+  code_quality:
+    - "pylint"
+    - "flake8"
+    - "black"
+    - "isort"
+  debugging:
+    - "pdb"
+    - "ipdb"
+    - "django-debug-toolbar"
+  profiling:
+    - "py-spy"
+    - "memory-profiler"
+  documentation:
+    - "sphinx"
+    - "mkdocs"
+
+# =============================================================================
+# DEVELOPMENT EXTERNAL SERVICES
+# =============================================================================
+external_services:
+  email:
+    backend: "console"
+    debug: true
+  storage:
+    backend: "local"
+    path: "/tmp/dev-storage"
+  cdn:
+    enabled: false
+  payment:
+    backend: "mock"
+    test_mode: true
+
+# =============================================================================
+# DEVELOPMENT COMPLIANCE (Relaxed)
+# =============================================================================
+compliance_enabled: false
+audit_logging_enabled: false
+security_scanning_enabled: false
+vulnerability_scanning_enabled: false
+
+# =============================================================================
+# DEVELOPMENT DEPLOYMENT
+# =============================================================================
+deployment_strategy: "recreate"
+rollback_enabled: false
+health_check_timeout: 30
+startup_timeout: 60
+shutdown_timeout: 30
+
+# =============================================================================
+# DEVELOPMENT CONTAINER CONFIGURATION
+# =============================================================================
+container_config:
+  restart_policy: "no"
+  log_driver: "json-file"
+  log_options:
+    max-size: "10m"
+    max-file: "3"
+  resource_limits:
+    cpus: "2.0"
+    memory: "4g"

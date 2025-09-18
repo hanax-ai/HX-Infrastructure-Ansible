@@ -1,87 +1,127 @@
 
 ---
-# Ansible Galaxy Collections
+# Ansible Collections Requirements for HX Infrastructure
 collections:
-  # Core Collections
+  # Core Ansible Collections
   - name: ansible.posix
-    version: ">=1.5.0"
+    version: ">=1.5.4"
+    source: https://galaxy.ansible.com
+
   - name: community.general
-    version: ">=7.0.0"
+    version: ">=8.0.0"
+    source: https://galaxy.ansible.com
+
   - name: community.crypto
-    version: ">=2.14.0"
-  - name: community.mysql
-    version: ">=3.7.0"
-  - name: community.postgresql
-    version: ">=3.0.0"
+    version: ">=2.15.0"
+    source: https://galaxy.ansible.com
+
   - name: community.docker
     version: ">=3.4.0"
+    source: https://galaxy.ansible.com
 
-  # Web Server Collections
-  - name: community.nginx
-    version: ">=1.0.0"
-  - name: community.apache
-    version: ">=1.0.0"
+  - name: community.postgresql
+    version: ">=3.2.0"
+    source: https://galaxy.ansible.com
 
-  # Monitoring Collections
+  - name: community.mysql
+    version: ">=3.7.0"
+    source: https://galaxy.ansible.com
+
+  # Security and Certificate Management
+  - name: community.crypto
+    version: ">=2.15.0"
+    source: https://galaxy.ansible.com
+
+  - name: ansible.windows
+    version: ">=2.0.0"
+    source: https://galaxy.ansible.com
+
+  # Cloud Providers
+  - name: amazon.aws
+    version: ">=7.0.0"
+    source: https://galaxy.ansible.com
+
+  - name: azure.azcollection
+    version: ">=1.19.0"
+    source: https://galaxy.ansible.com
+
+  - name: google.cloud
+    version: ">=1.2.0"
+    source: https://galaxy.ansible.com
+
+  # Kubernetes and Container Management
+  - name: kubernetes.core
+    version: ">=2.4.0"
+    source: https://galaxy.ansible.com
+
+  - name: community.kubernetes
+    version: ">=2.0.0"
+    source: https://galaxy.ansible.com
+
+  # Monitoring and Observability
   - name: community.grafana
     version: ">=1.5.0"
+    source: https://galaxy.ansible.com
+
   - name: prometheus.prometheus
-    version: ">=0.12.0"
+    version: ">=0.13.0"
+    source: https://galaxy.ansible.com
 
-  # Security Collections
-  - name: community.crypto
-    version: ">=2.14.0"
-  - name: ansible.security
-    version: ">=2.0.0"
+  # Network Management
+  - name: cisco.ios
+    version: ">=5.0.0"
+    source: https://galaxy.ansible.com
 
-  # Cloud Collections
-  - name: amazon.aws
-    version: ">=6.0.0"
-  - name: google.cloud
-    version: ">=1.1.0"
-  - name: azure.azcollection
-    version: ">=1.16.0"
+  - name: junipernetworks.junos
+    version: ">=5.3.0"
+    source: https://galaxy.ansible.com
 
-# Ansible Galaxy Roles
+  # Virtualization
+  - name: community.vmware
+    version: ">=4.0.0"
+    source: https://galaxy.ansible.com
+
+  - name: community.libvirt
+    version: ">=1.3.0"
+    source: https://galaxy.ansible.com
+
+# Ansible Roles from Galaxy
 roles:
-  # System Roles
-  - name: geerlingguy.security
-    version: "2.0.1"
-  - name: geerlingguy.firewall
-    version: "2.6.0"
-  - name: geerlingguy.ntp
-    version: "2.3.0"
+  # Common infrastructure roles
+  - name: geerlingguy.docker
+    version: "7.0.2"
+    src: https://galaxy.ansible.com
 
-  # Web Server Roles
-  - name: geerlingguy.nginx
-    version: "3.1.4"
-  - name: geerlingguy.apache
-    version: "3.2.5"
-
-  # Database Roles
   - name: geerlingguy.postgresql
     version: "3.4.2"
-  - name: geerlingguy.mysql
-    version: "4.3.4"
-  - name: geerlingguy.redis
-    version: "1.7.0"
+    src: https://galaxy.ansible.com
 
-  # Monitoring Roles
+  - name: geerlingguy.nginx
+    version: "3.1.4"
+    src: https://galaxy.ansible.com
+
+  - name: geerlingguy.redis
+    version: "1.8.0"
+    src: https://galaxy.ansible.com
+
+  - name: geerlingguy.security
+    version: "2.0.1"
+    src: https://galaxy.ansible.com
+
+  # Certificate and PKI management
+  - name: community.crypto.acme_certificate
+    version: "2.15.0"
+    src: https://galaxy.ansible.com
+
+  # Monitoring roles
   - name: cloudalchemy.prometheus
     version: "2.17.0"
+    src: https://galaxy.ansible.com
+
   - name: cloudalchemy.grafana
     version: "0.22.3"
-  - name: geerlingguy.node-exporter
-    version: "1.0.1"
+    src: https://galaxy.ansible.com
 
-  # SSL/TLS Roles
-  - name: geerlingguy.certbot
-    version: "4.1.0"
-
-  # Backup Roles
-  - name: arillso.restic
-    version: "1.7.1"
-
-  # Docker Roles
-  - name: geerlingguy.docker
-    version: "6.1.0"
+  - name: cloudalchemy.node_exporter
+    version: "3.0.0"
+    src: https://galaxy.ansible.com

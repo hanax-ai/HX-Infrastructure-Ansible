@@ -1,0 +1,136 @@
+
+---
+# Ansible Lint Configuration for HX Infrastructure
+profile: production
+
+# Exclude paths
+exclude_paths:
+  - .cache/
+  - .github/
+  - molecule/
+  - .ansible/
+  - tests/output/
+  - vault/
+  - '*.retry'
+
+# Skip specific rules
+skip_list:
+  - yaml[line-length]  # Allow longer lines for readability
+  - name[casing]       # Allow flexible naming conventions
+  - fqcn[action-core]  # Allow core module short names
+
+# Enable all rules by default
+enable_list:
+  - yaml
+  - name
+  - var-naming
+  - no-changed-when
+  - no-handler
+  - command-instead-of-module
+  - command-instead-of-shell
+  - deprecated-module
+  - empty-string-compare
+  - ignore-errors
+  - inline-env-var
+  - literal-compare
+  - meta-incorrect
+  - meta-no-info
+  - meta-no-tags
+  - meta-video-links
+  - no-free-form
+  - no-jinja-when
+  - no-log-password
+  - no-prompting
+  - no-relative-paths
+  - no-same-owner
+  - no-tabs
+  - package-latest
+  - risky-file-permissions
+  - risky-octal
+  - risky-shell-pipe
+  - role-name
+  - run-once
+  - schema
+  - syntax-check
+  - truthy
+  - var-spacing
+  - yaml-indent
+
+# Warn on specific issues
+warn_list:
+  - experimental
+  - jinja
+  - latest
+  - role-name
+  - package-latest
+
+# Use default rules
+use_default_rules: true
+
+# Verbosity level
+verbosity: 1
+
+# Offline mode
+offline: false
+
+# Parseable output
+parseable: false
+
+# Quiet mode
+quiet: false
+
+# Show relative paths
+show_relpath: true
+
+# Tags to run
+tags: []
+
+# Tags to skip  
+skip_tags: []
+
+# Write list of checked files
+write_list: []
+
+# Enable colored output
+colored: true
+
+# Exclude specific files
+exclude_files: []
+
+# Mock modules
+mock_modules: []
+
+# Mock roles
+mock_roles: []
+
+# Extra variables
+extra_vars: {}
+
+# Only check syntax
+syntax_check_only: false
+
+# Enable progressive mode
+progressive: false
+
+# Project directory
+project_dir: .
+
+# Kinds of files to lint
+kinds:
+  - yaml
+  - playbook
+  - role
+  - tasks
+  - handlers
+  - vars
+  - meta
+  - requirements
+
+# Supported file extensions
+supported_file_extensions:
+  - .yml
+  - .yaml
+
+# Ansible configuration
+ansible:
+  config_file: ansible.cfg

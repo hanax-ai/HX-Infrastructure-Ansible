@@ -1,0 +1,25 @@
+---
+galaxy_info:
+  author: HX Infrastructure Team
+  description: Standardized Open WebUI installation with enhanced security and validation
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - "20.04"
+        - "22.04"
+        - "24.04"
+  galaxy_tags:
+    - webui
+    - openwebui
+    - ai
+    - llm
+    - standardized
+
+dependencies: []
+
+collections:
+  - community.general
+  - ansible.posix

@@ -1,0 +1,17 @@
+---
+- name: Restart open-webui
+  ansible.builtin.systemd:
+    name: "{{ webui_service_name }}"
+    state: restarted
+    daemon_reload: true
+  listen: "restart webui"
+
+- name: Reload open-webui
+  ansible.builtin.systemd:
+    name: "{{ webui_service_name }}"
+    state: reloaded
+  listen: "reload webui"
+
+- name: Validate webui service
+  ansible.builtin.include_tasks: validate_service.yml
+  listen: "validate webui"

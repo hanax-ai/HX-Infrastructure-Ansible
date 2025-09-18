@@ -1,9 +1,43 @@
 
-# Ansible
+# Ansible specific
 *.retry
 .ansible/
 ansible.log
-/tmp/
+*.log
+
+# Vault files - CRITICAL SECURITY
+vault_pass*
+.vault_pass*
+*vault_password*
+*.vault
+group_vars/*/vault*
+host_vars/*/vault*
+vault/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.#*
+#*#
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
 
 # Python
 __pycache__/
@@ -28,125 +62,124 @@ wheels/
 *.egg
 MANIFEST
 
-# Virtual Environments
+# Virtual environments
 venv/
 env/
 ENV/
 env.bak/
 venv.bak/
-.venv/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-*.log
-logs/
-/var/log/
-
-# Temporary files
-*.tmp
-*.temp
-.tmp/
-.temp/
-
-# Secrets and Sensitive Data
-secrets.yml
-vault_pass.txt
-.vault_pass
-*.pem
-*.key
-*.crt
-id_rsa*
-*.p12
-*.pfx
-
-# Backup files
-*.bak
-*.backup
-*~
-
-# Cache
-.cache/
-*.cache
-.pytest_cache/
+# Testing
+.tox/
 .coverage
-htmlcov/
-
-# Molecule
-.molecule/
-molecule/*/molecule.yml.bak
-
-# Terraform (if used)
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
-
-# Docker
-.dockerignore
-
-# Local environment files
-.env
-.env.local
-.env.*.local
-
-# Documentation build
-site/
-docs/_build/
-
-# Test results
-test-results/
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# Molecule
+molecule/*/molecule.yml.bak
+.molecule/
 
-# pyenv
-.python-version
+# Terraform (if used alongside)
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
 
-# pipenv
-Pipfile.lock
+# Docker
+.dockerignore
 
-# PEP 582
-__pypackages__/
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Celery
-celerybeat-schedule
-celerybeat.pid
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
 
-# SageMath parsed files
-*.sage.py
+# Coverage directory used by tools like istanbul
+coverage/
 
-# Spyder project settings
-.spyderproject
-.spyproject
+# Dependency directories
+node_modules/
 
-# Rope project settings
-.ropeproject
+# Optional npm cache directory
+.npm
 
-# mkdocs documentation
-/site
+# Optional REPL history
+.node_repl_history
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# Output of 'npm pack'
+*.tgz
 
-# Pyre type checker
-.pyre/
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Cache directories
+.cache/
+cache/
+
+# Local configuration overrides
+local_settings.yml
+local_vars.yml
+override_vars.yml
+
+# SSH keys
+*.pem
+*.key
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+
+# SSL certificates
+*.crt
+*.cert
+*.cer
+*.p12
+*.pfx
+
+# Sensitive configuration
+secrets.yml
+credentials.yml
+passwords.yml
+tokens.yml
+
+# Output directories
+output/
+results/
+reports/
+
+# Temporary Ansible facts
+/tmp/ansible_facts_cache/
+
+# Galaxy installed roles and collections (if not tracked)
+roles/external/
+collections/ansible_collections/
+
+# Local development overrides
+local/
+dev/
+development/
+
+# Backup and temporary directories
+backup/
+tmp/
+temp/
