@@ -1,6 +1,31 @@
 
 # HX-Infrastructure Ansible Project
 
+## 🚨 CRITICAL DIRECTIVE - IMMEDIATE ACTION REQUIRED
+
+**⚠️ URGENT: Critical Infrastructure Misalignment Identified**
+
+A **CRITICAL DIRECTIVE** has been issued by the Manus AI Infrastructure Audit Team identifying critical misalignments between actual HX infrastructure and Ansible repository configuration.
+
+**📋 [READ FULL DIRECTIVE: docs/CRITICAL DIRECTIVE_ HX Infrastructure Ansible Engineering Team.md](docs/CRITICAL%20DIRECTIVE_%20HX%20Infrastructure%20Ansible%20Engineering%20Team.md)**
+
+### Critical Issues Summary:
+- ❌ **IP Address Misalignment**: Production servers using 192.168.10.x range, but Ansible inventory configured for 10.0.1.x range
+- ❌ **Environment Classification Error**: Production servers incorrectly labeled as "dev-test" environment  
+- ❌ **Security Vulnerabilities**: 1,109 security findings requiring immediate attention
+- ❌ **Code Quality Issues**: 31/100 compliance score with extensive linting errors
+
+### Immediate Actions Required:
+1. **Phase 1 (0-24 hours)**: Fix IP address misalignments and security vulnerabilities
+2. **Phase 2 (24-48 hours)**: Security remediation and SSH hardening
+3. **Phase 3 (48-72 hours)**: Code quality improvements and linting fixes
+
+**⏰ Deadline for Phase 1 completion: 24 hours from directive receipt**
+
+**🔗 DevOps Context**: "devops is the host node" - hx-devops-server (192.168.10.14) serves as the control node
+
+---
+
 ## Overview
 This repository contains the standardized Ansible infrastructure automation for HX environments, implementing enterprise-grade configuration management, deployment automation, and operational procedures.
 
