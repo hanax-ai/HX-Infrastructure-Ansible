@@ -1,0 +1,218 @@
+
+---
+# Default variables for hx_pg_auth_standardized role
+# Following SOLID principles with comprehensive PostgreSQL authentication and security
+
+# === POSTGRESQL VERSION AND INSTALLATION ===
+hx_pg_auth_version: "14"                                     # PostgreSQL version
+hx_pg_auth_package_state: "present"                          # Package installation state
+hx_pg_auth_service_name: "postgresql"                        # PostgreSQL service name
+hx_pg_auth_config_dir: "/etc/postgresql/{{ hx_pg_auth_version }}/main"  # Configuration directory
+hx_pg_auth_data_dir: "/var/lib/postgresql/{{ hx_pg_auth_version }}/main"  # Data directory
+
+# === DATABASE CONNECTION SETTINGS ===
+hx_pg_auth_listen_addresses: "localhost"                     # Listen addresses (* for all)
+hx_pg_auth_port: 5432                                        # PostgreSQL port
+hx_pg_auth_max_connections: 100                              # Maximum connections
+hx_pg_auth_shared_buffers: "128MB"                           # Shared buffer size
+hx_pg_auth_effective_cache_size: "4GB"                       # Effective cache size
+hx_pg_auth_work_mem: "4MB"                                   # Work memory per operation
+hx_pg_auth_maintenance_work_mem: "64MB"                      # Maintenance work memory
+
+# === AUTHENTICATION CONFIGURATION ===
+hx_pg_auth_method_local: "peer"                              # Local authentication method
+hx_pg_auth_method_host: "md5"                                # Host authentication method
+hx_pg_auth_method_hostssl: "md5"                             # SSL host authentication method
+hx_pg_auth_method_hostnossl: "reject"                        # Non-SSL host authentication method
+
+# === SSL/TLS CONFIGURATION ===
+hx_pg_auth_ssl_enabled: true                                 # Enable SSL/TLS
+hx_pg_auth_ssl_cert_file: "server.crt"                       # SSL certificate file
+hx_pg_auth_ssl_key_file: "server.key"                        # SSL private key file
+hx_pg_auth_ssl_ca_file: "ca.crt"                             # SSL CA certificate file
+hx_pg_auth_ssl_crl_file: ""                                  # SSL CRL file
+hx_pg_auth_ssl_ciphers: "HIGH:MEDIUM:+3DES:!aNULL"          # SSL cipher suite
+hx_pg_auth_ssl_prefer_server_ciphers: true                   # Prefer server ciphers
+hx_pg_auth_ssl_min_protocol_version: "TLSv1.2"               # Minimum TLS version
+hx_pg_auth_ssl_max_protocol_version: ""                      # Maximum TLS version (empty = latest)
+
+# === USER MANAGEMENT ===
+hx_pg_auth_superuser: "postgres"                             # PostgreSQL superuser
+hx_pg_auth_superuser_password: "{{ vault_postgres_superuser_password }}"  # Superuser password (vaulted)
+
+# Application users configuration
+hx_pg_auth_users:                                             # Database users
+  - name: "hx_app_user"
+    password: "{{ vault_hx_app_user_password }}"
+    role_attr_flags: "CREATEDB,NOSUPERUSER"
+    db: "hx_application"
+    priv: "ALL"
+    expires: "infinity"
+    comment: "HX Application Database User"
+  - name: "hx_readonly_user"
+    password: "{{ vault_hx_readonly_password }}"
+    role_attr_flags: "NOSUPERUSER,NOCREATEDB"
+    db: "hx_application"
+    priv: "SELECT"
+    expires: "infinity"
+    comment: "HX Read-only Database User"
+  - name: "hx_backup_user"
+    password: "{{ vault_hx_backup_password }}"
+    role_attr_flags: "REPLICATION,NOSUPERUSER"
+    db: "postgres"
+    priv: "CONNECT"
+    expires: "infinity"
+    comment: "HX Backup and Replication User"
+
+# === DATABASE MANAGEMENT ===
+hx_pg_auth_databases:                                         # Databases to create
+  - name: "hx_application"
+    owner: "hx_app_user"
+    encoding: "UTF8"
+    lc_collate: "en_US.UTF-8"
+    lc_ctype: "en_US.UTF-8"
+    template: "template0"
+    comment: "HX Application Database"
+  - name: "hx_analytics"
+    owner: "hx_app_user"
+    encoding: "UTF8"
+    lc_collate: "en_US.UTF-8"
+    lc_ctype: "en_US.UTF-8"
+    template: "template0"
+    comment: "HX Analytics Database"
+
+# === SECURITY SETTINGS ===
+hx_pg_auth_password_encryption: "scram-sha-256"              # Password encryption method
+hx_pg_auth_row_security: true                                # Enable row-level security
+hx_pg_auth_log_connections: true                             # Log connections
+hx_pg_auth_log_disconnections: true                          # Log disconnections
+hx_pg_auth_log_statement: "all"                              # Log statements (none, ddl, mod, all)
+hx_pg_auth_log_min_duration_statement: 1000                  # Log slow queries (ms)
+hx_pg_auth_log_checkpoints: true                             # Log checkpoints
+hx_pg_auth_log_lock_waits: true                              # Log lock waits
+
+# === ACCESS CONTROL ===
+hx_pg_auth_allowed_hosts:                                     # Allowed host patterns
+  - "127.0.0.1/32"
+  - "::1/128"
+  - "10.0.0.0/8"
+  - "172.16.0.0/12"
+  - "192.168.0.0/16"
+
+hx_pg_auth_denied_hosts: []                                   # Denied host patterns
+# Example:
+# hx_pg_auth_denied_hosts:
+#   - "192.168.1.100/32"
+
+# === BACKUP CONFIGURATION ===
+hx_pg_auth_backup_enabled: true                              # Enable automated backups
+hx_pg_auth_backup_dir: "/var/backups/postgresql"             # Backup directory
+hx_pg_auth_backup_retention_days: 30                         # Backup retention period
+hx_pg_auth_backup_schedule: "0 2 * * *"                      # Backup cron schedule
+hx_pg_auth_backup_compression: true                          # Compress backups
+hx_pg_auth_backup_encryption: true                           # Encrypt backups
+hx_pg_auth_backup_encryption_key: "{{ vault_backup_encryption_key }}"  # Backup encryption key
+
+# === REPLICATION SETTINGS ===
+hx_pg_auth_replication_enabled: false                        # Enable streaming replication
+hx_pg_auth_replication_user: "replicator"                    # Replication user
+hx_pg_auth_replication_password: "{{ vault_replication_password }}"  # Replication password
+hx_pg_auth_replication_slots: []                             # Replication slots
+hx_pg_auth_wal_level: "replica"                              # WAL level (minimal, replica, logical)
+hx_pg_auth_max_wal_senders: 3                                # Maximum WAL senders
+hx_pg_auth_wal_keep_segments: 32                             # WAL segments to keep
+
+# === MONITORING AND LOGGING ===
+hx_pg_auth_enable_logging: true                              # Enable detailed logging
+hx_pg_auth_log_level: "INFO"                                 # Log level
+hx_pg_auth_audit_enabled: true                               # Enable audit logging
+hx_pg_auth_audit_log_path: "/var/log/postgresql/hx-pg-auth.log"  # Audit log path
+hx_pg_auth_stats_collector: true                             # Enable statistics collector
+hx_pg_auth_track_activities: true                            # Track activities
+hx_pg_auth_track_counts: true                                # Track counts
+hx_pg_auth_track_io_timing: true                             # Track I/O timing
+hx_pg_auth_track_functions: "all"                            # Track function calls
+
+# === PERFORMANCE TUNING ===
+hx_pg_auth_checkpoint_segments: 32                           # Checkpoint segments
+hx_pg_auth_checkpoint_completion_target: 0.9                 # Checkpoint completion target
+hx_pg_auth_wal_buffers: "16MB"                               # WAL buffers
+hx_pg_auth_random_page_cost: 1.1                             # Random page cost (SSD optimized)
+hx_pg_auth_effective_io_concurrency: 200                     # Effective I/O concurrency
+hx_pg_auth_max_worker_processes: 8                           # Maximum worker processes
+hx_pg_auth_max_parallel_workers: 8                           # Maximum parallel workers
+hx_pg_auth_max_parallel_workers_per_gather: 2                # Max parallel workers per gather
+
+# === SECURITY EXTENSIONS ===
+hx_pg_auth_extensions:                                        # PostgreSQL extensions
+  - name: "pgcrypto"
+    database: "hx_application"
+  - name: "uuid-ossp"
+    database: "hx_application"
+  - name: "pg_stat_statements"
+    database: "postgres"
+  - name: "pg_trgm"
+    database: "hx_application"
+
+# === FIREWALL CONFIGURATION ===
+hx_pg_auth_configure_firewall: true                          # Configure firewall rules
+hx_pg_auth_firewall_allowed_ports:                           # Allowed ports
+  - "{{ hx_pg_auth_port }}"
+
+# === HEALTH CHECKS ===
+hx_pg_auth_health_checks: true                               # Enable health checks
+hx_pg_auth_health_check_interval: "*/5 * * * *"              # Health check cron schedule
+hx_pg_auth_connection_timeout: 10                            # Connection timeout seconds
+hx_pg_auth_query_timeout: 30                                 # Query timeout seconds
+
+# === MAINTENANCE SETTINGS ===
+hx_pg_auth_autovacuum: true                                  # Enable autovacuum
+hx_pg_auth_autovacuum_max_workers: 3                         # Autovacuum max workers
+hx_pg_auth_autovacuum_naptime: "1min"                        # Autovacuum nap time
+hx_pg_auth_autovacuum_vacuum_threshold: 50                   # Autovacuum vacuum threshold
+hx_pg_auth_autovacuum_analyze_threshold: 50                  # Autovacuum analyze threshold
+hx_pg_auth_autovacuum_vacuum_scale_factor: 0.2               # Autovacuum vacuum scale factor
+hx_pg_auth_autovacuum_analyze_scale_factor: 0.1              # Autovacuum analyze scale factor
+
+# === ARCHIVE SETTINGS ===
+hx_pg_auth_archive_mode: false                               # Enable archive mode
+hx_pg_auth_archive_command: ""                               # Archive command
+hx_pg_auth_archive_timeout: 0                                # Archive timeout
+
+# === CONNECTION POOLING ===
+hx_pg_auth_connection_pooling: false                         # Enable connection pooling (pgbouncer)
+hx_pg_auth_pool_mode: "transaction"                          # Pool mode (session, transaction, statement)
+hx_pg_auth_pool_size: 20                                     # Pool size per database
+hx_pg_auth_pool_reserve_size: 5                              # Reserve pool size
+hx_pg_auth_pool_max_client_conn: 100                         # Maximum client connections
+
+# === COMPLIANCE SETTINGS ===
+hx_pg_auth_compliance_mode: "standard"                       # Compliance mode (standard, strict, custom)
+hx_pg_auth_data_checksums: true                              # Enable data checksums
+hx_pg_auth_force_ssl: false                                  # Force SSL connections only
+hx_pg_auth_password_min_length: 12                           # Minimum password length
+hx_pg_auth_password_complexity: true                         # Enforce password complexity
+
+# === NOTIFICATION SETTINGS ===
+hx_pg_auth_notifications_enabled: false                      # Enable notifications
+hx_pg_auth_notification_email: "dba@hanax.ai"                # Notification email
+hx_pg_auth_notification_events:                              # Events to notify
+  - "connection_failure"
+  - "authentication_failure"
+  - "backup_failure"
+  - "replication_failure"
+  - "disk_space_low"
+
+# === TESTING AND VALIDATION ===
+hx_pg_auth_run_tests: true                                   # Run validation tests
+hx_pg_auth_test_connections: true                            # Test database connections
+hx_pg_auth_test_authentication: true                         # Test user authentication
+hx_pg_auth_test_ssl: true                                    # Test SSL connections
+hx_pg_auth_test_backups: true                                # Test backup procedures
+hx_pg_auth_test_performance: false                           # Run performance tests
+
+# === TROUBLESHOOTING ===
+hx_pg_auth_debug_mode: false                                 # Enable debug mode
+hx_pg_auth_verbose_logging: false                            # Enable verbose logging
+hx_pg_auth_preserve_logs: true                               # Preserve logs on failure
+hx_pg_auth_diagnostic_queries: true                          # Enable diagnostic queries

@@ -1,0 +1,348 @@
+
+---
+# Verification tasks for hx_domain_join_standardized role
+# Comprehensive testing and validation of domain join
+
+- name: Verify domain join status
+  block:
+    - name: Check realm status
+      ansible.builtin.command:
+        cmd: realm list
+      register: realm_status
+      changed_when: false
+      become: true
+
+    - name: Assert domain is joined
+      ansible.builtin.assert:
+        that:
+          - hx_domain_join_domain_name in realm_status.stdout
+          - "'configured: kerberos-member' in realm_status.stdout"
+        fail_msg: "System is not properly joined to domain {{ hx_domain_join_domain_name }}"
+        success_msg: "System is successfully joined to domain {{ hx_domain_join_domain_name }}"
+
+- name: Verify SSSD service status
+  block:
+    - name: Check SSSD service status
+      ansible.builtin.systemd:
+        name: sssd
+      register: sssd_status
+      become: true
+
+    - name: Assert SSSD is running
+      ansible.builtin.assert:
+        that:
+          - sssd_status.status.ActiveState == "active"
+          - sssd_status.status.SubState == "running"
+        fail_msg: "SSSD service is not running properly"
+        success_msg: "SSSD service is running correctly"
+  when: hx_domain_join_use_sssd | default(true)
+
+- name: Verify Kerberos authentication
+  block:
+    - name: Test Kerberos authentication with service account
+      ansible.builtin.shell:
+        cmd: >
+          echo "{{ hx_domain_join_service_password }}" | 
+          kinit {{ hx_domain_join_service_account }}@{{ hx_domain_join_realm }}
+      register: kinit_test
+      become: true
+      no_log: true
+      changed_when: false
+
+    - name: Verify Kerberos ticket
+      ansible.builtin.command:
+        cmd: klist
+      register: klist_output
+      become: true
+      changed_when: false
+
+    - name: Assert Kerberos ticket is valid
+      ansible.builtin.assert:
+        that:
+          - kinit_test.rc == 0
+          - hx_domain_join_realm in klist_output.stdout
+        fail_msg: "Kerberos authentication failed"
+        success_msg: "Kerberos authentication successful"
+
+    - name: Clean up test ticket
+      ansible.builtin.command:
+        cmd: kdestroy
+      become: true
+      changed_when: false
+      failed_when: false
+  when: hx_domain_join_test_authentication | default(true)
+
+- name: Verify DNS resolution
+  block:
+    - name: Test DNS resolution for domain
+      ansible.builtin.command:
+        cmd: "nslookup {{ hx_domain_join_domain_name }}"
+      register: dns_test
+      changed_when: false
+
+    - name: Test DNS resolution for domain controllers
+      ansible.builtin.command:
+        cmd: "nslookup {{ item }}"
+      register: dc_dns_test
+      loop: "{{ hx_domain_join_domain_controllers }}"
+      changed_when: false
+
+    - name: Assert DNS resolution works
+      ansible.builtin.assert:
+        that:
+          - dns_test.rc == 0
+          - dc_dns_test.results | selectattr('rc', 'equalto', 0) | list | length == hx_domain_join_domain_controllers | length
+        fail_msg: "DNS resolution failed for domain or domain controllers"
+        success_msg: "DNS resolution working correctly"
+
+- name: Verify user authentication and lookup
+  block:
+    - name: Test user lookup with getent
+      ansible.builtin.command:
+        cmd: "getent passwd {{ hx_domain_join_service_account }}@{{ hx_domain_join_domain_name }}"
+      register: user_lookup
+      changed_when: false
+      failed_when: false
+
+    - name: Test user lookup without domain suffix
+      ansible.builtin.command:
+        cmd: "getent passwd {{ hx_domain_join_service_account }}"
+      register: user_lookup_short
+      changed_when: false
+      failed_when: false
+      when: not hx_domain_join_use_fully_qualified_names | default(false)
+
+    - name: Assert user lookup works
+      ansible.builtin.assert:
+        that:
+          - user_lookup.rc == 0 or user_lookup_short.rc == 0
+        fail_msg: "User lookup failed for domain users"
+        success_msg: "User lookup working correctly"
+
+- name: Verify group membership
+  block:
+    - name: Test group lookup
+      ansible.builtin.command:
+        cmd: "getent group '{{ item }}'"
+      register: group_lookup
+      loop: "{{ hx_domain_join_allowed_groups }}"
+      changed_when: false
+      failed_when: false
+
+    - name: Assert group lookup works
+      ansible.builtin.assert:
+        that:
+          - group_lookup.results | selectattr('rc', 'equalto', 0) | list | length > 0
+        fail_msg: "Group lookup failed for domain groups"
+        success_msg: "Group lookup working correctly"
+  when: hx_domain_join_test_group_membership | default(true)
+
+- name: Verify home directory creation
+  block:
+    - name: Create test user home directory
+      ansible.builtin.shell:
+        cmd: "mkhomedir_helper {{ hx_domain_join_service_account }}"
+      register: home_creation
+      become: true
+      changed_when: false
+      failed_when: false
+
+    - name: Check if home directory exists
+      ansible.builtin.stat:
+        path: "{{ hx_domain_join_home_directory_template | replace('%u', hx_domain_join_service_account) | replace('%d', hx_domain_join_domain_name) }}"
+      register: home_dir_stat
+
+    - name: Assert home directory creation works
+      ansible.builtin.assert:
+        that:
+          - home_creation.rc == 0 or home_dir_stat.stat.exists
+        fail_msg: "Home directory creation failed"
+        success_msg: "Home directory creation working correctly"
+  when: hx_domain_join_test_home_directory | default(true)
+
+- name: Verify sudo access
+  block:
+    - name: Check sudo configuration
+      ansible.builtin.command:
+        cmd: "sudo -l -U {{ hx_domain_join_service_account }}"
+      register: sudo_check
+      become: true
+      changed_when: false
+      failed_when: false
+
+    - name: Verify sudo groups configuration
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/domain-admins
+        line: "%{{ item }} ALL=(ALL) ALL"
+        state: present
+      loop: "{{ hx_domain_join_sudo_groups }}"
+      check_mode: true
+      register: sudo_config_check
+      become: true
+
+    - name: Assert sudo access is configured
+      ansible.builtin.assert:
+        that:
+          - sudo_config_check.results | selectattr('changed', 'equalto', false) | list | length == hx_domain_join_sudo_groups | length
+        fail_msg: "Sudo access configuration is incorrect"
+        success_msg: "Sudo access configured correctly"
+  when: 
+    - hx_domain_join_test_sudo_access | default(true)
+    - hx_domain_join_sudo_groups | length > 0
+
+- name: Verify SSH configuration
+  block:
+    - name: Check SSH configuration
+      ansible.builtin.command:
+        cmd: sshd -T
+      register: sshd_config_test
+      become: true
+      changed_when: false
+
+    - name: Verify GSSAPI authentication is enabled
+      ansible.builtin.assert:
+        that:
+          - "'gssapiauthentication yes' in sshd_config_test.stdout"
+        fail_msg: "GSSAPI authentication is not enabled in SSH"
+        success_msg: "GSSAPI authentication is enabled in SSH"
+      when: hx_domain_join_gssapi_authentication | default(true)
+
+    - name: Verify SSH access restrictions
+      ansible.builtin.assert:
+        that:
+          - "'allowgroups' in sshd_config_test.stdout"
+        fail_msg: "SSH access restrictions are not configured"
+        success_msg: "SSH access restrictions are configured"
+      when: hx_domain_join_allowed_groups | length > 0
+
+- name: Verify time synchronization
+  block:
+    - name: Check NTP synchronization status
+      ansible.builtin.command:
+        cmd: timedatectl status
+      register: ntp_status
+      changed_when: false
+
+    - name: Assert time is synchronized
+      ansible.builtin.assert:
+        that:
+          - "'NTP synchronized: yes' in ntp_status.stdout or 'System clock synchronized: yes' in ntp_status.stdout"
+        fail_msg: "Time synchronization is not working"
+        success_msg: "Time synchronization is working correctly"
+  when: hx_domain_join_configure_ntp | default(true)
+
+- name: Verify connectivity to domain controllers
+  block:
+    - name: Test LDAP connectivity
+      ansible.builtin.wait_for:
+        host: "{{ item }}"
+        port: 389
+        timeout: 10
+      loop: "{{ hx_domain_join_domain_controllers }}"
+      register: ldap_connectivity
+
+    - name: Test Kerberos connectivity
+      ansible.builtin.wait_for:
+        host: "{{ item }}"
+        port: 88
+        timeout: 10
+      loop: "{{ hx_domain_join_domain_controllers }}"
+      register: kerberos_connectivity
+
+    - name: Assert connectivity to domain controllers
+      ansible.builtin.assert:
+        that:
+          - ldap_connectivity.results | selectattr('failed', 'equalto', false) | list | length > 0
+          - kerberos_connectivity.results | selectattr('failed', 'equalto', false) | list | length > 0
+        fail_msg: "Cannot connect to domain controllers"
+        success_msg: "Connectivity to domain controllers verified"
+
+- name: Verify health check scripts
+  block:
+    - name: Test domain health check script
+      ansible.builtin.command:
+        cmd: /usr/local/bin/hx-domain-health-check --test
+      register: health_check_test
+      become: true
+      changed_when: false
+      failed_when: false
+
+    - name: Test domain status script
+      ansible.builtin.command:
+        cmd: /usr/local/bin/hx-domain-status
+      register: status_script_test
+      become: true
+      changed_when: false
+
+    - name: Assert health check scripts work
+      ansible.builtin.assert:
+        that:
+          - status_script_test.rc == 0
+        fail_msg: "Domain management scripts are not working"
+        success_msg: "Domain management scripts are working correctly"
+  when: hx_domain_join_health_checks | default(false)
+
+- name: Verify security configurations
+  block:
+    - name: Check SSSD configuration permissions
+      ansible.builtin.stat:
+        path: /etc/sssd/sssd.conf
+      register: sssd_conf_stat
+
+    - name: Check Kerberos configuration permissions
+      ansible.builtin.stat:
+        path: /etc/krb5.conf
+      register: krb5_conf_stat
+
+    - name: Assert security permissions are correct
+      ansible.builtin.assert:
+        that:
+          - sssd_conf_stat.stat.mode == "0600"
+          - krb5_conf_stat.stat.mode == "0644"
+          - sssd_conf_stat.stat.uid == 0
+          - krb5_conf_stat.stat.uid == 0
+        fail_msg: "Security permissions are not configured correctly"
+        success_msg: "Security permissions are configured correctly"
+
+- name: Performance and load testing
+  block:
+    - name: Test authentication performance
+      ansible.builtin.shell:
+        cmd: |
+          start_time=$(date +%s.%N)
+          getent passwd {{ hx_domain_join_service_account }} > /dev/null
+          end_time=$(date +%s.%N)
+          echo "scale=3; $end_time - $start_time" | bc
+      register: auth_perf_test
+      changed_when: false
+
+    - name: Assert authentication performance is acceptable
+      ansible.builtin.assert:
+        that:
+          - auth_perf_test.stdout | float < 5.0  # Less than 5 seconds
+        fail_msg: "Authentication performance is too slow: {{ auth_perf_test.stdout }}s"
+        success_msg: "Authentication performance is acceptable: {{ auth_perf_test.stdout }}s"
+
+- name: Log verification completion
+  ansible.builtin.lineinfile:
+    path: "{{ hx_domain_join_audit_log_path }}"
+    line: "{{ ansible_date_time.iso8601 }} - Domain join verification completed successfully on {{ inventory_hostname }}"
+    create: true
+  become: true
+  when: hx_domain_join_audit_enabled | default(false)
+
+- name: Display verification summary
+  ansible.builtin.debug:
+    msg:
+      - "Domain join verification completed successfully"
+      - "Domain Status: {{ 'Joined' if hx_domain_join_domain_name in realm_status.stdout else 'Not joined' }}"
+      - "SSSD Service: {{ 'Running' if sssd_status.status.ActiveState == 'active' else 'Not running' }}"
+      - "Kerberos Auth: {{ 'Working' if kinit_test.rc == 0 else 'Failed' }}"
+      - "DNS Resolution: {{ 'Working' if dns_test.rc == 0 else 'Failed' }}"
+      - "User Lookup: {{ 'Working' if user_lookup.rc == 0 or user_lookup_short.rc == 0 else 'Failed' }}"
+      - "Group Lookup: {{ 'Working' if group_lookup.results | selectattr('rc', 'equalto', 0) | list | length > 0 else 'Failed' }}"
+      - "Home Directory: {{ 'Working' if home_creation.rc == 0 or home_dir_stat.stat.exists else 'Failed' }}"
+      - "Time Sync: {{ 'Synchronized' if 'synchronized: yes' in ntp_status.stdout else 'Not synchronized' }}"
+      - "DC Connectivity: {{ 'Working' if ldap_connectivity.results | selectattr('failed', 'equalto', false) | list | length > 0 else 'Failed' }}"
+      - "Security Config: Verified and secure"
+  when: hx_domain_join_enable_logging | default(true)

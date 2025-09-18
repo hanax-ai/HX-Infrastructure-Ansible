@@ -1,0 +1,302 @@
+
+---
+# Installation tasks for hx_domain_join_standardized role
+# Active Directory domain join and computer account creation
+
+- name: Check if already joined to domain
+  ansible.builtin.command:
+    cmd: realm list
+  register: current_realm_status
+  changed_when: false
+  failed_when: false
+  become: true
+
+- name: Set domain join status
+  ansible.builtin.set_fact:
+    domain_already_joined: "{{ hx_domain_join_domain_name in current_realm_status.stdout }}"
+
+- name: Leave existing domain if different
+  block:
+    - name: Get current domain information
+      ansible.builtin.shell:
+        cmd: "realm list | grep 'domain-name:' | awk '{print $2}'"
+      register: current_domain
+      changed_when: false
+
+    - name: Leave current domain
+      ansible.builtin.command:
+        cmd: "realm leave {{ current_domain.stdout }}"
+      become: true
+      when: 
+        - current_domain.stdout is defined
+        - current_domain.stdout != hx_domain_join_domain_name
+        - current_domain.stdout | length > 0
+  when: domain_already_joined and hx_domain_join_force_rejoin | default(false)
+
+- name: Discover domain using realm
+  ansible.builtin.command:
+    cmd: "realm discover {{ hx_domain_join_domain_name }}"
+  register: domain_discovery
+  become: true
+  changed_when: false
+  failed_when: domain_discovery.rc != 0
+
+- name: Parse domain discovery information
+  ansible.builtin.set_fact:
+    domain_info: "{{ domain_discovery.stdout }}"
+
+- name: Join domain using realm
+  ansible.builtin.expect:
+    command: >
+      realm join 
+      --user={{ hx_domain_join_admin_user }}
+      --computer-ou="{{ hx_domain_join_computer_ou }}"
+      --os-name="{{ ansible_distribution }}"
+      --os-version="{{ ansible_distribution_version }}"
+      {% if hx_domain_join_service_account != hx_domain_join_admin_user %}
+      --one-time-password
+      {% endif %}
+      {{ hx_domain_join_domain_name }}
+    responses:
+      'Password for *': "{{ hx_domain_join_admin_password }}"
+    timeout: 60
+  register: domain_join_result
+  become: true
+  no_log: true
+  when: not domain_already_joined or hx_domain_join_force_rejoin | default(false)
+
+- name: Verify domain join success
+  ansible.builtin.command:
+    cmd: realm list
+  register: post_join_status
+  changed_when: false
+  become: true
+
+- name: Assert domain join was successful
+  ansible.builtin.assert:
+    that:
+      - hx_domain_join_domain_name in post_join_status.stdout
+      - "'configured: kerberos-member' in post_join_status.stdout"
+    fail_msg: "Domain join failed - domain not found in realm list"
+    success_msg: "Domain join completed successfully"
+
+- name: Configure computer account description
+  ansible.builtin.shell:
+    cmd: >
+      adcli update 
+      --domain={{ hx_domain_join_domain_name }}
+      --login-user={{ hx_domain_join_admin_user }}
+      --stdin-password
+      --computer-name={{ hx_domain_join_computer_name }}
+      --description="{{ hx_domain_join_computer_description }}"
+  args:
+    stdin: "{{ hx_domain_join_admin_password }}"
+  register: computer_update
+  become: true
+  no_log: true
+  changed_when: computer_update.rc == 0
+  failed_when: false
+
+- name: Add computer to additional groups
+  ansible.builtin.shell:
+    cmd: >
+      adcli update
+      --domain={{ hx_domain_join_domain_name }}
+      --login-user={{ hx_domain_join_admin_user }}
+      --stdin-password
+      --computer-name={{ hx_domain_join_computer_name }}
+      --add-service-principal-name="{{ item }}/{{ hx_domain_join_computer_name }}.{{ hx_domain_join_domain_name }}"
+  args:
+    stdin: "{{ hx_domain_join_admin_password }}"
+  loop: "{{ hx_domain_join_computer_groups }}"
+  register: group_membership
+  become: true
+  no_log: true
+  changed_when: group_membership.rc == 0
+  failed_when: false
+  when: hx_domain_join_computer_groups | length > 0
+
+- name: Configure SSSD for domain authentication
+  block:
+    - name: Generate SSSD configuration
+      ansible.builtin.template:
+        src: sssd.conf.j2
+        dest: /etc/sssd/sssd.conf
+        owner: root
+        group: root
+        mode: '0600'
+        backup: true
+      become: true
+      notify: restart sssd
+
+    - name: Enable and start SSSD service
+      ansible.builtin.systemd:
+        name: sssd
+        state: started
+        enabled: true
+        daemon_reload: true
+      become: true
+
+    - name: Configure NSS to use SSSD
+      ansible.builtin.lineinfile:
+        path: /etc/nsswitch.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backup: true
+      loop:
+        - regexp: '^passwd:'
+          line: 'passwd:         files systemd sss'
+        - regexp: '^group:'
+          line: 'group:          files systemd sss'
+        - regexp: '^shadow:'
+          line: 'shadow:         files sss'
+        - regexp: '^gshadow:'
+          line: 'gshadow:        files sss'
+      become: true
+      notify: restart sssd
+  when: hx_domain_join_use_sssd | default(true)
+
+- name: Configure PAM for domain authentication
+  block:
+    - name: Configure PAM authentication (Debian/Ubuntu)
+      ansible.builtin.shell:
+        cmd: pam-auth-update --enable mkhomedir
+      become: true
+      when: ansible_os_family == "Debian"
+
+    - name: Configure PAM authentication (RedHat/CentOS)
+      ansible.builtin.command:
+        cmd: authconfig --enablesssd --enablesssdauth --enablemkhomedir --update
+      become: true
+      when: ansible_os_family == "RedHat"
+
+    - name: Configure sudo access for domain groups
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/domain-admins
+        line: "%{{ item }} ALL=(ALL) ALL"
+        create: true
+        mode: '0440'
+        validate: 'visudo -cf %s'
+      loop: "{{ hx_domain_join_sudo_groups }}"
+      become: true
+      when: hx_domain_join_sudo_groups | length > 0
+
+- name: Test Kerberos authentication
+  block:
+    - name: Obtain Kerberos ticket for service account
+      ansible.builtin.shell:
+        cmd: >
+          echo "{{ hx_domain_join_service_password }}" | 
+          kinit {{ hx_domain_join_service_account }}@{{ hx_domain_join_realm }}
+      register: kinit_result
+      become: true
+      no_log: true
+      changed_when: false
+
+    - name: Verify Kerberos ticket
+      ansible.builtin.command:
+        cmd: klist
+      register: klist_result
+      become: true
+      changed_when: false
+
+    - name: Destroy test ticket
+      ansible.builtin.command:
+        cmd: kdestroy
+      become: true
+      changed_when: false
+      failed_when: false
+
+- name: Configure automatic home directory creation
+  block:
+    - name: Ensure mkhomedir is configured in PAM
+      ansible.builtin.lineinfile:
+        path: "{{ item }}"
+        line: "session required pam_mkhomedir.so skel=/etc/skel umask=077"
+        insertafter: "session.*pam_unix.so"
+      loop:
+        - /etc/pam.d/common-session
+        - /etc/pam.d/sshd
+      become: true
+      when: ansible_os_family == "Debian"
+
+    - name: Configure home directory template
+      ansible.builtin.lineinfile:
+        path: /etc/sssd/sssd.conf
+        regexp: '^fallback_homedir'
+        line: "fallback_homedir = {{ hx_domain_join_home_directory_template }}"
+        insertafter: '^\[domain/'
+      become: true
+      notify: restart sssd
+      when: hx_domain_join_use_sssd | default(true)
+
+- name: Configure SSH for domain authentication
+  block:
+    - name: Enable GSSAPI authentication in SSH
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backup: true
+      loop:
+        - regexp: '^#?GSSAPIAuthentication'
+          line: "GSSAPIAuthentication {{ 'yes' if hx_domain_join_gssapi_authentication else 'no' }}"
+        - regexp: '^#?GSSAPICleanupCredentials'
+          line: 'GSSAPICleanupCredentials yes'
+        - regexp: '^#?UsePAM'
+          line: 'UsePAM yes'
+        - regexp: '^#?PasswordAuthentication'
+          line: "PasswordAuthentication {{ 'yes' if hx_domain_join_password_authentication else 'no' }}"
+        - regexp: '^#?PubkeyAuthentication'
+          line: "PubkeyAuthentication {{ 'yes' if hx_domain_join_pubkey_authentication else 'no' }}"
+        - regexp: '^#?ChallengeResponseAuthentication'
+          line: "ChallengeResponseAuthentication {{ 'yes' if hx_domain_join_challenge_response_auth else 'no' }}"
+      become: true
+      notify: restart sshd
+
+    - name: Configure SSH access restrictions
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        line: "AllowGroups {{ hx_domain_join_allowed_groups | map('regex_replace', ' ', '\\ ') | join(' ') }}"
+        backup: true
+      become: true
+      notify: restart sshd
+      when: hx_domain_join_allowed_groups | length > 0
+
+- name: Create domain join status file
+  ansible.builtin.copy:
+    content: |
+      Domain: {{ hx_domain_join_domain_name }}
+      Realm: {{ hx_domain_join_realm }}
+      Computer Name: {{ hx_domain_join_computer_name }}
+      Join Date: {{ ansible_date_time.iso8601 }}
+      Join User: {{ hx_domain_join_admin_user }}
+      SSSD Enabled: {{ hx_domain_join_use_sssd }}
+      Status: Joined
+    dest: /etc/hx-domain-join-status
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+
+- name: Log domain join completion
+  ansible.builtin.lineinfile:
+    path: "{{ hx_domain_join_audit_log_path }}"
+    line: "{{ ansible_date_time.iso8601 }} - Domain join completed successfully: {{ hx_domain_join_domain_name }} on {{ inventory_hostname }}"
+    create: true
+  become: true
+  when: hx_domain_join_audit_enabled | default(false)
+
+- name: Display installation summary
+  ansible.builtin.debug:
+    msg:
+      - "Domain join installation completed successfully"
+      - "Domain: {{ hx_domain_join_domain_name }}"
+      - "Realm: {{ hx_domain_join_realm }}"
+      - "Computer Name: {{ hx_domain_join_computer_name }}"
+      - "Computer OU: {{ hx_domain_join_computer_ou }}"
+      - "SSSD Configured: {{ hx_domain_join_use_sssd }}"
+      - "Home Directory Template: {{ hx_domain_join_home_directory_template }}"
+      - "Sudo Groups: {{ hx_domain_join_sudo_groups | length }}"
+      - "Allowed Groups: {{ hx_domain_join_allowed_groups | length }}"
+  when: hx_domain_join_enable_logging | default(true)

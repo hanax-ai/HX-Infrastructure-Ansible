@@ -1,0 +1,270 @@
+
+---
+# Security hardening tasks for hx_ca_trust_standardized role
+# Comprehensive security measures and hardening
+
+- name: Secure certificate file permissions
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: "{{ item.mode }}"
+    attributes: "{{ item.attributes | default(omit) }}"
+  loop:
+    - path: "{{ hx_ca_trust_ca_cert_path }}"
+      mode: "{{ hx_ca_trust_cert_mode }}"
+      attributes: "+i"  # Immutable
+    - path: "{{ hx_ca_trust_ca_key_path }}"
+      mode: "{{ hx_ca_trust_key_mode }}"
+      attributes: "+i"  # Immutable
+    - path: "{{ hx_ca_trust_private_dir }}"
+      mode: "0700"
+      attributes: "+a"  # Append only
+  become: true
+  when: hx_ca_trust_secure_deletion | default(true)
+
+- name: Configure SELinux contexts (RedHat family)
+  block:
+    - name: Set SELinux context for certificate files
+      community.general.sefcontext:
+        target: "{{ hx_ca_trust_cert_dir }}(/.*)?"
+        setype: cert_t
+        reload: true
+      become: true
+
+    - name: Set SELinux context for private key files
+      community.general.sefcontext:
+        target: "{{ hx_ca_trust_private_dir }}(/.*)?"
+        setype: cert_t
+        reload: true
+      become: true
+
+    - name: Apply SELinux contexts
+      ansible.builtin.command:
+        cmd: "restorecon -R {{ item }}"
+      loop:
+        - "{{ hx_ca_trust_cert_dir }}"
+        - "{{ hx_ca_trust_private_dir }}"
+      become: true
+      changed_when: false
+  when: 
+    - ansible_os_family == "RedHat"
+    - ansible_selinux.status == "enabled"
+
+- name: Configure AppArmor profiles (Debian family)
+  block:
+    - name: Create AppArmor profile for CA operations
+      ansible.builtin.template:
+        src: apparmor_ca.profile.j2
+        dest: /etc/apparmor.d/usr.local.bin.hx-ca-operations
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+
+    - name: Load AppArmor profile
+      ansible.builtin.command:
+        cmd: apparmor_parser -r /etc/apparmor.d/usr.local.bin.hx-ca-operations
+      become: true
+      changed_when: false
+  when: 
+    - ansible_os_family == "Debian"
+    - ansible_apparmor is defined
+    - ansible_apparmor.status == "enabled"
+
+- name: Secure temporary files cleanup
+  block:
+    - name: Create secure cleanup script
+      ansible.builtin.template:
+        src: secure_cleanup.sh.j2
+        dest: /usr/local/bin/hx-secure-cleanup
+        owner: root
+        group: root
+        mode: '0700'
+      become: true
+
+    - name: Run secure cleanup
+      ansible.builtin.command:
+        cmd: /usr/local/bin/hx-secure-cleanup "{{ hx_ca_trust_work_dir }}"
+      become: true
+      changed_when: false
+      when: hx_ca_trust_secure_deletion | default(true)
+  when: hx_ca_trust_work_dir is defined
+
+- name: Configure audit logging
+  block:
+    - name: Add audit rules for certificate files
+      ansible.builtin.lineinfile:
+        path: /etc/audit/rules.d/hx-ca-trust.rules
+        line: "{{ item }}"
+        create: true
+      loop:
+        - "-w {{ hx_ca_trust_ca_cert_path }} -p wa -k hx_ca_cert"
+        - "-w {{ hx_ca_trust_ca_key_path }} -p wa -k hx_ca_key"
+        - "-w {{ hx_ca_trust_cert_dir }} -p wa -k hx_ca_dir"
+        - "-w {{ hx_ca_trust_private_dir }} -p wa -k hx_ca_private"
+      become: true
+      notify: restart auditd
+
+    - name: Verify audit rules
+      ansible.builtin.command:
+        cmd: auditctl -l
+      register: audit_rules
+      become: true
+      changed_when: false
+  when: 
+    - hx_ca_trust_audit_enabled | default(false)
+    - ansible_service_mgr == "systemd"
+
+- name: Configure firewall rules
+  block:
+    - name: Allow OCSP responder port (UFW)
+      community.general.ufw:
+        rule: allow
+        port: "2560"
+        proto: tcp
+        comment: "HX OCSP Responder"
+      become: true
+      when: 
+        - ansible_os_family == "Debian"
+        - hx_ca_trust_ocsp_enabled | default(false)
+
+    - name: Allow OCSP responder port (firewalld)
+      ansible.posix.firewalld:
+        port: 2560/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+      become: true
+      when: 
+        - ansible_os_family == "RedHat"
+        - hx_ca_trust_ocsp_enabled | default(false)
+  when: hx_ca_trust_ocsp_enabled | default(false)
+
+- name: Implement key rotation policy
+  block:
+    - name: Create key rotation script
+      ansible.builtin.template:
+        src: key_rotation.sh.j2
+        dest: /usr/local/bin/hx-key-rotation
+        owner: root
+        group: root
+        mode: '0700'
+      become: true
+
+    - name: Schedule key rotation
+      ansible.builtin.cron:
+        name: "HX CA Key Rotation Check"
+        job: "/usr/local/bin/hx-key-rotation check"
+        minute: "0"
+        hour: "3"
+        day: "1"
+        user: root
+      become: true
+  when: hx_ca_trust_key_rotation_enabled | default(false)
+
+- name: Configure intrusion detection
+  block:
+    - name: Install AIDE (Advanced Intrusion Detection Environment)
+      ansible.builtin.package:
+        name: aide
+        state: present
+      become: true
+
+    - name: Configure AIDE for certificate monitoring
+      ansible.builtin.lineinfile:
+        path: /etc/aide/aide.conf
+        line: "{{ hx_ca_trust_cert_dir }} NORMAL"
+        create: true
+      become: true
+
+    - name: Initialize AIDE database
+      ansible.builtin.command:
+        cmd: aide --init
+      become: true
+      changed_when: false
+      failed_when: false
+
+    - name: Schedule AIDE checks
+      ansible.builtin.cron:
+        name: "AIDE Certificate Check"
+        job: "aide --check"
+        minute: "0"
+        hour: "4"
+        user: root
+      become: true
+  when: hx_ca_trust_intrusion_detection | default(false)
+
+- name: Implement certificate pinning
+  block:
+    - name: Generate certificate fingerprints
+      ansible.builtin.shell:
+        cmd: "openssl x509 -in {{ hx_ca_trust_ca_cert_path }} -fingerprint -sha256 -noout"
+      register: cert_fingerprint
+      become: true
+      changed_when: false
+
+    - name: Store certificate fingerprint
+      ansible.builtin.copy:
+        content: "{{ cert_fingerprint.stdout }}"
+        dest: "{{ hx_ca_trust_cert_dir }}/hx-ca-fingerprint.txt"
+        owner: "{{ hx_ca_trust_file_owner }}"
+        group: "{{ hx_ca_trust_file_group }}"
+        mode: '0644'
+      become: true
+
+    - name: Create certificate validation script
+      ansible.builtin.template:
+        src: cert_validation.sh.j2
+        dest: /usr/local/bin/hx-cert-validate
+        owner: root
+        group: root
+        mode: '0755'
+      become: true
+  when: hx_ca_trust_certificate_pinning | default(false)
+
+- name: Configure secure communication
+  block:
+    - name: Disable weak SSL/TLS protocols
+      ansible.builtin.lineinfile:
+        path: /etc/ssl/openssl.cnf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backup: true
+      loop:
+        - regexp: '^MinProtocol'
+          line: 'MinProtocol = TLSv1.2'
+        - regexp: '^CipherString'
+          line: 'CipherString = ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS'
+      become: true
+
+    - name: Configure cipher suites
+      ansible.builtin.template:
+        src: ssl_security.conf.j2
+        dest: /etc/ssl/hx-security.conf
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+  when: hx_ca_trust_secure_communication | default(true)
+
+- name: Log security hardening completion
+  ansible.builtin.lineinfile:
+    path: "{{ hx_ca_trust_audit_log_path }}"
+    line: "{{ ansible_date_time.iso8601 }} - CA Trust security hardening completed on {{ inventory_hostname }}"
+    create: true
+  become: true
+  when: hx_ca_trust_audit_enabled | default(false)
+
+- name: Display security summary
+  ansible.builtin.debug:
+    msg:
+      - "CA Trust security hardening completed successfully"
+      - "File permissions secured: {{ hx_ca_trust_secure_deletion }}"
+      - "SELinux/AppArmor configured: {{ ansible_selinux.status | default('N/A') }}"
+      - "Audit logging enabled: {{ hx_ca_trust_audit_enabled }}"
+      - "Firewall rules configured: {{ hx_ca_trust_ocsp_enabled }}"
+      - "Intrusion detection: {{ hx_ca_trust_intrusion_detection | default(false) }}"
+      - "Certificate pinning: {{ hx_ca_trust_certificate_pinning | default(false) }}"
+      - "Secure communication: {{ hx_ca_trust_secure_communication | default(true) }}"
+  when: hx_ca_trust_enable_logging | default(true)

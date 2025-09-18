@@ -1,0 +1,144 @@
+
+---
+# Default variables for hx_ca_trust_standardized role
+# Following SOLID principles with comprehensive configuration options
+
+# === CERTIFICATE AUTHORITY CONFIGURATION ===
+hx_ca_trust_ca_name: "HX-Root-CA"                    # Name of the Certificate Authority
+hx_ca_trust_ca_organization: "Hanax AI"              # Organization name for CA
+hx_ca_trust_ca_country: "US"                         # Country code for CA
+hx_ca_trust_ca_state: "California"                   # State/Province for CA
+hx_ca_trust_ca_locality: "San Francisco"             # City/Locality for CA
+
+# === CERTIFICATE PATHS AND LOCATIONS ===
+hx_ca_trust_cert_dir: "/etc/ssl/certs"               # System certificate directory
+hx_ca_trust_private_dir: "/etc/ssl/private"          # Private key directory
+hx_ca_trust_ca_cert_path: "{{ hx_ca_trust_cert_dir }}/hx-ca.crt"  # CA certificate path
+hx_ca_trust_ca_key_path: "{{ hx_ca_trust_private_dir }}/hx-ca.key" # CA private key path
+hx_ca_trust_backup_dir: "/etc/ssl/backup"            # Backup directory for certificates
+
+# === CERTIFICATE PROPERTIES ===
+hx_ca_trust_key_size: 4096                           # RSA key size (2048, 3072, 4096)
+hx_ca_trust_validity_days: 3650                      # Certificate validity in days (10 years)
+hx_ca_trust_digest: "sha256"                         # Digest algorithm
+hx_ca_trust_key_type: "RSA"                          # Key type (RSA, EC)
+
+# === CERTIFICATE EXTENSIONS ===
+hx_ca_trust_basic_constraints: "CA:TRUE"             # Basic constraints for CA
+hx_ca_trust_key_usage:                               # Key usage extensions
+  - "keyCertSign"
+  - "cRLSign"
+  - "digitalSignature"
+hx_ca_trust_extended_key_usage:                      # Extended key usage
+  - "serverAuth"
+  - "clientAuth"
+
+# === SYSTEM INTEGRATION ===
+hx_ca_trust_update_system_store: true                # Update system certificate store
+hx_ca_trust_update_command: "update-ca-certificates" # Command to update certificate store
+hx_ca_trust_java_keystore_update: false              # Update Java keystore
+hx_ca_trust_java_keystore_path: "/etc/ssl/certs/java/cacerts"  # Java keystore path
+hx_ca_trust_java_keystore_password: "changeit"       # Java keystore password
+
+# === SECURITY SETTINGS ===
+hx_ca_trust_file_owner: "root"                       # Certificate file owner
+hx_ca_trust_file_group: "root"                       # Certificate file group
+hx_ca_trust_cert_mode: "0644"                        # Certificate file permissions
+hx_ca_trust_key_mode: "0600"                         # Private key file permissions
+hx_ca_trust_backup_enabled: true                     # Enable certificate backup
+hx_ca_trust_secure_deletion: true                    # Secure deletion of temporary files
+
+# === VALIDATION SETTINGS ===
+hx_ca_trust_validate_certificates: true              # Validate certificates after installation
+hx_ca_trust_check_expiration: true                   # Check certificate expiration
+hx_ca_trust_expiration_warning_days: 30              # Days before expiration to warn
+hx_ca_trust_verify_chain: true                       # Verify certificate chain
+
+# === DISTRIBUTION SETTINGS ===
+hx_ca_trust_distribute_to_clients: false             # Distribute CA cert to client systems
+hx_ca_trust_client_cert_path: "/usr/local/share/ca-certificates/"  # Client cert path
+hx_ca_trust_distribution_method: "copy"              # Distribution method (copy, fetch, url)
+
+# === MONITORING AND LOGGING ===
+hx_ca_trust_enable_logging: true                     # Enable detailed logging
+hx_ca_trust_log_level: "INFO"                        # Log level (DEBUG, INFO, WARN, ERROR)
+hx_ca_trust_audit_enabled: true                      # Enable audit logging
+hx_ca_trust_audit_log_path: "/var/log/hx-ca-trust.log"  # Audit log file path
+
+# === CERTIFICATE REVOCATION ===
+hx_ca_trust_crl_enabled: false                       # Enable Certificate Revocation List
+hx_ca_trust_crl_path: "{{ hx_ca_trust_cert_dir }}/hx-ca.crl"  # CRL file path
+hx_ca_trust_crl_update_interval: "daily"             # CRL update interval
+hx_ca_trust_ocsp_enabled: false                      # Enable OCSP responder
+
+# === BACKUP AND RECOVERY ===
+hx_ca_trust_backup_schedule: "0 2 * * 0"             # Weekly backup schedule (cron format)
+hx_ca_trust_backup_retention_days: 90                # Backup retention period
+hx_ca_trust_backup_encryption: true                  # Encrypt backups
+hx_ca_trust_recovery_test: false                     # Test recovery procedures
+
+# === INTERMEDIATE CA SUPPORT ===
+hx_ca_trust_intermediate_cas: []                     # List of intermediate CAs
+# Example:
+# hx_ca_trust_intermediate_cas:
+#   - name: "HX-Intermediate-CA"
+#     cert_path: "/etc/ssl/certs/hx-intermediate.crt"
+#     key_path: "/etc/ssl/private/hx-intermediate.key"
+#     parent_ca: "HX-Root-CA"
+
+# === CERTIFICATE TEMPLATES ===
+hx_ca_trust_certificate_templates:                   # Certificate templates for different use cases
+  server:
+    key_usage:
+      - "keyEncipherment"
+      - "digitalSignature"
+    extended_key_usage:
+      - "serverAuth"
+    validity_days: 365
+  client:
+    key_usage:
+      - "keyEncipherment"
+      - "digitalSignature"
+    extended_key_usage:
+      - "clientAuth"
+    validity_days: 365
+  code_signing:
+    key_usage:
+      - "digitalSignature"
+    extended_key_usage:
+      - "codeSigning"
+    validity_days: 1095
+
+# === INTEGRATION SETTINGS ===
+hx_ca_trust_integrate_with_services: []              # Services to integrate with
+# Example:
+# hx_ca_trust_integrate_with_services:
+#   - nginx
+#   - apache
+#   - postgresql
+#   - docker
+
+# === COMPLIANCE SETTINGS ===
+hx_ca_trust_compliance_mode: "standard"              # Compliance mode (standard, strict, custom)
+hx_ca_trust_fips_mode: false                         # FIPS 140-2 compliance mode
+hx_ca_trust_common_criteria: false                   # Common Criteria compliance
+
+# === PERFORMANCE TUNING ===
+hx_ca_trust_parallel_operations: true                # Enable parallel certificate operations
+hx_ca_trust_max_parallel_jobs: 4                     # Maximum parallel jobs
+hx_ca_trust_operation_timeout: 300                   # Operation timeout in seconds
+
+# === NOTIFICATION SETTINGS ===
+hx_ca_trust_notifications_enabled: false             # Enable notifications
+hx_ca_trust_notification_email: "admin@hanax.ai"     # Notification email address
+hx_ca_trust_notification_events:                     # Events to notify about
+  - "certificate_expiring"
+  - "certificate_expired"
+  - "ca_created"
+  - "ca_renewed"
+
+# === TESTING AND VALIDATION ===
+hx_ca_trust_run_tests: true                          # Run validation tests
+hx_ca_trust_test_certificate_creation: true          # Test certificate creation
+hx_ca_trust_test_certificate_validation: true        # Test certificate validation
+hx_ca_trust_test_system_integration: true            # Test system integration

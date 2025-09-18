@@ -1,0 +1,196 @@
+
+---
+# Default variables for hx_domain_join_standardized role
+# Following SOLID principles with comprehensive Active Directory integration
+
+# === DOMAIN CONFIGURATION ===
+hx_domain_join_domain_name: "hanax.local"                    # Active Directory domain name
+hx_domain_join_domain_netbios: "HANAX"                       # NetBIOS domain name
+hx_domain_join_realm: "{{ hx_domain_join_domain_name | upper }}"  # Kerberos realm
+hx_domain_join_workgroup: "{{ hx_domain_join_domain_netbios }}"   # SMB workgroup
+
+# === DOMAIN CONTROLLERS ===
+hx_domain_join_domain_controllers:                           # List of domain controllers
+  - "dc01.hanax.local"
+  - "dc02.hanax.local"
+hx_domain_join_preferred_dc: "{{ hx_domain_join_domain_controllers[0] }}"  # Preferred DC
+hx_domain_join_dc_discovery: "auto"                          # DC discovery method (auto, manual, dns)
+
+# === AUTHENTICATION CREDENTIALS ===
+hx_domain_join_admin_user: "Administrator"                   # Domain admin username
+hx_domain_join_admin_password: "{{ vault_domain_admin_password }}"  # Domain admin password (vaulted)
+hx_domain_join_service_account: "svc-ansible"                # Service account for operations
+hx_domain_join_service_password: "{{ vault_service_account_password }}"  # Service account password
+
+# === COMPUTER ACCOUNT SETTINGS ===
+hx_domain_join_computer_name: "{{ ansible_hostname | upper }}"  # Computer name in AD
+hx_domain_join_computer_ou: "OU=Servers,DC=hanax,DC=local"   # Organizational Unit for computer
+hx_domain_join_computer_description: "HX Infrastructure Server - {{ inventory_hostname }}"  # Computer description
+hx_domain_join_computer_groups: []                           # Additional computer groups
+# Example:
+# hx_domain_join_computer_groups:
+#   - "CN=HX-Servers,OU=Groups,DC=hanax,DC=local"
+
+# === SSSD CONFIGURATION ===
+hx_domain_join_use_sssd: true                                # Use SSSD for authentication
+hx_domain_join_sssd_cache_credentials: true                  # Cache credentials offline
+hx_domain_join_sssd_enumerate: false                         # Enumerate users/groups
+hx_domain_join_sssd_case_sensitive: false                    # Case sensitive names
+hx_domain_join_sssd_id_provider: "ad"                        # Identity provider
+hx_domain_join_sssd_auth_provider: "ad"                      # Authentication provider
+hx_domain_join_sssd_access_provider: "ad"                    # Access control provider
+
+# === KERBEROS CONFIGURATION ===
+hx_domain_join_kerberos_encryption_types:                    # Supported encryption types
+  - "aes256-cts-hmac-sha1-96"
+  - "aes128-cts-hmac-sha1-96"
+  - "rc4-hmac"
+hx_domain_join_kerberos_ticket_lifetime: "24h"               # Ticket lifetime
+hx_domain_join_kerberos_renew_lifetime: "7d"                 # Renewable lifetime
+hx_domain_join_kerberos_forwardable: true                    # Forwardable tickets
+
+# === DNS CONFIGURATION ===
+hx_domain_join_configure_dns: true                           # Configure DNS settings
+hx_domain_join_dns_servers: "{{ hx_domain_join_domain_controllers }}"  # DNS servers
+hx_domain_join_dns_search_domains:                           # DNS search domains
+  - "{{ hx_domain_join_domain_name }}"
+hx_domain_join_dns_timeout: 5                                # DNS query timeout
+
+# === NTP CONFIGURATION ===
+hx_domain_join_configure_ntp: true                           # Configure NTP
+hx_domain_join_ntp_servers: "{{ hx_domain_join_domain_controllers }}"  # NTP servers
+hx_domain_join_ntp_fallback_servers:                         # Fallback NTP servers
+  - "pool.ntp.org"
+  - "time.google.com"
+
+# === USER ACCESS CONTROL ===
+hx_domain_join_allowed_groups:                               # Groups allowed to login
+  - "Domain Admins"
+  - "HX-Administrators"
+  - "HX-Users"
+hx_domain_join_denied_groups: []                             # Groups denied access
+hx_domain_join_sudo_groups:                                  # Groups with sudo access
+  - "Domain Admins"
+  - "HX-Administrators"
+hx_domain_join_home_directory_template: "/home/%u@%d"        # Home directory template
+
+# === SECURITY SETTINGS ===
+hx_domain_join_require_membership: true                      # Require group membership
+hx_domain_join_use_fully_qualified_names: false              # Use FQDN for usernames
+hx_domain_join_password_authentication: true                 # Enable password auth
+hx_domain_join_pubkey_authentication: true                   # Enable public key auth
+hx_domain_join_challenge_response_auth: false                # Disable challenge-response
+hx_domain_join_gssapi_authentication: true                   # Enable GSSAPI auth
+
+# === SMB/CIFS CONFIGURATION ===
+hx_domain_join_configure_smb: false                          # Configure SMB client
+hx_domain_join_smb_security: "ads"                           # SMB security mode
+hx_domain_join_smb_encrypt: "auto"                           # SMB encryption
+hx_domain_join_smb_signing: "mandatory"                      # SMB signing
+
+# === LOGGING AND MONITORING ===
+hx_domain_join_enable_logging: true                          # Enable detailed logging
+hx_domain_join_log_level: "INFO"                             # Log level
+hx_domain_join_audit_enabled: true                           # Enable audit logging
+hx_domain_join_audit_log_path: "/var/log/hx-domain-join.log" # Audit log path
+hx_domain_join_sssd_debug_level: 6                           # SSSD debug level (0-10)
+
+# === BACKUP AND RECOVERY ===
+hx_domain_join_backup_enabled: true                          # Enable configuration backup
+hx_domain_join_backup_dir: "/etc/hx-backup/domain-join"      # Backup directory
+hx_domain_join_backup_retention_days: 30                     # Backup retention period
+
+# === HEALTH CHECKS ===
+hx_domain_join_health_checks: true                           # Enable health checks
+hx_domain_join_health_check_interval: "*/15 * * * *"         # Health check cron schedule
+hx_domain_join_connectivity_timeout: 10                      # Connection timeout seconds
+hx_domain_join_auth_test_user: "{{ hx_domain_join_service_account }}"  # User for auth tests
+
+# === PACKAGE MANAGEMENT ===
+hx_domain_join_packages_debian:                              # Debian/Ubuntu packages
+  - realmd
+  - sssd
+  - sssd-tools
+  - libnss-sss
+  - libpam-sss
+  - adcli
+  - samba-common-bin
+  - oddjob
+  - oddjob-mkhomedir
+  - packagekit
+  - krb5-user
+  - chrony
+
+hx_domain_join_packages_redhat:                              # RedHat/CentOS packages
+  - realmd
+  - sssd
+  - sssd-tools
+  - sssd-ad
+  - adcli
+  - samba-common-tools
+  - oddjob
+  - oddjob-mkhomedir
+  - PackageKit
+  - krb5-workstation
+  - chrony
+
+# === ADVANCED CONFIGURATION ===
+hx_domain_join_ldap_search_base: "DC=hanax,DC=local"         # LDAP search base
+hx_domain_join_ldap_user_search_base: "CN=Users,DC=hanax,DC=local"  # User search base
+hx_domain_join_ldap_group_search_base: "CN=Users,DC=hanax,DC=local" # Group search base
+hx_domain_join_ldap_schema: "ad"                             # LDAP schema type
+hx_domain_join_ldap_id_mapping: true                         # Enable ID mapping
+hx_domain_join_ldap_min_id: 10000                            # Minimum UID/GID
+hx_domain_join_ldap_max_id: 2000000000                       # Maximum UID/GID
+
+# === PERFORMANCE TUNING ===
+hx_domain_join_cache_timeout: 86400                          # Cache timeout seconds
+hx_domain_join_enum_cache_timeout: 120                       # Enumeration cache timeout
+hx_domain_join_entry_cache_timeout: 5400                     # Entry cache timeout
+hx_domain_join_neg_timeout: 15                               # Negative cache timeout
+hx_domain_join_memcache_timeout: 300                         # Memory cache timeout
+
+# === FAILOVER CONFIGURATION ===
+hx_domain_join_failover_primary: "{{ hx_domain_join_preferred_dc }}"  # Primary server
+hx_domain_join_failover_backup: "{{ hx_domain_join_domain_controllers[1:] }}"  # Backup servers
+hx_domain_join_offline_credentials_expiration: 7             # Offline credentials expiry (days)
+hx_domain_join_offline_failed_login_attempts: 3              # Max offline login attempts
+
+# === COMPLIANCE SETTINGS ===
+hx_domain_join_compliance_mode: "standard"                   # Compliance mode
+hx_domain_join_password_complexity: true                     # Enforce password complexity
+hx_domain_join_account_lockout: true                         # Enable account lockout
+hx_domain_join_session_timeout: 3600                         # Session timeout seconds
+hx_domain_join_idle_timeout: 900                             # Idle timeout seconds
+
+# === INTEGRATION SETTINGS ===
+hx_domain_join_integrate_with_services: []                   # Services to integrate
+# Example:
+# hx_domain_join_integrate_with_services:
+#   - ssh
+#   - sudo
+#   - cron
+#   - apache
+#   - nginx
+
+# === NOTIFICATION SETTINGS ===
+hx_domain_join_notifications_enabled: false                  # Enable notifications
+hx_domain_join_notification_email: "admin@hanax.ai"          # Notification email
+hx_domain_join_notification_events:                          # Events to notify
+  - "domain_join_success"
+  - "domain_join_failure"
+  - "authentication_failure"
+  - "connectivity_issues"
+
+# === TESTING AND VALIDATION ===
+hx_domain_join_run_tests: true                               # Run validation tests
+hx_domain_join_test_authentication: true                     # Test authentication
+hx_domain_join_test_group_membership: true                   # Test group membership
+hx_domain_join_test_home_directory: true                     # Test home directory creation
+hx_domain_join_test_sudo_access: true                        # Test sudo access
+
+# === TROUBLESHOOTING ===
+hx_domain_join_debug_mode: false                             # Enable debug mode
+hx_domain_join_verbose_logging: false                        # Enable verbose logging
+hx_domain_join_preserve_logs: true                           # Preserve logs on failure
+hx_domain_join_diagnostic_tools: true                        # Install diagnostic tools

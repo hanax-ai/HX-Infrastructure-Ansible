@@ -1,0 +1,168 @@
+
+---
+# Preparation tasks for hx_ca_trust_standardized role
+# System preparation and dependency installation
+
+- name: Create certificate directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: '0755'
+  loop:
+    - "{{ hx_ca_trust_cert_dir }}"
+    - "{{ hx_ca_trust_private_dir }}"
+    - "{{ hx_ca_trust_backup_dir }}"
+  become: true
+
+- name: Install required packages (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - openssl
+      - ca-certificates
+      - python3-cryptography
+      - python3-openssl
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+  when: ansible_os_family == "Debian"
+
+- name: Install required packages (RedHat/CentOS)
+  ansible.builtin.yum:
+    name:
+      - openssl
+      - ca-certificates
+      - python3-cryptography
+      - python3-pyOpenSSL
+    state: present
+  become: true
+  when: ansible_os_family == "RedHat"
+
+- name: Install Java keystore tools (if Java integration enabled)
+  ansible.builtin.package:
+    name:
+      - openjdk-11-jre-headless
+    state: present
+  become: true
+  when: 
+    - hx_ca_trust_java_keystore_update | default(false)
+    - ansible_os_family == "Debian"
+
+- name: Create backup directory structure
+  ansible.builtin.file:
+    path: "{{ hx_ca_trust_backup_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: '0700'
+  loop:
+    - certificates
+    - keys
+    - configs
+  become: true
+  when: hx_ca_trust_backup_enabled | default(false)
+
+- name: Create audit log directory
+  ansible.builtin.file:
+    path: "{{ hx_ca_trust_audit_log_path | dirname }}"
+    state: directory
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: '0755'
+  become: true
+  when: hx_ca_trust_audit_enabled | default(false)
+
+- name: Initialize audit log file
+  ansible.builtin.file:
+    path: "{{ hx_ca_trust_audit_log_path }}"
+    state: touch
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: '0644'
+  become: true
+  when: hx_ca_trust_audit_enabled | default(false)
+
+- name: Check for existing CA certificate
+  ansible.builtin.stat:
+    path: "{{ hx_ca_trust_ca_cert_path }}"
+  register: existing_ca_cert
+
+- name: Check for existing CA private key
+  ansible.builtin.stat:
+    path: "{{ hx_ca_trust_ca_key_path }}"
+  register: existing_ca_key
+
+- name: Backup existing certificates
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ hx_ca_trust_backup_dir }}/certificates/{{ item.dest }}"
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: '0644'
+    remote_src: true
+  loop:
+    - src: "{{ hx_ca_trust_ca_cert_path }}"
+      dest: "hx-ca-backup-{{ ansible_date_time.epoch }}.crt"
+  become: true
+  when: 
+    - existing_ca_cert.stat.exists
+    - hx_ca_trust_backup_enabled | default(false)
+
+- name: Backup existing private keys
+  ansible.builtin.copy:
+    src: "{{ hx_ca_trust_ca_key_path }}"
+    dest: "{{ hx_ca_trust_backup_dir }}/keys/hx-ca-key-backup-{{ ansible_date_time.epoch }}.key"
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: '0600'
+    remote_src: true
+  become: true
+  when: 
+    - existing_ca_key.stat.exists
+    - hx_ca_trust_backup_enabled | default(false)
+
+- name: Set up certificate update command based on OS
+  ansible.builtin.set_fact:
+    hx_ca_trust_update_command: "{{ 'update-ca-certificates' if ansible_os_family == 'Debian' else 'update-ca-trust' }}"
+
+- name: Create temporary working directory
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: hx_ca_trust
+  register: temp_work_dir
+  become: true
+
+- name: Set working directory fact
+  ansible.builtin.set_fact:
+    hx_ca_trust_work_dir: "{{ temp_work_dir.path }}"
+
+- name: Create OpenSSL configuration template
+  ansible.builtin.template:
+    src: openssl_ca.conf.j2
+    dest: "{{ hx_ca_trust_work_dir }}/openssl_ca.conf"
+    owner: "{{ hx_ca_trust_file_owner }}"
+    group: "{{ hx_ca_trust_file_group }}"
+    mode: '0644'
+  become: true
+
+- name: Log preparation completion
+  ansible.builtin.lineinfile:
+    path: "{{ hx_ca_trust_audit_log_path }}"
+    line: "{{ ansible_date_time.iso8601 }} - CA Trust preparation completed on {{ inventory_hostname }}"
+    create: true
+  become: true
+  when: hx_ca_trust_audit_enabled | default(false)
+
+- name: Display preparation summary
+  ansible.builtin.debug:
+    msg:
+      - "CA Trust preparation completed successfully"
+      - "Certificate directory: {{ hx_ca_trust_cert_dir }}"
+      - "Private key directory: {{ hx_ca_trust_private_dir }}"
+      - "Backup directory: {{ hx_ca_trust_backup_dir }}"
+      - "Working directory: {{ hx_ca_trust_work_dir }}"
+      - "Existing CA cert: {{ existing_ca_cert.stat.exists }}"
+      - "Existing CA key: {{ existing_ca_key.stat.exists }}"
+  when: hx_ca_trust_enable_logging | default(true)
