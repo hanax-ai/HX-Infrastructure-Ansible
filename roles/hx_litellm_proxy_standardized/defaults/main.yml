@@ -1,11 +1,10 @@
-
 ---
 # LiteLLM Proxy Role - Default Variables
 # HX Infrastructure Ansible - Enterprise Grade Configuration
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # LITELLM PROXY BASIC CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_version: "latest"
 hx_litellm_user: "litellm"
 hx_litellm_group: "litellm"
@@ -14,9 +13,9 @@ hx_litellm_config_directory: "/etc/litellm"
 hx_litellm_log_directory: "/var/log/litellm"
 hx_litellm_data_directory: "/var/lib/litellm"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # SERVICE CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_service_name: "litellm-proxy"
 hx_litellm_service_description: "LiteLLM Proxy Service"
 hx_litellm_host: "0.0.0.0"
@@ -25,9 +24,9 @@ hx_litellm_workers: 1
 hx_litellm_timeout: 600  # 10 minutes
 hx_litellm_max_budget: 100.0  # USD per month
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # DATABASE CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_database: true
 hx_litellm_database_type: "postgresql"
 hx_litellm_database_host: "{{ groups['database'] | default([]) | default([]) | first | default('localhost') }}"
@@ -37,19 +36,18 @@ hx_litellm_database_user: "litellm_user"
 # hx_litellm_database_password: "{{ vault_litellm_db_password }}"  # Should be vaulted
 hx_litellm_database_url: "postgresql://{{ hx_litellm_database_user }}:{{ hx_litellm_database_password | default('') }}@{{ hx_litellm_database_host }}:{{ hx_litellm_database_port }}/{{ hx_litellm_database_name }}"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # REDIS CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_redis: true
 hx_litellm_redis_host: "127.0.0.1"  # Security: bind to localhost
 hx_litellm_redis_port: 6379
 hx_litellm_redis_database: 1
-hx_litellm_redis_protected_mode: true  # Security: enable protected mode
 hx_litellm_redis_url: "redis://{{ hx_litellm_redis_host }}:{{ hx_litellm_redis_port }}/{{ hx_litellm_redis_database }}"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # LLM PROVIDER CONFIGURATIONS
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_providers:
   - model_name: "gpt-3.5-turbo"
     litellm_params:
@@ -89,18 +87,18 @@ hx_litellm_providers:
       supports_function_calling: true
       max_tokens: 32768
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # LOAD BALANCING CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_load_balancing: true
 hx_litellm_load_balancing_strategy: "round_robin"  # round_robin, least_busy, weighted
 hx_litellm_fallback_models: []
 hx_litellm_retry_attempts: 3
 hx_litellm_retry_delay: 1  # seconds
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # RATE LIMITING CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_rate_limiting: true
 hx_litellm_rate_limits:
   - model: "gpt-4"
@@ -113,9 +111,9 @@ hx_litellm_rate_limits:
     rpm: 50
     tpm: 40000
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # AUTHENTICATION AND AUTHORIZATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_auth: true
 hx_litellm_auth_type: "api_key"  # api_key, oauth, jwt
 hx_litellm_master_key: "{{ vault_litellm_master_key | default('change-me-in-production') }}"
@@ -126,9 +124,9 @@ hx_litellm_api_keys: []
 #   max_budget: 50.0
 #   user_id: "user1"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # LOGGING AND MONITORING
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_log_level: "INFO"
 hx_litellm_enable_detailed_logging: true
 hx_litellm_log_format: "json"
@@ -137,17 +135,17 @@ hx_litellm_enable_response_logging: false  # Security: avoid logging sensitive d
 hx_litellm_log_rotation: true
 hx_litellm_log_retention_days: 30
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # CACHING CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_caching: true
 hx_litellm_cache_type: "redis"  # redis, memory, disk
 hx_litellm_cache_ttl: 3600  # 1 hour
 hx_litellm_cache_max_size: "1GB"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # SECURITY CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_ssl: true
 hx_litellm_ssl_cert_path: "/etc/ssl/certs/litellm.crt"
 hx_litellm_ssl_key_path: "/etc/ssl/private/litellm.key"
@@ -156,57 +154,57 @@ hx_litellm_cors_origins: ["*"]
 hx_litellm_enable_request_validation: true
 hx_litellm_max_request_size: "10MB"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # HEALTH CHECK CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_health_check: true
 hx_litellm_health_check_path: "/health"
 hx_litellm_health_check_interval: 30
 hx_litellm_health_check_timeout: 10
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # METRICS AND OBSERVABILITY
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_metrics: true
 hx_litellm_metrics_path: "/metrics"
 hx_litellm_enable_prometheus: true
 hx_litellm_enable_grafana_dashboard: true
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # PROXY SETTINGS
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_streaming: true
 hx_litellm_enable_function_calling: true
 hx_litellm_enable_embeddings: true
 hx_litellm_enable_image_generation: false
 hx_litellm_enable_audio_transcription: false
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # COST TRACKING
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_cost_tracking: true
 hx_litellm_cost_tracking_currency: "USD"
 hx_litellm_budget_alerts: true
 hx_litellm_budget_alert_threshold: 0.8  # 80% of budget
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # WEBHOOK CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_webhooks: false
 hx_litellm_webhook_url: ""
 hx_litellm_webhook_events: ["request_start", "request_end", "error"]
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # BACKUP CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_backup: true
 hx_litellm_backup_directory: "/var/backups/litellm"
 hx_litellm_backup_schedule: "0 2 * * *"  # Daily at 2 AM
 hx_litellm_backup_retention_days: 7
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # ENVIRONMENT VARIABLES
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_environment_variables:
   LITELLM_LOG: "{{ hx_litellm_log_level }}"
   LITELLM_PORT: "{{ hx_litellm_port }}"
@@ -215,9 +213,9 @@ hx_litellm_environment_variables:
   LITELLM_MASTER_KEY: "{{ hx_litellm_master_key }}"
   LITELLM_MAX_BUDGET: "{{ hx_litellm_max_budget }}"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # FAILOVER CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_failover: true
 hx_litellm_failover_models:
   gpt-4:
@@ -227,9 +225,9 @@ hx_litellm_failover_models:
     - "gpt-4"
     - "gpt-3.5-turbo"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # CUSTOM MODELS CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_custom_models: []
 # Example custom model configuration:
 # - model_name: "custom-llama"
@@ -240,9 +238,9 @@ hx_litellm_custom_models: []
 #     mode: "chat"
 #     max_tokens: 4096
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # MIDDLEWARE CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_middleware: []
 # Example middleware configuration:
 # - name: "request_logger"
@@ -250,9 +248,9 @@ hx_litellm_middleware: []
 #     log_requests: true
 #     log_responses: false
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # ALERTING CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_alerting: true
 hx_litellm_alert_channels: []
 # Example alert channels:
@@ -264,32 +262,32 @@ hx_litellm_alert_channels: []
 #   username: "{{ vault_smtp_username }}"
 #   password: "{{ vault_smtp_password }}"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # PERFORMANCE TUNING
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_max_concurrent_requests: 100
 hx_litellm_request_timeout: 300  # 5 minutes
 hx_litellm_connection_pool_size: 10
 hx_litellm_enable_async: true
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # DEVELOPMENT SETTINGS
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_debug_mode: false
 hx_litellm_enable_swagger: true
 hx_litellm_swagger_path: "/docs"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # COMPLIANCE AND AUDIT
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_enable_audit_logging: true
 hx_litellm_audit_log_path: "{{ hx_litellm_log_directory }}/audit.log"
 hx_litellm_enable_data_retention_policy: true
 hx_litellm_data_retention_days: 90
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # CONTAINER CONFIGURATION (if using Docker)
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_use_docker: false
 hx_litellm_docker_image: "ghcr.io/berriai/litellm:main-latest"
 hx_litellm_docker_network: "litellm-network"
@@ -297,10 +295,14 @@ hx_litellm_docker_volumes:
   - "{{ hx_litellm_config_directory }}:/app/config"
   - "{{ hx_litellm_log_directory }}:/app/logs"
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # SYSTEMD SERVICE CONFIGURATION
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 hx_litellm_service_restart_policy: "always"
 hx_litellm_service_restart_delay: "10s"
 hx_litellm_service_start_limit_interval: "60s"
 hx_litellm_service_start_limit_burst: 3
+
+# Redis Security Configuration
+hx_litellm_redis_bind: "{{ '127.0.0.1' if hx_litellm_redis_host == 'localhost' else hx_litellm_redis_host }}"
+hx_litellm_embed_api_key_in_config: false

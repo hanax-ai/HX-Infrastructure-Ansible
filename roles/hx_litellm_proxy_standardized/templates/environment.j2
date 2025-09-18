@@ -10,7 +10,7 @@ LITELLM_SET_VERBOSE={{ 'true' if hx_litellm_log_level == 'DEBUG' else 'false' }}
 
 # Database configuration
 {% if hx_litellm_database_enabled %}
-DATABASE_URL={{ hx_litellm_database_url }}
+DATABASE_URL="{{ hx_litellm_database_url }}"
 {% endif %}
 
 # Caching configuration
@@ -18,12 +18,12 @@ DATABASE_URL={{ hx_litellm_database_url }}
 REDIS_HOST={{ hx_litellm_redis_host }}
 REDIS_PORT={{ hx_litellm_redis_port }}
 {% if hx_litellm_redis_password %}
-REDIS_PASSWORD={{ hx_litellm_redis_password }}
+REDIS_PASSWORD="{{ hx_litellm_redis_password }}"
 {% endif %}
 {% endif %}
 
 # Security
-LITELLM_MASTER_KEY={{ hx_litellm_master_key }}
+LITELLM_MASTER_KEY="{{ hx_litellm_master_key }}"
 
 # Performance settings
 LITELLM_REQUEST_TIMEOUT={{ hx_litellm_request_timeout }}

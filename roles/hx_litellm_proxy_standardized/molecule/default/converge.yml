@@ -16,10 +16,10 @@
       vars:
         # Override sensitive defaults for testing
         vault_postgres_password: "test_password_123"
-        vault_litellm_master_key: "test_master_key_12345678901234567890"
+        vault_litellm_master_key: "dummy_master_key_32bytes_minimum____"
         vault_litellm_db_password: "test_db_password_123"
-        vault_openai_api_key: "sk-test1234567890abcdef"
-        vault_anthropic_api_key: "sk-ant-test1234567890abcdef"
+        vault_openai_api_key: "sk_test_dummy_key"
+        vault_anthropic_api_key: "sk_ant_test_dummy_key"
         # Disable external dependencies for testing
         hx_litellm_providers:
           openai:

@@ -1,4 +1,3 @@
-
 ---
 - name: "Hx | LiteLLM | Configure firewall rules"
   ufw:
@@ -8,6 +7,7 @@
   when: 
     - hx_litellm_firewall_enabled | default(false) | bool
     - ansible_facts['os_family'] == "Debian"
+    - (hx_litellm_allowed_ips | default([]) | length == 0)
   tags: ['security']
 
 - name: "Hx | LiteLLM | Block malicious IPs"
