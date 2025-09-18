@@ -1,0 +1,42 @@
+
+---
+# Production Operations Role Defaults
+production_ops_enabled: true
+monitoring_enabled: true
+alerting_enabled: true
+
+# Deployment Configuration
+deployment_strategy: "blue_green"
+health_check_timeout: 300
+rollback_enabled: true
+
+# Blue-Green Configuration
+blue_port: 8080
+green_port: 8081
+health_check_endpoint: "/health"
+
+# Canary Configuration
+canary_traffic_percentage: 10
+canary_monitoring_time: 600
+canary_success_threshold: 95
+
+# Service Discovery
+service_discovery_enabled: true
+service_registry_url: "http://consul:8500"
+
+# Auto Recovery
+auto_recovery_enabled: true
+max_recovery_attempts: 3
+recovery_delay: 60
+
+# Monitoring Thresholds
+alert_thresholds:
+  cpu_usage: 80
+  memory_usage: 85
+  disk_usage: 90
+  response_time: 2000
+  error_rate: 5
+
+# Load Balancer Configuration
+load_balancer_type: "nginx"
+upstream_servers: []

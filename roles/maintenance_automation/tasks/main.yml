@@ -1,0 +1,18 @@
+
+---
+# Maintenance Automation Role - Main Tasks
+- name: Include maintenance automation tasks
+  include_tasks: "{{ item }}"
+  with_items:
+    - pre_maintenance_validation.yml
+    - schedule_maintenance.yml
+    - execute_maintenance.yml
+    - database_maintenance.yml
+    - system_optimization.yml
+    - security_patching.yml
+    - post_maintenance_verification.yml
+  when: maintenance_automation_enabled | default(true)
+
+- name: Generate maintenance reports
+  include_tasks: generate_maintenance_report.yml
+  when: generate_reports | default(true)

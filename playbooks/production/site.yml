@@ -1,0 +1,25 @@
+
+---
+# Phase 3.4 - Production Operations and Maintenance Automation
+# Main site playbook for production operations
+- name: HX Infrastructure Production Operations
+  hosts: localhost
+  gather_facts: false
+  vars:
+    phase: "3.4"
+    operation_type: "production"
+  tasks:
+    - name: Display Phase 3.4 Banner
+      debug:
+        msg: |
+          ========================================
+          HX Infrastructure - Phase 3.4
+          Production Operations & Maintenance
+          ========================================
+
+- import_playbook: deployment/blue_green_deploy.yml
+- import_playbook: deployment/canary_deploy.yml
+- import_playbook: operations/service_management.yml
+- import_playbook: operations/health_monitoring.yml
+- import_playbook: maintenance/automated_maintenance.yml
+- import_playbook: maintenance/system_updates.yml
