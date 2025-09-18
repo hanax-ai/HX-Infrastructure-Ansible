@@ -1,22 +1,38 @@
 ---
+# Common role metadata with hx_ prefix standardization
+
 galaxy_info:
-  author: Hanax AI Infrastructure Team
-  description: Common configuration for HX Infrastructure
+  role_name: common
+  namespace: hx
+  author: HX Infrastructure Team
+  description: Common system configuration and hardening for HX Infrastructure
   company: Hanax AI
   license: MIT
-  min_ansible_version: 2.9
+  min_ansible_version: "2.12"
+  
   platforms:
     - name: Ubuntu
       versions:
-        - focal
-        - jammy
-    - name: EL
+        - "20.04"
+        - "22.04"
+    - name: Debian
       versions:
-        - 8
-        - 9
+        - "11"
+        - "12"
+  
   galaxy_tags:
     - system
+    - security
+    - hardening
     - common
     - hx
 
-dependencies: []
+dependencies:
+  - role: geerlingguy.security
+    when: hx_common_security_hardening
+  - role: geerlingguy.firewall
+    when: hx_common_firewall_enabled
+
+collections:
+  - community.general
+  - ansible.posix

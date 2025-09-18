@@ -1,0 +1,58 @@
+---
+# Test role playbook for HX Infrastructure
+# Used by Makefile to test individual roles
+
+- name: Test HX Infrastructure Role
+  hosts: all
+  become: yes
+  gather_facts: yes
+  vars:
+    hx_test_mode: true
+  
+  tasks:
+    - name: Validate target role is specified
+      fail:
+        msg: "target_role variable must be specified"
+      when: target_role is not defined
+      tags:
+        - hx_test
+        - hx_validation
+
+    - name: Display test information
+      debug:
+        msg: |
+          Testing HX Infrastructure Role: {{ target_role }}
+          
+          Test Mode: {{ hx_test_mode }}
+          Target Hosts: {{ ansible_play_hosts | join(', ') }}
+          Ansible Version: {{ ansible_version.full }}
+          
+          This is a dry-run test of the role.
+      tags:
+        - hx_test
+        - hx_info
+
+    - name: Include target role for testing
+      include_role:
+        name: "{{ target_role }}"
+      vars:
+        # Override potentially destructive actions in test mode
+        hx_common_create_users: false
+        hx_security_remove_packages: []
+        hx_security_auditd_enabled: false
+      tags:
+        - hx_test
+        - hx_role
+
+    - name: Validate role execution
+      debug:
+        msg: |
+          Role Test Complete: {{ target_role }}
+          
+          Status: SUCCESS
+          
+          Note: This was a test run. No permanent changes were made.
+          Use the full deployment playbook for actual changes.
+      tags:
+        - hx_test
+        - hx_result

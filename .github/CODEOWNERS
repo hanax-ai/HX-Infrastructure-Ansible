@@ -1,29 +1,75 @@
-# HX Infrastructure Ansible Code Owners
-# These owners will be requested for review when anyone opens a pull request.
+# CODEOWNERS for HX Infrastructure Ansible Repository
+# 
+# This file defines code ownership and review requirements for different parts
+# of the repository. All changes require approval from designated code owners.
+#
+# For more information about CODEOWNERS:
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Global owners
+# Global ownership - Infrastructure team owns everything by default
 * @hanax-ai/infrastructure-team
 
-# Ansible configuration
-ansible.cfg @hanax-ai/infrastructure-team @hanax-ai/security-team
-.ansible-lint @hanax-ai/infrastructure-team
-.yamllint.yml @hanax-ai/infrastructure-team
+# Security-critical files require security team review
+SECURITY.md @hanax-ai/security-team @hanax-ai/infrastructure-team
+ansible.cfg @hanax-ai/security-team @hanax-ai/infrastructure-team
+.gitignore @hanax-ai/security-team @hanax-ai/infrastructure-team
 
-# Security-related files
-SECURITY.md @hanax-ai/security-team
-roles/security/ @hanax-ai/security-team
-playbooks/security/ @hanax-ai/security-team
+# Vault and secrets management
+vars/secrets.yml.template @hanax-ai/security-team @hanax-ai/infrastructure-team
+vars/vault_* @hanax-ai/security-team @hanax-ai/infrastructure-team
+**/vault_* @hanax-ai/security-team @hanax-ai/infrastructure-team
 
-# Inventory and sensitive configurations
-inventory/ @hanax-ai/infrastructure-team @hanax-ai/security-team
-group_vars/ @hanax-ai/infrastructure-team @hanax-ai/security-team
-host_vars/ @hanax-ai/infrastructure-team @hanax-ai/security-team
+# Production inventory and configuration
+inventory/environments/production/ @hanax-ai/infrastructure-team @hanax-ai/security-team
+inventory/group_vars/production.yml @hanax-ai/infrastructure-team @hanax-ai/security-team
 
-# Documentation
-*.md @hanax-ai/infrastructure-team @hanax-ai/documentation-team
-docs/ @hanax-ai/documentation-team
+# Security roles and playbooks
+roles/security/ @hanax-ai/security-team @hanax-ai/infrastructure-team
+playbooks/security/ @hanax-ai/security-team @hanax-ai/infrastructure-team
 
 # CI/CD and automation
-.github/ @hanax-ai/infrastructure-team @hanax-ai/devops-team
-Makefile @hanax-ai/infrastructure-team @hanax-ai/devops-team
-.pre-commit-config.yaml @hanax-ai/infrastructure-team @hanax-ai/devops-team
+.github/ @hanax-ai/devops-team @hanax-ai/infrastructure-team
+Makefile @hanax-ai/devops-team @hanax-ai/infrastructure-team
+
+# Linting and quality control configuration
+.ansible-lint @hanax-ai/infrastructure-team
+.yamllint.yml @hanax-ai/infrastructure-team
+.pre-commit-config.yaml @hanax-ai/infrastructure-team
+requirements*.txt @hanax-ai/infrastructure-team
+
+# Documentation
+docs/ @hanax-ai/documentation-team @hanax-ai/infrastructure-team
+README.md @hanax-ai/documentation-team @hanax-ai/infrastructure-team
+*.md @hanax-ai/documentation-team
+
+# Role-specific ownership
+roles/common/ @hanax-ai/infrastructure-team
+roles/hx_*/ @hanax-ai/infrastructure-team @hanax-ai/application-team
+
+# Database-related configurations
+roles/hx_pg_auth_standardized/ @hanax-ai/database-team @hanax-ai/infrastructure-team
+inventory/group_vars/database.yml @hanax-ai/database-team @hanax-ai/infrastructure-team
+
+# Web and proxy configurations
+roles/hx_litellm_proxy_standardized/ @hanax-ai/infrastructure-team @hanax-ai/application-team
+roles/hx_webui_install_standardized/ @hanax-ai/infrastructure-team @hanax-ai/application-team
+
+# External role dependencies
+requirements.yml @hanax-ai/infrastructure-team
+
+# Environment-specific configurations
+inventory/environments/development/ @hanax-ai/infrastructure-team
+inventory/environments/staging/ @hanax-ai/infrastructure-team @hanax-ai/qa-team
+
+# Branch protection and governance files
+.github/CODEOWNERS @hanax-ai/infrastructure-team @hanax-ai/security-team
+
+# Note: Team names should be updated to match actual GitHub teams
+# Current placeholder teams:
+# - @hanax-ai/infrastructure-team (primary infrastructure maintainers)
+# - @hanax-ai/security-team (security specialists)
+# - @hanax-ai/devops-team (CI/CD and automation specialists)
+# - @hanax-ai/documentation-team (technical writers)
+# - @hanax-ai/database-team (database administrators)
+# - @hanax-ai/application-team (application developers)
+# - @hanax-ai/qa-team (quality assurance team)

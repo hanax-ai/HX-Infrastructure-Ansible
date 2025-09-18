@@ -1,17 +1,178 @@
 ---
-- name: Backup HX Infrastructure
+# Backup playbook for HX Infrastructure
+# Performs comprehensive backup of critical data and configurations
+
+- name: HX Infrastructure Backup
   hosts: all
   become: yes
-
+  gather_facts: yes
+  vars:
+    hx_backup_timestamp: "{{ ansible_date_time.epoch }}"
+    hx_backup_date: "{{ ansible_date_time.date }}"
+    hx_backup_base_dir: "{{ hx_common_backup_directory | default('/opt/hx/backups') }}"
+    hx_backup_retention_days: "{{ hx_common_backup_retention_days | default(7) }}"
+  
   tasks:
-    - name: Create backup directory
+    - name: Create backup directory structure
       file:
-        path: /opt/hx-backups
+        path: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}"
         state: directory
-        mode: '0755'
+        owner: root
+        group: root
+        mode: '0750'
+      tags:
+        - hx_backup
+        - hx_setup
 
-    - name: Backup configuration files
+    - name: Backup system configuration files
       archive:
-        path: /etc
-        dest: "/opt/hx-backups/etc-backup-{{ ansible_date_time.date }}.tar.gz"
-      tags: ['config']
+        path:
+          - /etc/ssh/
+          - /etc/fail2ban/
+          - /etc/ufw/
+          - /etc/audit/
+          - /etc/ansible/
+        dest: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}/system-config-{{ hx_backup_timestamp }}.tar.gz"
+        owner: root
+        group: root
+        mode: '0640'
+      tags:
+        - hx_backup
+        - hx_system
+
+    - name: Backup HX application configurations
+      archive:
+        path: "{{ item }}"
+        dest: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}/hx-config-{{ item | basename }}-{{ hx_backup_timestamp }}.tar.gz"
+        owner: root
+        group: root
+        mode: '0640'
+      loop:
+        - /opt/hx/
+        - /var/lib/hx/
+      when: item is exists
+      ignore_errors: yes
+      tags:
+        - hx_backup
+        - hx_application
+
+    - name: Backup user data and home directories
+      archive:
+        path: /home/
+        dest: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}/user-data-{{ hx_backup_timestamp }}.tar.gz"
+        owner: root
+        group: root
+        mode: '0640'
+        exclude_path:
+          - /home/*/.cache/
+          - /home/*/.local/share/Trash/
+          - /home/*/tmp/
+      tags:
+        - hx_backup
+        - hx_users
+
+    - name: Backup log files
+      archive:
+        path:
+          - /var/log/auth.log*
+          - /var/log/syslog*
+          - /var/log/fail2ban.log*
+          - /var/log/ufw.log*
+          - /var/log/hx/
+        dest: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}/logs-{{ hx_backup_timestamp }}.tar.gz"
+        owner: root
+        group: root
+        mode: '0640'
+      ignore_errors: yes
+      tags:
+        - hx_backup
+        - hx_logs
+
+    - name: Create backup manifest
+      template:
+        src: backup-manifest.j2
+        dest: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}/MANIFEST-{{ hx_backup_timestamp }}.txt"
+        owner: root
+        group: root
+        mode: '0644'
+      tags:
+        - hx_backup
+        - hx_manifest
+
+    - name: Clean up old backups
+      find:
+        paths: "{{ hx_backup_base_dir }}"
+        age: "{{ hx_backup_retention_days }}d"
+        file_type: directory
+      register: hx_old_backups
+      tags:
+        - hx_backup
+        - hx_cleanup
+
+    - name: Remove old backup directories
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ hx_old_backups.files }}"
+      tags:
+        - hx_backup
+        - hx_cleanup
+
+    - name: Generate backup report
+      debug:
+        msg: |
+          HX Infrastructure Backup Complete!
+          
+          Backup Details:
+          - Date: {{ hx_backup_date }}
+          - Timestamp: {{ hx_backup_timestamp }}
+          - Location: {{ hx_backup_base_dir }}/{{ hx_backup_date }}
+          - Retention: {{ hx_backup_retention_days }} days
+          
+          Backed up components:
+          - System configurations
+          - HX application data
+          - User home directories
+          - System logs
+          
+          Next Steps:
+          1. Verify backup integrity
+          2. Test restore procedures
+          3. Upload to remote storage (if configured)
+      tags:
+        - hx_backup
+        - hx_report
+
+- name: Database Backup (Database Servers Only)
+  hosts: database_servers
+  become: yes
+  gather_facts: yes
+  vars:
+    hx_backup_timestamp: "{{ ansible_date_time.epoch }}"
+    hx_backup_date: "{{ ansible_date_time.date }}"
+    hx_backup_base_dir: "{{ hx_common_backup_directory | default('/opt/hx/backups') }}"
+  
+  tasks:
+    - name: Create database backup
+      postgresql_db:
+        name: "{{ item }}"
+        state: dump
+        target: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}/database-{{ item }}-{{ hx_backup_timestamp }}.sql"
+      loop: "{{ hx_database_names | default(['hx_main']) }}"
+      become_user: postgres
+      when: ansible_facts['services']['postgresql.service'] is defined
+      tags:
+        - hx_backup
+        - hx_database
+
+    - name: Compress database backups
+      archive:
+        path: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}/database-*.sql"
+        dest: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}/databases-{{ hx_backup_timestamp }}.tar.gz"
+        remove: yes
+        owner: root
+        group: root
+        mode: '0640'
+      tags:
+        - hx_backup
+        - hx_database
