@@ -24,7 +24,7 @@
 
 - name: Verify traffic switch
   uri:
-    url: "http://{{ ansible_default_ipv4.address }}/health"
+    url: "https://{{ ansible_default_ipv4.address }}/health"
     method: GET
     timeout: 10
   register: traffic_verification

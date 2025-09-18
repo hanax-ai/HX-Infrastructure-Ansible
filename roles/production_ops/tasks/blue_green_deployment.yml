@@ -20,7 +20,7 @@
 
 - name: Wait for green environment to be ready
   uri:
-    url: "http://{{ ansible_default_ipv4.address }}:{{ green_port | default(8081) }}/health"
+    url: "https://{{ ansible_default_ipv4.address }}:{{ green_port | default(8081) }}/health"
     method: GET
     timeout: 30
   register: green_health_check

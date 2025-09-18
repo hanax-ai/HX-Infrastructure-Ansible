@@ -13,8 +13,8 @@ critical_services:
 
 # Application Endpoints to Monitor
 application_endpoints:
-  - "http://localhost/health"
-  - "http://localhost/api/status"
+  - "https://localhost/health"
+  - "https://localhost/api/status"
 
 # Incident Classification
 incident_severity_levels:

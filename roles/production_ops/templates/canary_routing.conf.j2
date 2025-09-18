@@ -29,9 +29,9 @@ server {
     # Canary routing logic
     location / {
         if ($variant = "canary") {
-            proxy_pass http://hx_infrastructure_canary;
+            proxy_pass https://hx_infrastructure_canary;
         }
-        proxy_pass http://hx_infrastructure_production;
+        proxy_pass https://hx_infrastructure_production;
         
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -48,9 +48,9 @@ server {
     # Health checks for both environments
     location /health {
         if ($variant = "canary") {
-            proxy_pass http://hx_infrastructure_canary/health;
+            proxy_pass https://hx_infrastructure_canary/health;
         }
-        proxy_pass http://hx_infrastructure_production/health;
+        proxy_pass https://hx_infrastructure_production/health;
         
         proxy_set_header Host $host;
         proxy_connect_timeout 5s;
@@ -60,7 +60,7 @@ server {
     
     # Canary metrics endpoint
     location /canary/metrics {
-        proxy_pass http://hx_infrastructure_canary/metrics;
+        proxy_pass https://hx_infrastructure_canary/metrics;
         proxy_set_header Host $host;
         
         # Restrict access to monitoring systems
