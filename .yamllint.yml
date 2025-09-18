@@ -3,58 +3,100 @@
 
 extends: default
 
+# File patterns to include/exclude
+ignore: |
+  .cache/
+  .github/
+  .ansible/
+  vars/secrets.yml
+
 rules:
   # Line length - allow longer lines for readability
   line-length:
     max: 120
     level: warning
 
-  # Comments - require space after #
-  comments:
-    min-spaces-from-content: 1
-
-  # Indentation - 2 spaces
+  # Indentation - enforce consistent 2-space indentation
   indentation:
     spaces: 2
     indent-sequences: true
     check-multi-line-strings: false
 
-  # Brackets - allow both styles
-  brackets:
-    min-spaces-inside: 0
-    max-spaces-inside: 1
+  # Comments - require space after # but allow inline comments
+  comments:
+    min-spaces-from-content: 1
+    require-starting-space: true
 
-  # Braces - allow both styles
-  braces:
-    min-spaces-inside: 0
-    max-spaces-inside: 1
-
-  # Empty lines
+  # Empty lines - control blank line usage
   empty-lines:
     max: 2
     max-start: 0
     max-end: 1
+
+  # Trailing spaces - strictly enforce no trailing spaces
+  trailing-spaces: enable
+
+  # Document markers - require --- at start but not ... at end
+  document-start:
+    present: true
+  document-end:
+    present: false
+
+  # Brackets and braces - allow both styles but prefer consistency
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+    min-spaces-inside-empty: 0
+    max-spaces-inside-empty: 0
+
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+    min-spaces-inside-empty: 0
+    max-spaces-inside-empty: 0
+
+  # Colons - enforce space after colon
+  colons:
+    max-spaces-before: 0
+    min-spaces-after: 1
+    max-spaces-after: 1
+
+  # Commas - enforce space after comma
+  commas:
+    max-spaces-before: 0
+    min-spaces-after: 1
+    max-spaces-after: 1
+
+  # Hyphens - enforce consistent list formatting
+  hyphens:
+    max-spaces-after: 1
+
+  # Key duplicates - strictly forbid duplicate keys
+  key-duplicates: enable
+
+  # Octal values - require quotes around octal values
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
 
   # Truthy values - allow yes/no, true/false, on/off
   truthy:
     allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
     check-keys: true
 
-  # Document start - not required
-  document-start:
-    present: false
+  # Float values - allow scientific notation
+  float-values:
+    require-numeral-before-decimal: true
+    forbid-nan: true
+    forbid-inf: true
 
-  # Octal values - allow
-  octal-values:
-    forbid-implicit-octal: true
-    forbid-explicit-octal: false
+  # New line at end of file
+  new-line-at-end-of-file: enable
 
-ignore: |
-  .ansible/
-  .cache/
-  .github/
-  .molecule/
-  molecule/
-  venv/
-  .venv/
-  *.pdf
+  # Key ordering - don't enforce alphabetical ordering
+  key-ordering: disable
+
+  # Quoted strings - allow both single and double quotes
+  quoted-strings:
+    quote-type: any
+    required: only-when-needed

@@ -6,61 +6,62 @@ We actively support and provide security updates for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 2.x.x   | :white_check_mark: |
-| 1.x.x   | :x:                |
+| 1.0.x   | :white_check_mark: |
+| < 1.0   | :x:                |
 
 ## Reporting a Vulnerability
 
-We take security vulnerabilities seriously. If you discover a security vulnerability in this project, please report it responsibly.
+We take security vulnerabilities seriously. If you discover a security vulnerability in this Ansible infrastructure repository, please report it responsibly.
 
 ### How to Report
 
-1. **Do NOT** create a public GitHub issue for security vulnerabilities
-2. Send an email to security@hanax.ai with:
-   - A clear description of the vulnerability
+1. **DO NOT** create a public GitHub issue for security vulnerabilities
+2. Send an email to: security@hanax.ai
+3. Include the following information:
+   - Description of the vulnerability
    - Steps to reproduce the issue
    - Potential impact assessment
-   - Any suggested fixes (if available)
+   - Suggested fix (if available)
 
-### What to Expect
+### Response Timeline
 
-- **Acknowledgment**: We will acknowledge receipt of your report within 48 hours
-- **Initial Assessment**: We will provide an initial assessment within 5 business days
-- **Updates**: We will keep you informed of our progress throughout the investigation
-- **Resolution**: We aim to resolve critical vulnerabilities within 30 days
-- **Disclosure**: We will coordinate with you on responsible disclosure timing
+- **Initial Response**: Within 24 hours of report
+- **Assessment**: Within 72 hours
+- **Fix Timeline**: Critical issues within 7 days, others within 30 days
+- **Disclosure**: Coordinated disclosure after fix is deployed
 
 ### Security Best Practices
 
-This repository follows these security practices:
+This repository follows these security principles:
 
-- All secrets are managed through Ansible Vault
-- Host key checking is enabled for SSH connections
-- Regular security updates and patches are applied
-- Access controls and authentication are properly configured
-- Security hardening playbooks are maintained and regularly updated
+#### Infrastructure Security
+- SSH host key verification enabled (`host_key_checking = True`)
+- Vault password files excluded from version control
+- Secrets managed through Ansible Vault
+- Principle of least privilege for all access
 
-### Scope
+#### Code Security
+- All commits signed and verified
+- Mandatory code review for security-related changes
+- Automated security scanning in CI/CD pipeline
+- Regular dependency updates and vulnerability scanning
 
-This security policy covers:
-- Ansible playbooks and roles in this repository
-- Configuration templates and variables
-- Documentation and deployment procedures
-- CI/CD pipeline security
+#### Operational Security
+- Production deployments require explicit confirmation
+- Dry-run mode enabled by default for production targets
+- Comprehensive logging and audit trails
+- Regular security assessments and penetration testing
 
-### Out of Scope
+### Security Contacts
 
-- Third-party dependencies (report to their respective maintainers)
-- Infrastructure vulnerabilities (report through appropriate channels)
-- Social engineering attacks
+- **Primary**: security@hanax.ai
+- **Infrastructure Team**: infra@hanax.ai
+- **Emergency**: +1-XXX-XXX-XXXX (24/7 on-call)
 
-## Security Hardening
+### Acknowledgments
 
-This repository includes security hardening measures:
-- SSH configuration hardening
-- Firewall configuration
-- System update automation
-- User access management
-- Audit logging configuration
+We appreciate responsible disclosure and will acknowledge security researchers who help improve our security posture.
 
-For more information, see our [Security Hardening Guide](docs/security-hardening.md).
+---
+
+*Last updated: September 17, 2025*

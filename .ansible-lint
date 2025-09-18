@@ -1,35 +1,82 @@
 ---
 # Ansible Lint Configuration for HX Infrastructure
 
-# Exclude paths
+# Exclude certain paths from linting
 exclude_paths:
   - .cache/
   - .github/
   - .ansible/
-  - molecule/
-  - .molecule/
-  - venv/
-  - .venv/
-
-# Skip specific rules
-skip_list:
-  - yaml[line-length]  # Allow longer lines in some cases
-  - name[casing]       # Allow flexible naming conventions
-  - fqcn[action-core]  # Allow core module short names
+  - vars/secrets.yml
 
 # Use default rules with some customizations
 use_default_rules: true
 
-# Enable offline mode for faster linting
-offline: false
+# Skip specific rules that may not apply to our infrastructure
+skip_list:
+  - yaml[line-length]  # Allow longer lines for readability in some cases
+  - name[casing]       # Allow flexible naming conventions for roles
 
-# Warn on unknown tags
-warn_list:
-  - experimental
+# Enable offline mode to avoid external dependencies during linting
+offline: true
 
-# Custom rules directory (if any)
-# rulesdir:
-#   - custom_rules/
+# Set the minimum required Ansible version
+min_ansible_version: "2.12"
 
-# Verbosity level
+# Configure specific rule behaviors
+rules:
+  # Require explicit task names
+  name[missing]: error
+  
+  # Enforce YAML formatting
+  yaml[indentation]: error
+  yaml[trailing-spaces]: error
+  yaml[empty-lines]: error
+  
+  # Security-focused rules
+  risky-file-permissions: error
+  no-changed-when: warning
+  command-instead-of-module: error
+  
+  # Best practices
+  package-latest: warning
+  deprecated-module: error
+
+# Warn on files that are too complex
+max_block_depth: 20
+
+# Configure parseable output for CI/CD
+parseable: false
+
+# Enable colored output
+colored: true
+
+# Set verbosity level
 verbosity: 1
+
+# Profile to use (can be: min, basic, moderate, safety, shared, production)
+profile: production
+
+# Additional configuration for specific file types
+kinds:
+  - yaml: "**/*.yaml"
+  - yaml: "**/*.yml"
+  - playbook: "**/playbooks/*.yml"
+  - playbook: "**/playbooks/**/*.yml"
+  - tasks: "**/tasks/*.yml"
+  - vars: "**/vars/*.yml"
+  - defaults: "**/defaults/*.yml"
+  - handlers: "**/handlers/*.yml"
+  - meta: "**/meta/*.yml"
+  - inventory: "**/inventory/**/*.yml"
+  - requirements: "**/requirements.yml"
+
+# Mock modules and roles for testing
+mock_modules:
+  - community.general.ufw
+  - ansible.posix.firewalld
+
+mock_roles:
+  - geerlingguy.security
+  - geerlingguy.firewall
+  - geerlingguy.nginx
+  - geerlingguy.ntp
