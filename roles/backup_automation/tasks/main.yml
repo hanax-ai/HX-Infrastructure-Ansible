@@ -1,0 +1,73 @@
+---
+# Main backup automation tasks
+- name: Include backup automation validation
+  include_tasks: validate.yml
+  tags: [backup, validate]
+
+- name: Include backup preparation tasks
+  include_tasks: prepare.yml
+  tags: [backup, prepare]
+
+- name: Include backup user and security setup
+  include_tasks: security.yml
+  tags: [backup, security]
+
+- name: Include backup directory structure setup
+  include_tasks: directories.yml
+  tags: [backup, directories]
+
+- name: Include backup tools installation
+  include_tasks: install.yml
+  tags: [backup, install]
+
+- name: Include encryption setup
+  include_tasks: encryption.yml
+  tags: [backup, encryption]
+  when: backup_automation.encryption.enabled
+
+- name: Include database backup configuration
+  include_tasks: database.yml
+  tags: [backup, database]
+  when: database_backup.enabled
+
+- name: Include application backup configuration
+  include_tasks: application.yml
+  tags: [backup, application]
+  when: application_backup.enabled
+
+- name: Include configuration backup setup
+  include_tasks: configuration.yml
+  tags: [backup, configuration]
+  when: configuration_backup.enabled
+
+- name: Include system backup setup
+  include_tasks: system.yml
+  tags: [backup, system]
+  when: system_backup.enabled
+
+- name: Include backup scheduling
+  include_tasks: scheduling.yml
+  tags: [backup, scheduling]
+
+- name: Include backup verification setup
+  include_tasks: verification.yml
+  tags: [backup, verification]
+  when: verification.enabled
+
+- name: Include remote storage configuration
+  include_tasks: remote_storage.yml
+  tags: [backup, remote]
+  when: remote_storage.enabled
+
+- name: Include monitoring and alerting setup
+  include_tasks: monitoring.yml
+  tags: [backup, monitoring]
+  when: backup_monitoring.enabled
+
+- name: Include backup service configuration
+  include_tasks: service.yml
+  tags: [backup, service]
+
+- name: Perform initial backup validation
+  include_tasks: initial_validation.yml
+  tags: [backup, validate, initial]

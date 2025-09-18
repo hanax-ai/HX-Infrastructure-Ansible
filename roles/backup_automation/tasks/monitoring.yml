@@ -1,0 +1,229 @@
+---
+# Backup monitoring and alerting setup
+- name: Create backup monitoring directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: backup
+    group: backup
+    mode: '0750'
+  loop:
+    - "{{ backup_automation.base_directory }}/monitoring"
+    - "/var/lib/backup/monitoring"
+    - "/var/lib/backup/alerts"
+
+- name: Create backup health check script
+  template:
+    src: backup-health-check.sh.j2
+    dest: /var/lib/backup/scripts/backup-health-check.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+
+- name: Create backup monitoring dashboard script
+  template:
+    src: backup-monitoring-dashboard.py.j2
+    dest: /var/lib/backup/scripts/backup-monitoring-dashboard.py
+    owner: backup
+    group: backup
+    mode: '0750'
+
+- name: Create backup alerting script
+  template:
+    src: backup-alerting.sh.j2
+    dest: /var/lib/backup/scripts/backup-alerting.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+
+- name: Create backup metrics collection script
+  template:
+    src: collect-backup-metrics.py.j2
+    dest: /var/lib/backup/scripts/collect-backup-metrics.py
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: backup_automation.monitoring.prometheus_metrics
+
+- name: Create backup status report script
+  template:
+    src: backup-status-report.sh.j2
+    dest: /var/lib/backup/scripts/backup-status-report.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+
+- name: Create notification sender script
+  template:
+    src: send-backup-notification.sh.j2
+    dest: /var/lib/backup/scripts/send-backup-notification.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: backup_automation.notifications.enabled
+
+- name: Schedule backup health checks
+  cron:
+    name: "Backup Health Check"
+    user: backup
+    job: "/var/lib/backup/scripts/backup-health-check.sh"
+    minute: "*/30"
+    state: present
+
+- name: Schedule backup status report
+  cron:
+    name: "Daily Backup Status Report"
+    user: backup
+    job: "/var/lib/backup/scripts/backup-status-report.sh"
+    minute: "0"
+    hour: "8"
+    state: present
+
+- name: Create backup monitoring service
+  template:
+    src: backup-monitoring.service.j2
+    dest: /etc/systemd/system/backup-monitoring.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload systemd
+
+- name: Create backup monitoring timer
+  template:
+    src: backup-monitoring.timer.j2
+    dest: /etc/systemd/system/backup-monitoring.timer
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload systemd
+
+- name: Enable and start backup monitoring timer
+  systemd:
+    name: backup-monitoring.timer
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  when: not ansible_check_mode
+
+- name: Create Prometheus metrics exporter
+  template:
+    src: backup-metrics-exporter.py.j2
+    dest: /var/lib/backup/scripts/backup-metrics-exporter.py
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: backup_automation.monitoring.prometheus_metrics
+
+- name: Create backup metrics service
+  template:
+    src: backup-metrics.service.j2
+    dest: /etc/systemd/system/backup-metrics.service
+    owner: root
+    group: root
+    mode: '0644'
+  when: backup_automation.monitoring.prometheus_metrics
+  notify: reload systemd
+
+- name: Enable and start backup metrics service
+  systemd:
+    name: backup-metrics
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  when: 
+    - backup_automation.monitoring.prometheus_metrics
+    - not ansible_check_mode
+
+- name: Create backup alert rules for Prometheus
+  template:
+    src: backup-alert-rules.yml.j2
+    dest: "{{ backup_automation.base_directory }}/monitoring/backup-alert-rules.yml"
+    owner: backup
+    group: backup
+    mode: '0644'
+  when: backup_automation.monitoring.prometheus_metrics
+
+- name: Create Grafana dashboard for backups
+  template:
+    src: backup-grafana-dashboard.json.j2
+    dest: "{{ backup_automation.base_directory }}/monitoring/backup-grafana-dashboard.json"
+    owner: backup
+    group: backup
+    mode: '0644'
+
+- name: Create backup log analyzer script
+  template:
+    src: analyze-backup-logs.py.j2
+    dest: /var/lib/backup/scripts/analyze-backup-logs.py
+    owner: backup
+    group: backup
+    mode: '0750'
+
+- name: Schedule backup log analysis
+  cron:
+    name: "Backup Log Analysis"
+    user: backup
+    job: "/var/lib/backup/scripts/analyze-backup-logs.py"
+    minute: "0"
+    hour: "6"
+    state: present
+
+- name: Create backup performance monitoring script
+  template:
+    src: monitor-backup-performance.sh.j2
+    dest: /var/lib/backup/scripts/monitor-backup-performance.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+
+- name: Create backup storage monitoring script
+  template:
+    src: monitor-backup-storage.sh.j2
+    dest: /var/lib/backup/scripts/monitor-backup-storage.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+
+- name: Schedule backup storage monitoring
+  cron:
+    name: "Backup Storage Monitoring"
+    user: backup
+    job: "/var/lib/backup/scripts/monitor-backup-storage.sh"
+    minute: "0"
+    hour: "*/4"
+    state: present
+
+- name: Create backup trend analysis script
+  template:
+    src: backup-trend-analysis.py.j2
+    dest: /var/lib/backup/scripts/backup-trend-analysis.py
+    owner: backup
+    group: backup
+    mode: '0750'
+
+- name: Schedule weekly backup trend analysis
+  cron:
+    name: "Weekly Backup Trend Analysis"
+    user: backup
+    job: "/var/lib/backup/scripts/backup-trend-analysis.py"
+    minute: "0"
+    hour: "9"
+    weekday: "1"
+    state: present
+
+- name: Create backup monitoring configuration
+  template:
+    src: backup-monitoring.conf.j2
+    dest: /etc/hx-backup/monitoring.conf
+    owner: backup
+    group: backup
+    mode: '0640'
+
+- name: Create backup alerting configuration
+  template:
+    src: backup-alerting.conf.j2
+    dest: /etc/hx-backup/alerting.conf
+    owner: backup
+    group: backup
+    mode: '0640'
+  when: backup_automation.notifications.enabled

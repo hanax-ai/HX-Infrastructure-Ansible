@@ -1,0 +1,110 @@
+---
+# Backup automation validation tasks
+- name: Validate backup automation configuration
+  assert:
+    that:
+      - backup_automation is defined
+      - backup_automation.enabled is defined
+      - backup_automation.base_directory is defined
+      - backup_automation.retention is defined
+    fail_msg: "Backup automation configuration is incomplete"
+    success_msg: "Backup automation configuration validated successfully"
+
+- name: Validate retention policy configuration
+  assert:
+    that:
+      - backup_automation.retention.daily is defined
+      - backup_automation.retention.daily | int > 0
+      - backup_automation.retention.weekly is defined
+      - backup_automation.retention.weekly | int > 0
+      - backup_automation.retention.monthly is defined
+      - backup_automation.retention.monthly | int > 0
+    fail_msg: "Invalid retention policy configuration"
+    success_msg: "Retention policy configuration validated"
+
+- name: Validate encryption configuration
+  assert:
+    that:
+      - backup_automation.encryption.algorithm in ['AES-256-CBC', 'AES-192-CBC', 'AES-128-CBC']
+      - backup_automation.encryption.key_file is defined
+    fail_msg: "Invalid encryption configuration"
+    success_msg: "Encryption configuration validated"
+  when: backup_automation.encryption.enabled
+
+- name: Validate database backup configuration
+  assert:
+    that:
+      - database_backup.databases is defined
+      - database_backup.databases.postgresql is defined or database_backup.databases.redis is defined
+    fail_msg: "At least one database type must be configured for backup"
+    success_msg: "Database backup configuration validated"
+  when: database_backup.enabled
+
+- name: Validate PostgreSQL configuration
+  assert:
+    that:
+      - database_backup.databases.postgresql.host is defined
+      - database_backup.databases.postgresql.port is defined
+      - database_backup.databases.postgresql.databases is defined
+      - database_backup.databases.postgresql.databases | length > 0
+    fail_msg: "PostgreSQL backup configuration is incomplete"
+    success_msg: "PostgreSQL backup configuration validated"
+  when: 
+    - database_backup.enabled
+    - database_backup.databases.postgresql.enabled
+
+- name: Validate application backup paths
+  assert:
+    that:
+      - application_backup.paths is defined
+      - application_backup.paths | length > 0
+      - item.path is defined
+      - item.type is defined
+    fail_msg: "Application backup paths configuration is invalid"
+    success_msg: "Application backup paths validated"
+  loop: "{{ application_backup.paths }}"
+  when: application_backup.enabled
+
+- name: Validate remote storage configuration
+  assert:
+    that:
+      - remote_storage.type in ['s3', 'azure', 'gcs', 'rsync']
+      - remote_storage.s3.bucket is defined
+      - remote_storage.s3.region is defined
+    fail_msg: "Remote storage configuration is invalid"
+    success_msg: "Remote storage configuration validated"
+  when: 
+    - remote_storage.enabled
+    - remote_storage.type == 's3'
+
+- name: Check available disk space
+  shell: df {{ backup_automation.base_directory | dirname }} | tail -1 | awk '{print $4}'
+  register: available_space
+  changed_when: false
+
+- name: Validate sufficient disk space
+  assert:
+    that:
+      - available_space.stdout | int > 10485760  # 10GB in KB
+    fail_msg: "Insufficient disk space for backups (less than 10GB available)"
+    success_msg: "Sufficient disk space available for backups"
+
+- name: Validate backup schedule format
+  assert:
+    that:
+      - item.value | regex_search('^[0-9*,-/]+ [0-9*,-/]+ [0-9*,-/]+ [0-9*,-/]+ [0-9*,-/]+$')
+    fail_msg: "Invalid cron schedule format: {{ item.key }} = {{ item.value }}"
+    success_msg: "Valid cron schedule format for {{ item.key }}"
+  loop: "{{ backup_schedule | dict2items | selectattr('value', 'string') | list }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Validate monitoring configuration
+  assert:
+    that:
+      - backup_monitoring.health_checks is defined
+      - backup_monitoring.alerts is defined
+      - backup_monitoring.health_checks | length > 0
+    fail_msg: "Backup monitoring configuration is incomplete"
+    success_msg: "Backup monitoring configuration validated"
+  when: backup_monitoring.enabled

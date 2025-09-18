@@ -1,0 +1,194 @@
+---
+# Backup Automation Configuration
+backup_automation:
+  # Global backup settings
+  enabled: true
+  base_directory: "/opt/hx-backups"
+  temp_directory: "/tmp/hx-backup-staging"
+  log_directory: "/var/log/hx-backups"
+  
+  # Retention policies
+  retention:
+    daily: 7
+    weekly: 4
+    monthly: 12
+    yearly: 3
+  
+  # Encryption settings
+  encryption:
+    enabled: true
+    algorithm: "AES-256-CBC"
+    key_file: "/etc/hx-backup/encryption.key"
+    
+  # Compression settings
+  compression:
+    enabled: true
+    algorithm: "gzip"
+    level: 6
+    
+  # Notification settings
+  notifications:
+    enabled: true
+    email_recipients:
+      - "ops@hanax.ai"
+      - "backup-alerts@hanax.ai"
+    slack_webhook: ""
+    
+  # Monitoring integration
+  monitoring:
+    prometheus_metrics: true
+    metrics_port: 9100
+    health_check_endpoint: "/backup-health"
+
+# Database backup configuration
+database_backup:
+  enabled: true
+  databases:
+    postgresql:
+      enabled: true
+      host: "{{ groups['database'][0] }}"
+      port: 5432
+      databases:
+        - "hx_production"
+        - "hx_analytics"
+        - "hx_audit"
+      backup_format: "custom"
+      parallel_jobs: 4
+      
+    redis:
+      enabled: true
+      host: "{{ groups['cache'][0] }}"
+      port: 6379
+      backup_type: "rdb"
+      
+  # Database-specific settings
+  postgresql:
+    pg_dump_options: "--verbose --no-owner --no-privileges"
+    vacuum_before_backup: true
+    analyze_after_backup: true
+    
+  redis:
+    save_before_backup: true
+    verify_rdb: true
+
+# Application data backup configuration
+application_backup:
+  enabled: true
+  paths:
+    - path: "/opt/hx-app/data"
+      type: "application_data"
+      exclude_patterns:
+        - "*.tmp"
+        - "*.log"
+        - "cache/*"
+    - path: "/opt/hx-app/uploads"
+      type: "user_uploads"
+      preserve_permissions: true
+    - path: "/opt/hx-app/config"
+      type: "configuration"
+      sensitive: true
+      
+# Configuration backup settings
+configuration_backup:
+  enabled: true
+  paths:
+    - path: "/etc/nginx"
+      type: "web_server"
+    - path: "/etc/postgresql"
+      type: "database"
+    - path: "/etc/redis"
+      type: "cache"
+    - path: "/etc/ssl/certs"
+      type: "certificates"
+      sensitive: true
+    - path: "/etc/hx-app"
+      type: "application"
+      sensitive: true
+      
+# System backup settings
+system_backup:
+  enabled: true
+  include_system_packages: true
+  include_user_data: false
+  paths:
+    - "/etc/hosts"
+    - "/etc/fstab"
+    - "/etc/crontab"
+    - "/etc/sudoers.d"
+
+# Backup scheduling
+backup_schedule:
+  database:
+    daily: "0 2 * * *"
+    weekly: "0 3 * * 0"
+    monthly: "0 4 1 * *"
+  application:
+    daily: "0 1 * * *"
+    weekly: "0 2 * * 0"
+  configuration:
+    daily: "0 0 * * *"
+    weekly: "0 1 * * 0"
+  system:
+    weekly: "0 5 * * 0"
+    monthly: "0 6 1 * *"
+
+# Backup verification settings
+verification:
+  enabled: true
+  test_restore: true
+  integrity_checks: true
+  checksum_algorithm: "sha256"
+  verify_encryption: true
+  
+# Remote storage configuration
+remote_storage:
+  enabled: true
+  type: "s3"  # s3, azure, gcs, rsync
+  s3:
+    bucket: "hx-infrastructure-backups"
+    region: "us-east-1"
+    storage_class: "STANDARD_IA"
+    encryption: "AES256"
+  
+  # Sync settings
+  sync:
+    enabled: true
+    immediate: false
+    batch_size: 100
+    retry_attempts: 3
+    
+# Backup monitoring and alerting
+backup_monitoring:
+  enabled: true
+  health_checks:
+    - name: "backup_completion"
+      threshold: "24h"
+    - name: "backup_size_variance"
+      threshold: "20%"
+    - name: "backup_duration"
+      threshold: "4h"
+      
+  alerts:
+    - name: "backup_failed"
+      severity: "critical"
+      channels: ["email", "slack"]
+    - name: "backup_delayed"
+      severity: "warning"
+      channels: ["email"]
+    - name: "storage_full"
+      severity: "critical"
+      channels: ["email", "slack", "pager"]
+
+# Security settings
+backup_security:
+  file_permissions: "0600"
+  directory_permissions: "0700"
+  owner: "backup"
+  group: "backup"
+  selinux_context: "system_u:object_r:admin_home_t:s0"
+  
+  # Access control
+  access_control:
+    read_users: ["backup", "root"]
+    write_users: ["backup"]
+    admin_users: ["root"]

@@ -1,0 +1,30 @@
+---
+# Backup automation handlers
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: restart backup-monitoring
+  systemd:
+    name: backup-monitoring
+    state: restarted
+
+- name: restart backup-metrics
+  systemd:
+    name: backup-metrics
+    state: restarted
+  when: backup_automation.monitoring.prometheus_metrics
+
+- name: reload cron
+  service:
+    name: cron
+    state: reloaded
+
+- name: restart rsyslog
+  service:
+    name: rsyslog
+    state: restarted
+
+- name: reload backup configuration
+  command: /var/lib/backup/scripts/reload-backup-config.sh
+  become_user: backup
