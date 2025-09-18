@@ -1,0 +1,519 @@
+
+---
+# Variable Validation Rules for HX Infrastructure
+# This file defines validation rules for all variables used in the infrastructure
+
+# Global Required Variables
+global_required_variables:
+  - name: "environment"
+    type: "string"
+    allowed_values: ["development", "test", "production"]
+    description: "Deployment environment"
+    
+  - name: "domain_name"
+    type: "string"
+    pattern: "^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\\.[a-zA-Z]{2,}$"
+    description: "Primary domain name for the infrastructure"
+    
+  - name: "network_subnet"
+    type: "string"
+    pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(?:[0-9]|[1-2][0-9]|3[0-2])$"
+    description: "Network subnet in CIDR notation"
+
+# Infrastructure Service Variables
+infrastructure_variables:
+  required:
+    - name: "vault_safe_mode_password"
+      type: "string"
+      min_length: 12
+      description: "Windows Safe Mode Administrator password"
+      
+  optional:
+    - name: "windows_forest_mode"
+      type: "string"
+      allowed_values: ["Win2003", "Win2008", "Win2008R2", "Win2012", "Win2012R2", "WinThreshold"]
+      default: "WinThreshold"
+      
+    - name: "windows_domain_mode"
+      type: "string"
+      allowed_values: ["Win2003", "Win2008", "Win2008R2", "Win2012", "Win2012R2", "WinThreshold"]
+      default: "WinThreshold"
+      
+    - name: "ca_key_length"
+      type: "integer"
+      allowed_values: [2048, 4096, 8192]
+      default: 4096
+      
+    - name: "ca_validity_period"
+      type: "string"
+      pattern: "^\\d+\\s+(years?|months?|days?)$"
+      default: "10 years"
+
+# AI/ML Service Variables
+ai_ml_variables:
+  required:
+    - name: "gpu_enabled"
+      type: "boolean"
+      description: "Whether GPU acceleration is enabled"
+      
+  optional:
+    - name: "python_version"
+      type: "string"
+      pattern: "^3\\.(8|9|10|11|12)$"
+      default: "3.11"
+      
+    - name: "cuda_version"
+      type: "string"
+      pattern: "^\\d+\\.\\d+$"
+      default: "12.1"
+      
+    - name: "ollama_max_loaded_models"
+      type: "integer"
+      min_value: 1
+      max_value: 10
+      default: 3
+      
+    - name: "litellm_workers"
+      type: "integer"
+      min_value: 1
+      max_value: 16
+      default: 4
+      
+    - name: "ai_ml_gpu_memory_fraction"
+      type: "float"
+      min_value: 0.1
+      max_value: 1.0
+      default: 0.9
+
+# Operations Service Variables
+operations_variables:
+  required:
+    - name: "vault_postgres_password"
+      type: "string"
+      min_length: 12
+      description: "PostgreSQL superuser password"
+      
+    - name: "vault_redis_password"
+      type: "string"
+      min_length: 12
+      description: "Redis authentication password"
+      
+  optional:
+    - name: "postgresql_version"
+      type: "string"
+      allowed_values: ["12", "13", "14", "15", "16"]
+      default: "15"
+      
+    - name: "redis_version"
+      type: "string"
+      allowed_values: ["6", "7"]
+      default: "7"
+      
+    - name: "postgresql_max_connections"
+      type: "integer"
+      min_value: 50
+      max_value: 1000
+      default: 200
+      
+    - name: "redis_maxmemory_policy"
+      type: "string"
+      allowed_values: ["noeviction", "allkeys-lru", "volatile-lru", "allkeys-random", "volatile-random", "volatile-ttl"]
+      default: "allkeys-lru"
+      
+    - name: "prometheus_retention_time"
+      type: "string"
+      pattern: "^\\d+[dwmy]$"
+      default: "90d"
+      
+    - name: "elasticsearch_heap_size"
+      type: "string"
+      pattern: "^\\d+[mg]$"
+      description: "Elasticsearch heap size (e.g., 1g, 512m)"
+
+# UI Service Variables
+ui_variables:
+  required:
+    - name: "vault_jwt_secret"
+      type: "string"
+      min_length: 32
+      description: "JWT signing secret"
+      
+    - name: "vault_session_secret"
+      type: "string"
+      min_length: 32
+      description: "Session encryption secret"
+      
+  optional:
+    - name: "nodejs_version"
+      type: "string"
+      allowed_values: ["16", "18", "20", "21"]
+      default: "20"
+      
+    - name: "webui_port"
+      type: "integer"
+      min_value: 1024
+      max_value: 65535
+      default: 3000
+      
+    - name: "nginx_worker_processes"
+      type: "string"
+      pattern: "^(auto|\\d+)$"
+      default: "auto"
+      
+    - name: "nginx_worker_connections"
+      type: "integer"
+      min_value: 512
+      max_value: 8192
+      default: 1024
+      
+    - name: "ssl_protocols"
+      type: "list"
+      allowed_values: ["TLSv1.2", "TLSv1.3"]
+      default: ["TLSv1.2", "TLSv1.3"]
+
+# Security Variables
+security_variables:
+  required:
+    - name: "vault_keepalived_password"
+      type: "string"
+      min_length: 8
+      max_length: 8
+      description: "Keepalived authentication password (exactly 8 characters)"
+      
+  optional:
+    - name: "security_ssh_port"
+      type: "integer"
+      min_value: 1024
+      max_value: 65535
+      default: 22
+      
+    - name: "security_ssh_max_auth_tries"
+      type: "integer"
+      min_value: 1
+      max_value: 10
+      default: 3
+      
+    - name: "firewall_enabled"
+      type: "boolean"
+      default: true
+      
+    - name: "ssl_verification"
+      type: "boolean"
+      default: true
+
+# Network Variables
+network_variables:
+  required:
+    - name: "vip_address"
+      type: "string"
+      pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+      description: "Virtual IP address for load balancing"
+      
+  optional:
+    - name: "dns_servers"
+      type: "list"
+      item_type: "string"
+      item_pattern: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+      default: ["8.8.8.8", "8.8.4.4", "1.1.1.1"]
+      
+    - name: "ntp_servers"
+      type: "list"
+      item_type: "string"
+      default: ["0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org"]
+
+# Performance Variables
+performance_variables:
+  optional:
+    - name: "performance_swappiness"
+      type: "integer"
+      min_value: 0
+      max_value: 100
+      default: 10
+      
+    - name: "performance_vm_dirty_ratio"
+      type: "integer"
+      min_value: 1
+      max_value: 100
+      default: 15
+      
+    - name: "web_worker_connections"
+      type: "integer"
+      min_value: 512
+      max_value: 8192
+      default: 1024
+
+# Backup Variables
+backup_variables:
+  optional:
+    - name: "backup_enabled"
+      type: "boolean"
+      default: true
+      
+    - name: "backup_retention_days"
+      type: "integer"
+      min_value: 1
+      max_value: 365
+      default: 30
+      
+    - name: "backup_compression"
+      type: "boolean"
+      default: true
+      
+    - name: "backup_encryption"
+      type: "boolean"
+      default: true
+
+# Monitoring Variables
+monitoring_variables:
+  optional:
+    - name: "monitoring_enabled"
+      type: "boolean"
+      default: true
+      
+    - name: "monitoring_metrics_retention_days"
+      type: "integer"
+      min_value: 7
+      max_value: 365
+      default: 90
+      
+    - name: "log_level"
+      type: "string"
+      allowed_values: ["DEBUG", "INFO", "WARN", "ERROR"]
+      default: "INFO"
+      
+    - name: "logging_retention_days"
+      type: "integer"
+      min_value: 7
+      max_value: 365
+      default: 90
+
+# Environment-specific Validation Rules
+environment_specific_rules:
+  development:
+    required_overrides:
+      - name: "debug_mode"
+        type: "boolean"
+        default: true
+        
+    optional_overrides:
+      - name: "ssl_verification"
+        type: "boolean"
+        default: false
+        
+      - name: "backup_enabled"
+        type: "boolean"
+        default: false
+        
+  test:
+    required_overrides:
+      - name: "debug_mode"
+        type: "boolean"
+        default: true
+        
+    optional_overrides:
+      - name: "ssl_verification"
+        type: "boolean"
+        default: false
+        
+      - name: "backup_retention_days"
+        type: "integer"
+        default: 14
+        
+  production:
+    required_overrides:
+      - name: "debug_mode"
+        type: "boolean"
+        default: false
+        
+      - name: "ssl_verification"
+        type: "boolean"
+        default: true
+        
+    optional_overrides:
+      - name: "backup_enabled"
+        type: "boolean"
+        default: true
+        
+      - name: "monitoring_enabled"
+        type: "boolean"
+        default: true
+        
+      - name: "performance_monitoring"
+        type: "boolean"
+        default: true
+
+# Dependency Validation Rules
+dependency_rules:
+  - condition: "gpu_enabled == true"
+    requires:
+      - "cuda_version"
+      - "ai_ml_gpu_memory_fraction"
+    description: "GPU-enabled hosts require CUDA configuration"
+    
+  - condition: "postgresql_replication_enabled == true"
+    requires:
+      - "vault_postgres_replication_password"
+    description: "PostgreSQL replication requires replication password"
+    
+  - condition: "redis_replication_enabled == true"
+    requires:
+      - "vault_redis_password"
+    description: "Redis replication requires authentication password"
+    
+  - condition: "webui_auth_enabled == true"
+    requires:
+      - "vault_jwt_secret"
+      - "vault_session_secret"
+    description: "WebUI authentication requires JWT and session secrets"
+    
+  - condition: "ssl_letsencrypt_enabled == true"
+    requires:
+      - "admin_email"
+    description: "Let's Encrypt SSL requires admin email"
+    
+  - condition: "notifications_email_enabled == true"
+    requires:
+      - "vault_smtp_server"
+      - "vault_smtp_username"
+      - "vault_smtp_password"
+    description: "Email notifications require SMTP configuration"
+    
+  - condition: "webui_oauth_enabled == true"
+    requires:
+      - "vault_google_oauth_client_id"
+      - "vault_google_oauth_client_secret"
+    description: "OAuth authentication requires OAuth credentials"
+
+# Cross-service Validation Rules
+cross_service_rules:
+  - name: "database_connectivity"
+    description: "Ensure database connectivity variables are consistent"
+    rules:
+      - "groups['databases'] is defined and groups['databases'] | length > 0"
+      - "vault_webui_db_user is defined"
+      - "vault_webui_db_password is defined"
+      
+  - name: "cache_connectivity"
+    description: "Ensure cache connectivity variables are consistent"
+    rules:
+      - "groups['cache_services'] is defined and groups['cache_services'] | length > 0"
+      - "vault_redis_password is defined"
+      
+  - name: "load_balancer_vip"
+    description: "Ensure VIP is within network subnet"
+    rules:
+      - "vip_address | ipaddr(network_subnet)"
+      
+  - name: "ssl_certificate_consistency"
+    description: "Ensure SSL certificate configuration is consistent"
+    rules:
+      - "ssl_letsencrypt_enabled == true or ssl_self_signed_enabled == true"
+      - "not (ssl_letsencrypt_enabled == true and ssl_self_signed_enabled == true)"
+
+# Resource Validation Rules
+resource_validation:
+  memory_requirements:
+    - service: "postgresql"
+      min_memory_gb: 4
+      recommended_memory_gb: 8
+      
+    - service: "elasticsearch"
+      min_memory_gb: 4
+      recommended_memory_gb: 8
+      
+    - service: "ollama"
+      min_memory_gb: 8
+      recommended_memory_gb: 32
+      gpu_memory_gb: 8
+      
+    - service: "litellm"
+      min_memory_gb: 4
+      recommended_memory_gb: 16
+      
+  disk_requirements:
+    - service: "postgresql"
+      min_disk_gb: 50
+      recommended_disk_gb: 500
+      
+    - service: "elasticsearch"
+      min_disk_gb: 100
+      recommended_disk_gb: 1000
+      
+    - service: "model_storage"
+      min_disk_gb: 100
+      recommended_disk_gb: 1000
+      
+    - service: "prometheus"
+      min_disk_gb: 50
+      recommended_disk_gb: 200
+      
+  cpu_requirements:
+    - service: "ollama"
+      min_cpu_cores: 4
+      recommended_cpu_cores: 16
+      
+    - service: "postgresql"
+      min_cpu_cores: 2
+      recommended_cpu_cores: 8
+      
+    - service: "elasticsearch"
+      min_cpu_cores: 2
+      recommended_cpu_cores: 6
+
+# Custom Validation Functions
+custom_validations:
+  - name: "validate_password_strength"
+    description: "Validate password meets security requirements"
+    function: |
+      def validate_password_strength(password):
+          if len(password) < 12:
+              return False, "Password must be at least 12 characters long"
+          if not any(c.isupper() for c in password):
+              return False, "Password must contain at least one uppercase letter"
+          if not any(c.islower() for c in password):
+              return False, "Password must contain at least one lowercase letter"
+          if not any(c.isdigit() for c in password):
+              return False, "Password must contain at least one digit"
+          if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password):
+              return False, "Password must contain at least one special character"
+          return True, "Password meets security requirements"
+          
+  - name: "validate_network_configuration"
+    description: "Validate network configuration consistency"
+    function: |
+      def validate_network_configuration(network_subnet, vip_address, host_ips):
+          import ipaddress
+          try:
+              subnet = ipaddress.ip_network(network_subnet, strict=False)
+              vip = ipaddress.ip_address(vip_address)
+              
+              if vip not in subnet:
+                  return False, f"VIP {vip_address} is not within subnet {network_subnet}"
+                  
+              for host_ip in host_ips:
+                  ip = ipaddress.ip_address(host_ip)
+                  if ip not in subnet:
+                      return False, f"Host IP {host_ip} is not within subnet {network_subnet}"
+                      
+              return True, "Network configuration is valid"
+          except Exception as e:
+              return False, f"Network validation error: {str(e)}"
+              
+  - name: "validate_service_dependencies"
+    description: "Validate service dependencies are met"
+    function: |
+      def validate_service_dependencies(groups, services):
+          required_groups = {
+              'webui': ['databases', 'cache_services', 'llm_services'],
+              'litellm': ['llm_services'],
+              'grafana': ['databases', 'monitoring'],
+              'prometheus': ['monitoring']
+          }
+          
+          for service in services:
+              if service in required_groups:
+                  for required_group in required_groups[service]:
+                      if required_group not in groups or len(groups[required_group]) == 0:
+                          return False, f"Service {service} requires group {required_group}"
+                          
+          return True, "Service dependencies are satisfied"

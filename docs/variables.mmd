@@ -1,0 +1,88 @@
+
+graph TB
+    subgraph "Variable Hierarchy"
+        A[Host Variables<br/>inventories/{env}/host_vars/] --> B[Environment Group Variables<br/>inventories/{env}/group_vars/]
+        B --> C[Global Group Variables<br/>inventories/group_vars/]
+        C --> D[Role Defaults<br/>role_defaults/*/defaults/]
+        D --> E[Template Defaults<br/>group_vars/templates/]
+    end
+
+    subgraph "Variable Categories"
+        F[Global Variables<br/>all.yml] --> F1[Project Info<br/>Authentication<br/>Network<br/>Security]
+        G[Infrastructure Variables<br/>infrastructure.yml] --> G1[Active Directory<br/>DNS/DHCP<br/>Certificate Authority<br/>Windows Services]
+        H[AI/ML Variables<br/>ai_ml.yml] --> H1[Python Environment<br/>LiteLLM<br/>Ollama<br/>Model Storage]
+        I[Operations Variables<br/>operations.yml] --> I1[PostgreSQL<br/>Redis<br/>Prometheus<br/>Grafana<br/>ELK Stack]
+        J[UI Variables<br/>ui.yml] --> J1[WebUI<br/>Nginx<br/>Load Balancer<br/>SSL Certificates]
+    end
+
+    subgraph "Validation System"
+        K[Validation Rules<br/>validation_rules.yml] --> K1[Type Validation<br/>Pattern Matching<br/>Range Checking<br/>Dependencies]
+        L[Validation Script<br/>validate_vars.py] --> L1[Load Variables<br/>Apply Rules<br/>Check Dependencies<br/>Generate Report]
+        M[Custom Functions<br/>Python Validators] --> M1[Password Strength<br/>Network Config<br/>Service Dependencies]
+    end
+
+    subgraph "Environment Configuration"
+        N[Development] --> N1[debug_mode: true<br/>ssl_verification: false<br/>backup_enabled: false]
+        O[Test] --> O1[debug_mode: true<br/>ssl_verification: false<br/>backup_enabled: true]
+        P[Production] --> P1[debug_mode: false<br/>ssl_verification: true<br/>high_availability: true]
+    end
+
+    subgraph "Template System"
+        Q[Jinja2 Templates] --> Q1[Dynamic Defaults<br/>Conditional Logic<br/>Resource Calculation]
+        R[Template Functions] --> R1[mandatory<br/>default<br/>ipaddr<br/>regex_replace]
+        S[Variable Resolution] --> S1[Template Processing<br/>Environment Override<br/>Final Configuration]
+    end
+
+    subgraph "Security & Vault"
+        T[Ansible Vault] --> T1[Database Passwords<br/>API Keys<br/>SSL Certificates<br/>OAuth Credentials]
+        U[Vault Variables] --> U1[vault_postgres_password<br/>vault_jwt_secret<br/>vault_ssl_private_key]
+        V[Security Validation] --> V1[Password Strength<br/>Encryption Settings<br/>Access Controls]
+    end
+
+    subgraph "Service Integration"
+        W[Infrastructure Services] --> W1[Domain Controllers<br/>Certificate Authorities]
+        X[AI/ML Services] --> X1[LiteLLM Gateway<br/>Ollama Inference<br/>Model Storage]
+        Y[Operations Services] --> Y1[Databases<br/>Cache<br/>Monitoring<br/>Logging]
+        Z[UI Services] --> Z1[Web Interface<br/>Load Balancer<br/>SSL Termination]
+    end
+
+    %% Relationships
+    A -.->|Highest Precedence| S
+    E -.->|Lowest Precedence| S
+    
+    F --> W
+    G --> W
+    H --> X
+    I --> Y
+    J --> Z
+    
+    K --> L
+    L --> M
+    
+    Q --> S
+    R --> Q
+    
+    T --> U
+    U --> V
+    
+    S --> W
+    S --> X
+    S --> Y
+    S --> Z
+
+    %% Styling
+    classDef hierarchy fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef categories fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef validation fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef environment fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef template fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef security fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+    classDef services fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+
+    class A,B,C,D,E hierarchy
+    class F,G,H,I,J,F1,G1,H1,I1,J1 categories
+    class K,L,M,K1,L1,M1 validation
+    class N,O,P,N1,O1,P1 environment
+    class Q,R,S,Q1,R1,S1 template
+    class T,U,V,T1,U1,V1 security
+    class W,X,Y,Z,W1,X1,Y1,Z1 services
