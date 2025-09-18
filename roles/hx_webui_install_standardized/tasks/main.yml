@@ -1,29 +1,33 @@
+
 ---
-- name: Include validation tasks
-  ansible.builtin.include_tasks: validate_input.yml
-  tags: [validation, webui]
+- name: "Hx | Web UI Install | Main task orchestration"
+  block:
+    - name: "Hx | Include validation tasks"
+      include_tasks: validate.yml
+      tags: ['validate', 'always']
 
-- name: Include prerequisite tasks
-  ansible.builtin.include_tasks: prerequisites.yml
-  tags: [prerequisites, webui]
+    - name: "Hx | Include preparation tasks"
+      include_tasks: prepare.yml
+      tags: ['prepare']
 
-- name: Include user management tasks
-  ansible.builtin.include_tasks: user_management.yml
-  tags: [users, webui]
+    - name: "Hx | Include installation tasks"
+      include_tasks: install.yml
+      tags: ['install']
 
-- name: Include installation tasks
-  ansible.builtin.include_tasks: installation.yml
-  tags: [installation, webui]
+    - name: "Hx | Include configuration tasks"
+      include_tasks: configure.yml
+      tags: ['configure']
 
-- name: Include configuration tasks
-  ansible.builtin.include_tasks: configuration.yml
-  tags: [configuration, webui]
+    - name: "Hx | Include security tasks"
+      include_tasks: security.yml
+      tags: ['security']
 
-- name: Include systemd service tasks
-  ansible.builtin.include_tasks: systemd.yml
-  tags: [systemd, webui]
+    - name: "Hx | Include verification tasks"
+      include_tasks: verify.yml
+      tags: ['verify']
 
-- name: Include post-installation validation
-  ansible.builtin.include_tasks: validate_service.yml
-  when: webui_validate_installation | bool
-  tags: [validation, webui]
+  rescue:
+    - name: "Hx | Handle Web UI installation failure"
+      fail:
+        msg: "Web UI installation failed: {{ ansible_failed_result.msg | default('Unknown error') }}"
+      tags: ['always']

@@ -1,0 +1,141 @@
+
+---
+- name: "Hx | Web UI | Configure firewall rules"
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - "{{ hx_webui_listen_port }}"
+    - "{{ hx_webui_ssl_port if hx_webui_ssl_enabled else omit }}"
+  when: 
+    - hx_webui_firewall_enabled | default(false) | bool
+    - ansible_facts['os_family'] == "Debian"
+  tags: ['security']
+
+- name: "Hx | Web UI | Block malicious IPs"
+  ufw:
+    rule: deny
+    src: "{{ item }}"
+  loop: "{{ hx_webui_blocked_ips }}"
+  when: 
+    - hx_webui_firewall_enabled | default(false) | bool
+    - hx_webui_blocked_ips | length > 0
+  tags: ['security']
+
+- name: "Hx | Web UI | Allow specific IPs only"
+  ufw:
+    rule: allow
+    port: "{{ hx_webui_listen_port }}"
+    src: "{{ item }}"
+    proto: tcp
+  loop: "{{ hx_webui_allowed_ips }}"
+  when: 
+    - hx_webui_firewall_enabled | default(false) | bool
+    - hx_webui_allowed_ips | length > 0
+  tags: ['security']
+
+- name: "Hx | Web UI | Set secure file permissions"
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+    recurse: "{{ item.recurse | default(false) }}"
+  loop:
+    - path: "{{ hx_webui_root_dir }}"
+      owner: "{{ hx_webui_app_user }}"
+      group: "{{ hx_webui_app_group }}"
+      mode: "0755"
+      recurse: true
+    - path: "/etc/{{ hx_webui_server_type }}"
+      owner: "root"
+      group: "root"
+      mode: "0755"
+      recurse: true
+    - path: "/var/log/{{ hx_webui_server_type }}"
+      owner: "root"
+      group: "adm"
+      mode: "0755"
+  tags: ['security']
+
+- name: "Hx | Web UI | Configure fail2ban for web server"
+  template:
+    src: webui-fail2ban.conf.j2
+    dest: "/etc/fail2ban/jail.d/{{ hx_webui_app_name }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart fail2ban
+  tags: ['security']
+
+- name: "Hx | Web UI | Install and configure fail2ban"
+  package:
+    name: fail2ban
+    state: present
+  tags: ['security']
+
+- name: "Hx | Web UI | Remove server tokens/signatures"
+  lineinfile:
+    path: "/etc/{{ hx_webui_server_type }}/{{ hx_webui_server_type }}.conf"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: true
+  loop:
+    - regexp: "^server_tokens"
+      line: "server_tokens off;"
+  when: hx_webui_server_type == "nginx"
+  notify: restart nginx
+  tags: ['security']
+
+- name: "Hx | Web UI | Remove Apache server signature"
+  lineinfile:
+    path: "/etc/apache2/conf-available/security.conf"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: true
+  loop:
+    - regexp: "^ServerTokens"
+      line: "ServerTokens Prod"
+    - regexp: "^ServerSignature"
+      line: "ServerSignature Off"
+  when: hx_webui_server_type == "apache"
+  notify: restart apache2
+  tags: ['security']
+
+- name: "Hx | Web UI | Configure security headers"
+  template:
+    src: "{{ hx_webui_server_type }}-security-headers.conf.j2"
+    dest: "/etc/{{ hx_webui_server_type }}/conf.d/security-headers.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: "restart {{ hx_webui_server_type }}"
+  tags: ['security']
+
+- name: "Hx | Web UI | Create security audit script"
+  template:
+    src: security-audit.sh.j2
+    dest: "{{ hx_webui_app_home }}/security-audit.sh"
+    owner: "{{ hx_webui_app_user }}"
+    group: "{{ hx_webui_app_group }}"
+    mode: "0750"
+  tags: ['security']
+
+- name: "Hx | Web UI | Setup security audit cron job"
+  cron:
+    name: "Web UI Security Audit"
+    minute: "0"
+    hour: "2"
+    job: "{{ hx_webui_app_home }}/security-audit.sh"
+    user: "{{ hx_webui_app_user }}"
+  tags: ['security']
+
+- name: "Hx | Web UI | Configure log monitoring"
+  template:
+    src: log-monitor.sh.j2
+    dest: "{{ hx_webui_app_home }}/log-monitor.sh"
+    owner: "{{ hx_webui_app_user }}"
+    group: "{{ hx_webui_app_group }}"
+    mode: "0750"
+  tags: ['security']

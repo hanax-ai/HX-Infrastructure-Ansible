@@ -1,0 +1,35 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: "Verify hx_webui_install_standardized installation"
+      block:
+        - name: Check if service files exist
+          stat:
+            path: "{{ item }}"
+          register: service_files
+          loop:
+            - "/etc/systemd/system/hx-webui-install-standardized.service"
+          when: "'hx_webui_install_standardized' != 'hx_pg_auth_standardized'"
+        
+        - name: Check configuration directories
+          stat:
+            path: "{{ item }}"
+          register: config_dirs
+          loop:
+            - "/etc/webui"
+            - "/opt/hx-webui-install-standardized"
+          failed_when: false
+        
+        - name: Verify log directories
+          stat:
+            path: "{{ item }}"
+          register: log_dirs
+          loop:
+            - "/var/log/webui"
+          failed_when: false
+        
+        - name: Display verification results
+          debug:
+            msg: "Verification completed for hx_webui_install_standardized"

@@ -1,24 +1,43 @@
+
 ---
 galaxy_info:
   author: HX Infrastructure Team
-  description: Standardized Open WebUI installation with enhanced security and validation
-  company: Hanax AI
+  description: Enterprise web UI installation and configuration
+  company: HX AI
   license: MIT
   min_ansible_version: "2.12"
+  
   platforms:
     - name: Ubuntu
       versions:
-        - "20.04"
-        - "22.04"
-        - "24.04"
-  galaxy_tags:
-    - webui
-    - openwebui
-    - ai
-    - llm
-    - standardized
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
 
-dependencies: []
+  galaxy_tags:
+    - web
+    - nginx
+    - apache
+    - ssl
+    - security
+    - performance
+
+dependencies:
+  - role: geerlingguy.nginx
+    when: hx_webui_server_type == "nginx"
+    vars:
+      nginx_remove_default_vhost: true
+      nginx_vhosts: []
+      nginx_upstreams: []
+  
+  - role: geerlingguy.apache
+    when: hx_webui_server_type == "apache"
+    vars:
+      apache_remove_default_vhost: true
+      apache_create_vhosts: false
 
 collections:
   - community.general

@@ -1,0 +1,15 @@
+
+{
+  "status": "healthy",
+  "timestamp": "{{ ansible_date_time.iso8601 }}",
+  "server": "{{ hx_webui_server_name }}",
+  "application": "{{ hx_webui_app_name }}",
+  "version": "{{ hx_webui_app_version }}",
+  "uptime": "{{ ansible_uptime_seconds }}",
+  "checks": {
+    "web_server": "ok",
+    "ssl": "{{ 'ok' if hx_webui_ssl_enabled else 'disabled' }}",
+    "caching": "{{ 'ok' if hx_webui_enable_caching else 'disabled' }}",
+    "compression": "{{ 'ok' if hx_webui_enable_gzip else 'disabled' }}"
+  }
+}

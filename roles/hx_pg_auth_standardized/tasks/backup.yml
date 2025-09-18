@@ -1,0 +1,43 @@
+---
+# PostgreSQL Backup and Recovery Tasks
+- name: "Hx | PostgreSQL Auth | Create backup directory"
+  file:
+    path: "{{ hx_pg_backup_directory }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0750'
+  become: true
+  tags: ['backup']
+
+- name: "Hx | PostgreSQL Auth | Create backup script"
+  template:
+    src: pg_backup.sh.j2
+    dest: /usr/local/bin/pg_backup.sh
+    owner: postgres
+    group: postgres
+    mode: '0750'
+  become: true
+  tags: ['backup']
+
+- name: "Hx | PostgreSQL Auth | Schedule automated backups"
+  cron:
+    name: "PostgreSQL automated backup"
+    user: postgres
+    minute: "{{ hx_pg_backup_minute | default('0') }}"
+    hour: "{{ hx_pg_backup_hour | default('2') }}"
+    job: "/usr/local/bin/pg_backup.sh"
+    state: "{{ 'present' if hx_pg_enable_automated_backup | default(true) else 'absent' }}"
+  become: true
+  tags: ['backup']
+
+- name: "Hx | PostgreSQL Auth | Configure WAL archiving"
+  lineinfile:
+    path: "{{ hx_pg_data_directory }}/postgresql.conf"
+    regexp: "^#?archive_mode"
+    line: "archive_mode = on"
+    backup: true
+  become: true
+  when: hx_pg_enable_wal_archiving | default(false)
+  notify: restart postgresql
+  tags: ['backup', 'wal']

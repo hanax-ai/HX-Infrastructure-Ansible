@@ -1,0 +1,112 @@
+
+---
+- name: "Hx | PostgreSQL Auth | Set secure file permissions on config files"
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ hx_pg_config_dir }}/postgresql.conf"
+      owner: "postgres"
+      group: "postgres"
+      mode: "0644"
+    - path: "{{ hx_pg_config_dir }}/pg_hba.conf"
+      owner: "postgres"
+      group: "postgres"
+      mode: "0640"
+    - path: "{{ hx_pg_data_dir }}"
+      owner: "postgres"
+      group: "postgres"
+      mode: "0700"
+  tags: ['security']
+
+- name: "Hx | PostgreSQL Auth | Remove default PostgreSQL users if they exist"
+  postgresql_user:
+    name: "{{ item }}"
+    state: absent
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  loop:
+    - "template0"
+    - "template1"
+  become: true
+  become_user: postgres
+  failed_when: false
+  tags: ['security']
+
+- name: "Hx | PostgreSQL Auth | Configure connection limits per user"
+  postgresql_query:
+    db: "postgres"
+    query: "ALTER USER {{ item.name }} CONNECTION LIMIT {{ item.connection_limit | default(10) }};"
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  loop: "{{ hx_pg_users }}"
+  become: true
+  become_user: postgres
+  when: 
+    - hx_pg_users | length > 0
+    - "'CHANGE_ME' not in item.password"
+  tags: ['security']
+
+- name: "Hx | PostgreSQL Auth | Set password expiration for users"
+  postgresql_query:
+    db: "postgres"
+    query: "ALTER USER {{ item.name }} VALID UNTIL '{{ item.expires | default('2025-12-31') }}';"
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  loop: "{{ hx_pg_users }}"
+  become: true
+  become_user: postgres
+  when: 
+    - hx_pg_users | length > 0
+    - "'CHANGE_ME' not in item.password"
+    - item.expires is defined
+  tags: ['security']
+
+- name: "Hx | PostgreSQL Auth | Configure audit logging"
+  postgresql_query:
+    db: "postgres"
+    query: |
+      CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+      CREATE EXTENSION IF NOT EXISTS pgaudit;
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  become: true
+  become_user: postgres
+  failed_when: false
+  tags: ['security']
+
+- name: "Hx | PostgreSQL Auth | Configure firewall rules"
+  ufw:
+    rule: allow
+    port: "{{ hx_pg_port }}"
+    src: "{{ item }}"
+    proto: tcp
+  loop:
+    - "127.0.0.1"
+    - "::1"
+  when: ansible_facts['os_family'] == "Debian"
+  tags: ['security']
+
+- name: "Hx | PostgreSQL Auth | Disable unnecessary PostgreSQL features"
+  lineinfile:
+    path: "{{ hx_pg_config_dir }}/postgresql.conf"
+    regexp: "^#?{{ item.key }}"
+    line: "{{ item.key }} = {{ item.value }}"
+    backup: true
+  loop:
+    - key: "shared_preload_libraries"
+      value: "'pg_stat_statements'"
+    - key: "track_activities"
+      value: "on"
+    - key: "track_counts"
+      value: "on"
+    - key: "track_functions"
+      value: "all"
+  notify: restart postgresql
+  tags: ['security']

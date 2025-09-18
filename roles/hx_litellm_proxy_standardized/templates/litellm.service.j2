@@ -1,0 +1,44 @@
+
+[Unit]
+Description=LiteLLM Proxy Server
+Documentation=https://docs.litellm.ai/
+After=network.target
+{% if hx_litellm_database_enabled and hx_litellm_database_type == "postgresql" %}
+After=postgresql.service
+Wants=postgresql.service
+{% endif %}
+{% if hx_litellm_caching_enabled and hx_litellm_cache_type == "redis" %}
+After=redis.service
+Wants=redis.service
+{% endif %}
+
+[Service]
+Type=exec
+User={{ hx_litellm_user }}
+Group={{ hx_litellm_group }}
+WorkingDirectory={{ hx_litellm_home }}
+Environment=PATH={{ hx_litellm_venv_path }}/bin
+EnvironmentFile={{ hx_litellm_config_dir }}/.env
+ExecStart={{ hx_litellm_home }}/start.sh
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+Restart={{ 'always' if hx_litellm_auto_restart else 'no' }}
+RestartSec=5
+TimeoutStopSec=30
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ hx_litellm_home }} {{ hx_litellm_log_dir }} {{ hx_litellm_data_dir }}
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

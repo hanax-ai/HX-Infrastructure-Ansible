@@ -1,17 +1,124 @@
+
 ---
-- name: Restart litellm
-  ansible.builtin.systemd:
-    name: "{{ litellm_service_name }}"
+# LiteLLM Proxy Role - Handlers
+# HX Infrastructure Ansible
+
+- name: restart litellm-proxy
+  systemd:
+    name: "{{ hx_litellm_service_name }}"
     state: restarted
     daemon_reload: true
-  listen: "restart litellm"
+  become: true
+  listen: "restart litellm-proxy"
 
-- name: Reload litellm
-  ansible.builtin.systemd:
-    name: "{{ litellm_service_name }}"
+- name: reload litellm-proxy
+  systemd:
+    name: "{{ hx_litellm_service_name }}"
     state: reloaded
-  listen: "reload litellm"
+  become: true
+  listen: "reload litellm-proxy"
 
-- name: Validate litellm service
-  ansible.builtin.include_tasks: validate_service.yml
-  listen: "validate litellm"
+- name: validate litellm config
+  shell: |
+    cd {{ hx_litellm_home_directory }}
+    python -c "import yaml; yaml.safe_load(open('{{ hx_litellm_config_directory }}/config.yaml'))"
+  become: true
+  become_user: "{{ hx_litellm_user }}"
+  register: litellm_config_validation
+  failed_when: litellm_config_validation.rc != 0
+  listen: "validate litellm config"
+
+- name: restart redis
+  systemd:
+    name: redis-server
+    state: restarted
+  become: true
+  when: hx_litellm_enable_redis | default(false)
+  listen: "restart redis"
+
+- name: reload redis
+  systemd:
+    name: redis-server
+    state: reloaded
+  become: true
+  when: hx_litellm_enable_redis | default(false)
+  listen: "reload redis"
+
+- name: restart postgresql
+  systemd:
+    name: postgresql
+    state: restarted
+  become: true
+  when: hx_litellm_enable_database | default(false)
+  listen: "restart postgresql"
+
+- name: update litellm database schema
+  shell: |
+    cd {{ hx_litellm_home_directory }}
+    litellm --config {{ hx_litellm_config_directory }}/config.yaml --create_tables
+  become: true
+  become_user: "{{ hx_litellm_user }}"
+  environment: "{{ hx_litellm_environment_variables }}"
+  when: hx_litellm_enable_database | default(false)
+  listen: "update litellm database schema"
+
+- name: clear litellm cache
+  shell: |
+    redis-cli -h {{ hx_litellm_redis_host }} -p {{ hx_litellm_redis_port }} -n {{ hx_litellm_redis_database }} FLUSHDB
+  become: true
+  when: hx_litellm_enable_redis and hx_litellm_enable_caching
+  listen: "clear litellm cache"
+
+- name: backup litellm config
+  copy:
+    src: "{{ hx_litellm_config_directory }}/config.yaml"
+    dest: "{{ hx_litellm_backup_directory }}/config_backup_{{ ansible_date_time.epoch }}.yaml"
+    remote_src: true
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: '0600'
+  become: true
+  listen: "backup litellm config"
+
+- name: rotate litellm logs
+  shell: |
+    logrotate -f /etc/logrotate.d/litellm
+  become: true
+  listen: "rotate litellm logs"
+
+- name: update prometheus metrics
+  uri:
+    url: "http://{{ hx_litellm_host }}:{{ hx_litellm_port }}{{ hx_litellm_metrics_path }}"
+    method: GET
+  when: hx_litellm_enable_prometheus | default(false)
+  listen: "update prometheus metrics"
+
+- name: test litellm health
+  uri:
+    url: "http://{{ hx_litellm_host }}:{{ hx_litellm_port }}{{ hx_litellm_health_check_path }}"
+    method: GET
+    timeout: "{{ hx_litellm_health_check_timeout }}"
+  register: litellm_health_test
+  failed_when: litellm_health_test.status != 200
+  listen: "test litellm health"
+
+- name: update firewall rules
+  ufw:
+    rule: allow
+    port: "{{ hx_litellm_port }}"
+    proto: tcp
+  become: true
+  listen: "update firewall rules"
+
+- name: send webhook notification
+  uri:
+    url: "{{ hx_litellm_webhook_url }}"
+    method: POST
+    body_format: json
+    body:
+      event: "service_restarted"
+      service: "{{ hx_litellm_service_name }}"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      hostname: "{{ ansible_hostname }}"
+  when: hx_litellm_enable_webhooks and hx_litellm_webhook_url != ""
+  listen: "send webhook notification"

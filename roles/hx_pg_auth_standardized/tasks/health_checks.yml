@@ -1,0 +1,61 @@
+---
+# PostgreSQL Health Check Tasks
+- name: "Hx | PostgreSQL Auth | Create health check script"
+  template:
+    src: pg_health_check.sh.j2
+    dest: /usr/local/bin/pg_health_check.sh
+    owner: postgres
+    group: postgres
+    mode: '0755'
+  become: true
+  tags: ['health_checks']
+
+- name: "Hx | PostgreSQL Auth | Test database connectivity"
+  postgresql_ping:
+    db: postgres
+  become: true
+  become_user: postgres
+  register: pg_connectivity_test
+  tags: ['health_checks', 'connectivity']
+
+- name: "Hx | PostgreSQL Auth | Verify PostgreSQL service status"
+  systemd:
+    name: postgresql
+    state: started
+  become: true
+  register: pg_service_status
+  tags: ['health_checks', 'service']
+
+- name: "Hx | PostgreSQL Auth | Check database disk usage"
+  shell: |
+    du -sh {{ hx_pg_data_directory }}
+  become: true
+  register: pg_disk_usage
+  changed_when: false
+  tags: ['health_checks', 'disk']
+
+- name: "Hx | PostgreSQL Auth | Monitor active connections"
+  postgresql_query:
+    db: postgres
+    query: "SELECT count(*) as active_connections FROM pg_stat_activity WHERE state = 'active';"
+  become: true
+  become_user: postgres
+  register: pg_active_connections
+  tags: ['health_checks', 'connections']
+
+- name: "Hx | PostgreSQL Auth | Create health check report"
+  template:
+    src: health_report.json.j2
+    dest: "{{ hx_pg_log_directory }}/health_report.json"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  become: true
+  vars:
+    health_data:
+      connectivity: "{{ pg_connectivity_test.is_available | default(false) }}"
+      service_status: "{{ pg_service_status.status.ActiveState | default('unknown') }}"
+      disk_usage: "{{ pg_disk_usage.stdout | default('unknown') }}"
+      active_connections: "{{ pg_active_connections.query_result[0].active_connections | default(0) }}"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+  tags: ['health_checks', 'reporting']

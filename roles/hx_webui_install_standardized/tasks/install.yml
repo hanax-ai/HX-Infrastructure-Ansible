@@ -1,0 +1,119 @@
+
+---
+- name: "Hx | Web UI | Install web server packages"
+  package:
+    name: "{{ hx_webui_packages[hx_webui_server_type] }}"
+    state: present
+  vars:
+    hx_webui_packages:
+      nginx:
+        - nginx
+        - nginx-extras
+      apache:
+        - apache2
+        - apache2-utils
+      custom:
+        - build-essential
+  tags: ['install']
+
+- name: "Hx | Web UI | Install additional tools"
+  package:
+    name:
+      - htop
+      - iotop
+      - net-tools
+      - tcpdump
+      - strace
+    state: present
+  tags: ['install']
+
+- name: "Hx | Web UI | Install monitoring tools"
+  package:
+    name:
+      - prometheus-node-exporter
+    state: present
+  when: hx_webui_monitoring_enabled | default(false) | bool
+  tags: ['install']
+
+- name: "Hx | Web UI | Install asset optimization tools"
+  package:
+    name:
+      - imagemagick
+      - optipng
+      - jpegoptim
+    state: present
+  when: hx_webui_optimize_assets | default(false) | bool
+  tags: ['install']
+
+- name: "Hx | Web UI | Install Node.js for asset processing"
+  package:
+    name:
+      - nodejs
+      - npm
+    state: present
+  when: hx_webui_minify_css | default(false) | bool or hx_webui_minify_js | default(false) | bool
+  tags: ['install']
+
+- name: "Hx | Web UI | Install CSS/JS minification tools"
+  npm:
+    name: "{{ item }}"
+    global: true
+  loop:
+    - "clean-css-cli"
+    - "uglify-js"
+  when: hx_webui_minify_css | default(false) | bool or hx_webui_minify_js | default(false) | bool
+  tags: ['install']
+
+- name: "Hx | Web UI | Create systemd service file"
+  template:
+    src: "{{ hx_webui_server_type }}-webui.service.j2"
+    dest: "/etc/systemd/system/{{ hx_webui_app_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: 
+    - reload systemd
+    - restart webui service
+  when: hx_webui_server_type == "custom"
+  tags: ['install']
+
+- name: "Hx | Web UI | Enable and start web server service"
+  systemd:
+    name: "{{ hx_webui_service_name[hx_webui_server_type] }}"
+    enabled: "{{ hx_webui_service_enabled }}"
+    state: "{{ hx_webui_service_state }}"
+    daemon_reload: true
+  vars:
+    hx_webui_service_name:
+      nginx: "nginx"
+      apache: "apache2"
+      custom: "{{ hx_webui_app_name }}"
+  tags: ['install']
+
+- name: "Hx | Web UI | Configure logrotate"
+  template:
+    src: webui-logrotate.j2
+    dest: "/etc/logrotate.d/{{ hx_webui_app_name }}"
+    owner: root
+    group: root
+    mode: "0644"
+  tags: ['install']
+
+- name: "Hx | Web UI | Create health check script"
+  template:
+    src: health-check.sh.j2
+    dest: "{{ hx_webui_app_home }}/health-check.sh"
+    owner: "{{ hx_webui_app_user }}"
+    group: "{{ hx_webui_app_group }}"
+    mode: "0755"
+  when: hx_webui_health_check_enabled | default(false) | bool
+  tags: ['install']
+
+- name: "Hx | Web UI | Setup health check cron job"
+  cron:
+    name: "Web UI Health Check"
+    minute: "*/{{ hx_webui_health_check_interval | default(30) }}"
+    job: "{{ hx_webui_app_home }}/health-check.sh"
+    user: "{{ hx_webui_app_user }}"
+  when: hx_webui_health_check_enabled | default(false) | bool
+  tags: ['install']

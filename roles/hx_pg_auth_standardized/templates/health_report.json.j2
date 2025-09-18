@@ -1,0 +1,41 @@
+
+{
+  "timestamp": "{{ health_data.timestamp }}",
+  "hostname": "{{ ansible_hostname }}",
+  "postgresql_health": {
+    "connectivity": {{ health_data.connectivity | to_json }},
+    "service_status": "{{ health_data.service_status }}",
+    "disk_usage": "{{ health_data.disk_usage }}",
+    "active_connections": {{ health_data.active_connections }},
+    "max_connections": {{ hx_pg_max_connections | default(100) }},
+    "connection_usage_percent": {{ ((health_data.active_connections | int) * 100 / (hx_pg_max_connections | default(100) | int)) | round(2) }},
+    "data_directory": "{{ hx_pg_data_directory | default('/var/lib/postgresql/data') }}",
+    "version": "{{ ansible_local.postgresql.version | default('unknown') }}",
+    "uptime": "{{ ansible_uptime_seconds | default(0) }}",
+    "configuration": {
+      "ssl_enabled": {{ hx_pg_enable_ssl | default(true) | to_json }},
+      "wal_archiving": {{ hx_pg_enable_wal_archiving | default(false) | to_json }},
+      "connection_pooling": {{ hx_pg_enable_connection_pooling | default(false) | to_json }},
+      "listen_addresses": "{{ hx_pg_listen_addresses | default('localhost') }}",
+      "port": {{ hx_pg_port | default(5432) }}
+    },
+    "security": {
+      "authentication_method": "{{ hx_pg_local_auth_method | default('md5') }}",
+      "ssl_configured": {{ hx_pg_enable_ssl | default(true) | to_json }},
+      "reject_other_connections": {{ hx_pg_reject_other_connections | default(true) | to_json }}
+    },
+    "backup": {
+      "automated_backup_enabled": {{ hx_pg_enable_automated_backup | default(true) | to_json }},
+      "backup_directory": "{{ hx_pg_backup_directory | default('/var/lib/postgresql/backups') }}",
+      "retention_days": {{ hx_pg_backup_retention_days | default(7) }}
+    }
+  },
+  "system_info": {
+    "os": "{{ ansible_distribution }} {{ ansible_distribution_version }}",
+    "architecture": "{{ ansible_architecture }}",
+    "memory_total": "{{ ansible_memtotal_mb }}MB",
+    "cpu_cores": {{ ansible_processor_vcpus }},
+    "load_average": "{{ ansible_loadavg | default({}) | to_json }}"
+  },
+  "status": "{{ 'healthy' if health_data.connectivity and health_data.service_status == 'active' else 'unhealthy' }}"
+}

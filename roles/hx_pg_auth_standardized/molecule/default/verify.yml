@@ -1,0 +1,35 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: "Verify hx_pg_auth_standardized installation"
+      block:
+        - name: Check if service files exist
+          stat:
+            path: "{{ item }}"
+          register: service_files
+          loop:
+            - "/etc/systemd/system/hx-pg-auth-standardized.service"
+          when: "'hx_pg_auth_standardized' != 'hx_pg_auth_standardized'"
+        
+        - name: Check configuration directories
+          stat:
+            path: "{{ item }}"
+          register: config_dirs
+          loop:
+            - "/etc/pg"
+            - "/opt/hx-pg-auth-standardized"
+          failed_when: false
+        
+        - name: Verify log directories
+          stat:
+            path: "{{ item }}"
+          register: log_dirs
+          loop:
+            - "/var/log/pg"
+          failed_when: false
+        
+        - name: Display verification results
+          debug:
+            msg: "Verification completed for hx_pg_auth_standardized"
