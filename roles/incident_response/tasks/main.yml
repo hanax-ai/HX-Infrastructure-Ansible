@@ -1,0 +1,16 @@
+
+---
+# Incident Response Role - Main Tasks
+- name: Include incident response tasks
+  include_tasks: "{{ item }}"
+  with_items:
+    - detect_incidents.yml
+    - classify_incidents.yml
+    - escalate_incidents.yml
+    - auto_remediation.yml
+    - incident_documentation.yml
+  when: incident_response_enabled | default(true)
+
+- name: Setup incident response monitoring
+  include_tasks: setup_incident_monitoring.yml
+  when: incident_monitoring_enabled | default(true)

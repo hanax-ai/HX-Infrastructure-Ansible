@@ -1,0 +1,196 @@
+{
+  "timestamp": "2025-09-18 07:56:38",
+  "performance_metrics": {
+    "linting_performance": {
+      "ansible_lint": {
+        "duration": 0.88,
+        "memory_usage": 0.0,
+        "exit_code": 3,
+        "issues_found": 0
+      },
+      "yamllint": {
+        "duration": 1.87,
+        "exit_code": 1,
+        "lines_checked": 391
+      }
+    },
+    "syntax_check_performance": {
+      "playbooks_tested": 1,
+      "total_duration": 0.66,
+      "average_duration": 0.66,
+      "max_duration": 0.66,
+      "min_duration": 0.66,
+      "details": [
+        {
+          "playbook": "site.yml",
+          "duration": 0.66,
+          "exit_code": 1
+        }
+      ]
+    },
+    "role_loading_performance": {
+      "total_roles": 19,
+      "total_duration": 0.15,
+      "average_role_duration": 0.008,
+      "max_role_duration": 0.025,
+      "roles_with_errors": 0,
+      "details": [
+        {
+          "role_name": "hx_ca_trust_standardized",
+          "files_loaded": 5,
+          "errors": [],
+          "duration": 0.025
+        },
+        {
+          "role_name": "networking",
+          "files_loaded": 0,
+          "errors": [],
+          "duration": 0.0
+        },
+        {
+          "role_name": "security",
+          "files_loaded": 0,
+          "errors": [],
+          "duration": 0.0
+        },
+        {
+          "role_name": "web_server",
+          "files_loaded": 0,
+          "errors": [],
+          "duration": 0.0
+        },
+        {
+          "role_name": "dependency_validator",
+          "files_loaded": 3,
+          "errors": [],
+          "duration": 0.015
+        },
+        {
+          "role_name": "hx_domain_join_standardized",
+          "files_loaded": 5,
+          "errors": [],
+          "duration": 0.016
+        },
+        {
+          "role_name": "ssh_key_management",
+          "files_loaded": 3,
+          "errors": [],
+          "duration": 0.017
+        },
+        {
+          "role_name": "backup",
+          "files_loaded": 4,
+          "errors": [],
+          "duration": 0.011
+        },
+        {
+          "role_name": "monitoring",
+          "files_loaded": 0,
+          "errors": [],
+          "duration": 0.0
+        },
+        {
+          "role_name": "reliability_monitor",
+          "files_loaded": 3,
+          "errors": [],
+          "duration": 0.016
+        },
+        {
+          "role_name": "common",
+          "files_loaded": 0,
+          "errors": [],
+          "duration": 0.0
+        },
+        {
+          "role_name": "operational_safety",
+          "files_loaded": 2,
+          "errors": [],
+          "duration": 0.012
+        },
+        {
+          "role_name": "storage",
+          "files_loaded": 0,
+          "errors": [],
+          "duration": 0.0
+        },
+        {
+          "role_name": "database",
+          "files_loaded": 0,
+          "errors": [],
+          "duration": 0.0
+        },
+        {
+          "role_name": "hx_pg_auth_standardized",
+          "files_loaded": 5,
+          "errors": [],
+          "duration": 0.019
+        },
+        {
+          "role_name": "config_validator",
+          "files_loaded": 3,
+          "errors": [],
+          "duration": 0.014
+        },
+        {
+          "role_name": "common_templates",
+          "files_loaded": 2,
+          "errors": [],
+          "duration": 0.006
+        },
+        {
+          "role_name": "logging",
+          "files_loaded": 0,
+          "errors": [],
+          "duration": 0.0
+        },
+        {
+          "role_name": "load_balancer",
+          "files_loaded": 0,
+          "errors": [],
+          "duration": 0.0
+        }
+      ]
+    },
+    "system_metrics": {
+      "cpu_percent": 1.2,
+      "memory_percent": 11.1,
+      "disk_usage_percent": 0.0,
+      "load_average": [
+        1.74169921875,
+        1.00048828125,
+        0.88232421875
+      ],
+      "process_count": 26,
+      "disk_io": {
+        "read_bytes": 23953278976,
+        "write_bytes": 869617357824
+      },
+      "network_io": {
+        "bytes_sent": 20106380,
+        "bytes_recv": 327689072
+      }
+    },
+    "scalability_metrics": {
+      "project_size": {
+        "total_files": 8062,
+        "yaml_files": 243,
+        "python_files": 2638,
+        "roles_count": 19,
+        "playbooks_count": 5
+      },
+      "complexity_metrics": {
+        "estimated_total_lines": 24883.2,
+        "average_lines_per_file": 102.4
+      }
+    }
+  },
+  "summary": {
+    "linting_speed": "Fast",
+    "syntax_check_speed": "Fast",
+    "role_loading_speed": "Fast",
+    "system_health": "Good"
+  },
+  "recommendations": [
+    "Consider organizing large project into smaller modules"
+  ]
+}

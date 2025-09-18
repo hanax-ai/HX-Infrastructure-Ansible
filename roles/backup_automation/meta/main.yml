@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  author: HX Infrastructure Team
+  description: Comprehensive backup automation for HX Infrastructure
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: 2.15
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: CentOS
+      versions:
+        - 8
+        - 9
+  galaxy_tags:
+    - backup
+    - automation
+    - database
+    - security
+    - monitoring
+
+dependencies:
+  - role: common
+  - role: security

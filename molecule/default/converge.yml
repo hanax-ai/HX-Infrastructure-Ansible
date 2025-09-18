@@ -1,0 +1,73 @@
+
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    # Template quality enhancement variables
+    template_version: "1.0.0"
+    organization_name: "HX Infrastructure Test"
+    environment: "testing"
+
+    # Reliability monitoring variables
+    service_monitoring:
+      enabled: true
+      check_interval: 30
+      timeout: 10
+      retries: 3
+
+    health_checks:
+      enabled: true
+      services:
+        - name: "sshd"
+          type: "systemd"
+          port: 22
+          process: "sshd"
+          log_file: "/var/log/auth.log"
+
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3
+      recovery_timeout: 30
+
+    performance_monitoring:
+      enabled: true
+      thresholds:
+        cpu_warning: 70
+        cpu_critical: 90
+        memory_warning: 80
+        memory_critical: 95
+
+  roles:
+    - common_templates
+    - reliability_monitor
+
+  tasks:
+    - name: Verify template framework is installed
+      stat:
+        path: /etc/ansible/templates/metadata.json
+      register: template_metadata
+
+    - name: Assert template metadata exists
+      assert:
+        that:
+          - template_metadata.stat.exists
+        fail_msg: "Template metadata file not found"
+
+    - name: Verify reliability monitor is installed
+      stat:
+        path: /opt/reliability_monitor/health_checker.py
+      register: health_checker
+
+    - name: Assert health checker exists
+      assert:
+        that:
+          - health_checker.stat.exists
+          - health_checker.stat.executable
+        fail_msg: "Health checker script not found or not executable"
+
+    - name: Test health checker functionality
+      command: /opt/reliability_monitor/health_checker.py --validate-config
+      register: health_check_validation
+      failed_when: health_check_validation.rc != 0
+      changed_when: false

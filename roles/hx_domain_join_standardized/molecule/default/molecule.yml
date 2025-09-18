@@ -1,0 +1,58 @@
+
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: ubuntu-focal-domain
+    image: ubuntu:20.04
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: "/lib/systemd/systemd"
+    tmpfs:
+      - /run
+      - /tmp
+    environment:
+      container: docker
+  - name: ubuntu-jammy-domain
+    image: ubuntu:22.04
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: "/lib/systemd/systemd"
+    tmpfs:
+      - /run
+      - /tmp
+    environment:
+      container: docker
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+      callback_whitelist: profile_tasks, timer, yaml
+      # host_key_checking: false  # REMOVED: Security risk for testing
+    ssh_connection:
+      pipelining: true
+  inventory:
+    host_vars:
+      ubuntu-focal-domain:
+        hx_ad_domain: "test.local"
+        hx_ad_realm: "TEST.LOCAL"
+        hx_ad_admin_user: "testadmin"
+        hx_ad_admin_password: "TestPassword123!"
+        hx_domain_join_enabled: false  # Skip actual join in tests
+        hx_domain_health_checks_enabled: false  # Skip health checks
+      ubuntu-jammy-domain:
+        hx_ad_domain: "test.local"
+        hx_ad_realm: "TEST.LOCAL"
+        hx_ad_admin_user: "testadmin"
+        hx_ad_admin_password: "TestPassword123!"
+        hx_domain_join_enabled: false  # Skip actual join in tests
+        hx_domain_health_checks_enabled: false  # Skip health checks
+verifier:
+  name: ansible

@@ -1,0 +1,21 @@
+
+---
+# Production Operations Role - Main Tasks
+- name: Include production operations tasks
+  include_tasks: "{{ item }}"
+  with_items:
+    - validate_prerequisites.yml
+    - blue_green_deployment.yml
+    - canary_deployment.yml
+    - service_discovery.yml
+    - auto_recovery.yml
+    - traffic_switch.yml
+  when: production_ops_enabled | default(true)
+
+- name: Setup production monitoring
+  include_tasks: setup_monitoring.yml
+  when: monitoring_enabled | default(true)
+
+- name: Configure alerting
+  include_tasks: configure_alerting.yml
+  when: alerting_enabled | default(true)

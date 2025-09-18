@@ -1,0 +1,22 @@
+
+---
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: restart reliability monitor
+  systemd:
+    name: reliability-monitor
+    state: restarted
+  when: service_monitoring.enabled | default(true)
+
+- name: stop reliability monitor
+  systemd:
+    name: reliability-monitor
+    state: stopped
+
+- name: start reliability monitor
+  systemd:
+    name: reliability-monitor
+    state: started
+  when: service_monitoring.enabled | default(true)

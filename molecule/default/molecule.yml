@@ -1,0 +1,67 @@
+
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: hx-infrastructure-ubuntu
+    image: quay.io/ansible/molecule-ubuntu:latest
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    command: /lib/systemd/systemd
+  - name: hx-infrastructure-centos
+    image: quay.io/ansible/molecule-centos:latest
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs:
+      - /run
+      - /tmp
+    capabilities:
+      - SYS_ADMIN
+    command: /usr/sbin/init
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+      callback_whitelist: profile_tasks, timer, yaml
+      stdout_callback: yaml
+    ssh_connection:
+      pipelining: false
+  inventory:
+    host_vars:
+      hx-infrastructure-ubuntu:
+        ansible_python_interpreter: /usr/bin/python3
+      hx-infrastructure-centos:
+        ansible_python_interpreter: /usr/bin/python3
+  lint: |
+    set -e
+    yamllint .
+    ansible-lint
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - dependency
+    - lint
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy

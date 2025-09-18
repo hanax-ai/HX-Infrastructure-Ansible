@@ -1,0 +1,154 @@
+---
+# Main site deployment playbook for HX Infrastructure
+# This playbook orchestrates the complete infrastructure deployment
+
+- name: Deploy HX Infrastructure - Common Configuration
+  hosts: all
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - "../../vars/secrets.yml"
+  roles:
+    - common
+  tags:
+    - hx_common
+    - hx_base
+
+- name: Deploy HX Infrastructure - Security Hardening
+  hosts: all
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - "../../vars/secrets.yml"
+  roles:
+    - security
+  tags:
+    - hx_security
+    - hx_hardening
+
+- name: Deploy HX Infrastructure - Control Nodes
+  hosts: control_nodes
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - "../../vars/secrets.yml"
+  tasks:
+    - name: Install control node specific packages
+      package:
+        name:
+          - ansible
+          - docker.io
+          - docker-compose
+          - kubectl
+        state: present
+      tags:
+        - hx_control
+        - hx_packages
+
+    - name: Configure control node services
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+      tags:
+        - hx_control
+        - hx_services
+
+- name: Deploy HX Infrastructure - LLM Servers
+  hosts: llm_servers
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - "../../vars/secrets.yml"
+  roles:
+    - hx_litellm_proxy_standardized
+  tasks:
+    - name: Install GPU monitoring tools
+      package:
+        name:
+          - nvidia-smi
+          - nvtop
+        state: present
+      when: gpu_count is defined and gpu_count > 0
+      tags:
+        - hx_llm
+        - hx_gpu
+
+    - name: Configure GPU services
+      systemd:
+        name: nvidia-persistenced
+        enabled: yes
+        state: started
+      when: gpu_count is defined and gpu_count > 0
+      ignore_errors: yes
+      tags:
+        - hx_llm
+        - hx_gpu
+
+- name: Deploy HX Infrastructure - Database Servers
+  hosts: database_servers
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - "../../vars/secrets.yml"
+  roles:
+    - hx_pg_auth_standardized
+  tags:
+    - hx_database
+
+- name: Deploy HX Infrastructure - Web UI Servers
+  hosts: webui_servers
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - "../../vars/secrets.yml"
+  roles:
+    - hx_webui_install_standardized
+  tags:
+    - hx_webui
+
+- name: Deploy HX Infrastructure - Final Validation
+  hosts: all
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Validate all services are running
+      systemd:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - sshd
+        - fail2ban
+        - ufw
+      ignore_errors: yes
+      tags:
+        - hx_validation
+
+    - name: Run security validation
+      command: "{{ item }}"
+      loop:
+        - "ufw status"
+        - "fail2ban-client status"
+        - "systemctl is-active sshd"
+      register: hx_security_status
+      ignore_errors: yes
+      tags:
+        - hx_validation
+
+    - name: Display deployment summary
+      debug:
+        msg: |
+          HX Infrastructure Deployment Complete!
+          
+          Security Status:
+          - UFW Firewall: {{ 'Active' if 'Status: active' in hx_security_status.results[0].stdout else 'Inactive' }}
+          - Fail2ban: {{ 'Active' if hx_security_status.results[1].rc == 0 else 'Inactive' }}
+          - SSH Service: {{ 'Active' if 'active' in hx_security_status.results[2].stdout else 'Inactive' }}
+          
+          Next Steps:
+          1. Review security configurations
+          2. Test application connectivity
+          3. Configure monitoring and alerting
+          4. Schedule regular backups
+      tags:
+        - hx_validation

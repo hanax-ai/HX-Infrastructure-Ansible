@@ -1,0 +1,75 @@
+---
+# Template for wrapping dangerous operations with safety checks
+# Copy this template and customize for specific dangerous operations
+
+- name: "SAFETY WRAPPER: {{ operation_description | default('Dangerous Operation') }}"
+  block:
+    # Pre-operation safety checks
+    - name: Import operational safety framework
+      include_tasks: "{{ playbook_dir }}/roles/common/tasks/operational_safety.yml"
+      vars:
+        safety_confirmation_required: true
+        safety_operation_name: "{{ operation_description | default('Dangerous Operation') }}"
+        safety_target: "{{ operation_target | default(inventory_hostname) }}"
+        safety_risks:
+          - "{{ operation_risks | default(['System downtime', 'Data loss']) }}"
+        safety_require_backup: "{{ require_backup | default(false) }}"
+        safety_backup_path: "{{ backup_path | default('') }}"
+        safety_forbidden_environments: "{{ forbidden_environments | default([]) }}"
+        safety_require_maintenance_window: "{{ require_maintenance_window | default(false) }}"
+
+    # The actual dangerous operation goes here
+    - name: "Execute: {{ operation_description | default('Dangerous Operation') }}"
+      # Replace this with your actual dangerous task
+      debug:
+        msg: "This is where the dangerous operation would be executed"
+      # Example dangerous operations:
+      # shell: "{{ dangerous_command }}"
+      # file: path="{{ dangerous_path }}" state=absent
+      # service: name="{{ service_name }}" state=stopped
+
+  rescue:
+    # Error handling and rollback
+    - name: "SAFETY: Operation failed - initiating rollback"
+      debug:
+        msg: "Operation {{ operation_description | default('Dangerous Operation') }} failed. Rollback procedures should be implemented here."
+
+    # Add rollback tasks here
+    - name: "Rollback: {{ operation_description | default('Dangerous Operation') }}"
+      debug:
+        msg: "Rollback procedures would be executed here"
+
+    - name: Log operation failure
+      lineinfile:
+        path: "{{ ansible_log_path | default('/var/log/ansible.log') }}"
+        line: "{{ ansible_date_time.iso8601 }} - SAFETY FAILURE: {{ operation_description | default('Operation') }} failed on {{ inventory_hostname }}"
+        create: yes
+      delegate_to: localhost
+
+    - name: Re-raise the error
+      fail:
+        msg: "Operation {{ operation_description | default('Dangerous Operation') }} failed and rollback completed"
+
+  always:
+    # Post-operation cleanup and logging
+    - name: Log operation completion
+      lineinfile:
+        path: "{{ ansible_log_path | default('/var/log/ansible.log') }}"
+        line: "{{ ansible_date_time.iso8601 }} - SAFETY COMPLETE: {{ operation_description | default('Operation') }} finished on {{ inventory_hostname }}"
+        create: yes
+      delegate_to: localhost
+
+  tags: [safety, dangerous_operation]
+
+# Example usage:
+# - include_tasks: templates/safety/dangerous_operation_wrapper.yml
+#   vars:
+#     operation_description: "Delete old log files"
+#     operation_target: "/var/log/old_logs"
+#     operation_risks:
+#       - "Loss of historical log data"
+#       - "Potential compliance issues"
+#     require_backup: true
+#     backup_path: "/backup/logs/{{ ansible_date_time.date }}"
+#     forbidden_environments: ["production"]
+#     dangerous_command: "rm -rf /var/log/old_logs/*"

@@ -1,0 +1,87 @@
+
+---
+# Main Site Playbook for HX-Infrastructure
+# This is the primary entry point for full infrastructure deployment
+
+- name: HX Infrastructure Site Deployment
+  hosts: all
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    # Phase 3: Core Reliability Framework - Dependency Validation
+    - name: "Phase 3 | Pre-flight dependency validation"
+      include_role:
+        name: dependency_validator
+      when:
+        - dependency_validation_enabled | default(true)
+        - not ansible_check_mode
+      vars:
+        dependency_validation_strict_mode: "{{ environment_type == 'production' }}"
+        features:
+          validate_system_requirements: true
+          validate_packages: true
+          validate_network: true
+          validate_certificates: "{{ environment_type == 'production' }}"
+
+    # Phase 3: Core Reliability Framework - Configuration Validation
+    - name: "Phase 3 | Pre-flight configuration validation"
+      include_role:
+        name: config_validator
+      when:
+        - config_validation_enabled | default(true)
+        - not ansible_check_mode
+      vars:
+        config_validation_strict_mode: "{{ environment_type == 'production' }}"
+
+    - name: Update package cache
+      package:
+        update_cache: true
+      when: ansible_os_family in ['Debian', 'RedHat']
+
+    - name: Ensure system is up to date
+      package:
+        name: '*'
+        state: latest
+      when: ansible_os_family == 'RedHat'
+
+  roles:
+    - role: common
+      tags: ['common', 'base']
+
+    - role: security
+      tags: ['security', 'hardening']
+
+    - role: monitoring
+      tags: ['monitoring', 'observability']
+      when: "'monitoring_servers' in group_names"
+
+    - role: web_server
+      tags: ['web', 'application']
+      when: "'web_servers' in group_names"
+
+    - role: database
+      tags: ['database', 'data']
+      when: "'database_servers' in group_names"
+
+    - role: load_balancer
+      tags: ['loadbalancer', 'networking']
+      when: "'load_balancers' in group_names"
+
+    - role: backup
+      tags: ['backup', 'recovery']
+      when: "'backup_servers' in group_names"
+
+  post_tasks:
+    - name: Restart services if needed
+      meta: flush_handlers
+
+    - name: Verify deployment
+      debug:
+        msg: "Site deployment completed successfully for {{ inventory_hostname }}"
+
+  handlers:
+    - name: restart system
+      reboot:
+        reboot_timeout: 300
+      listen: "restart system"

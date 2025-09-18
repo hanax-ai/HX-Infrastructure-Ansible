@@ -1,0 +1,40 @@
+
+---
+# Dependency Validator Role Metadata - Phase 3 Day 1
+
+galaxy_info:
+  role_name: dependency_validator
+  namespace: hx_infrastructure
+  author: HX Infrastructure Team
+  description: Comprehensive dependency validation framework for HX Infrastructure
+  company: Hana-X Platform
+  license: MIT
+  min_ansible_version: "2.9"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - "20.04"
+        - "22.04"
+        - "24.04"
+    - name: Debian
+      versions:
+        - "10"
+        - "11"
+        - "12"
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - infrastructure
+    - validation
+    - dependencies
+    - reliability
+    - system
+    - network
+    - security
+
+dependencies: []
+

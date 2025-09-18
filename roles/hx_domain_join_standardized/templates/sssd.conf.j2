@@ -1,0 +1,67 @@
+
+# {{ ansible_managed }}
+# SSSD Configuration for HX Domain Join
+
+[sssd]
+domains = {{ hx_ad_domain_lower }}
+config_file_version = 2
+services = nss, pam
+debug_level = 1
+
+[nss]
+filter_groups = root
+filter_users = root
+reconnection_retries = 3
+entry_cache_timeout = 300
+entry_cache_nowait_percentage = 75
+
+[pam]
+reconnection_retries = 3
+offline_credentials_expiration = 2
+offline_failed_login_attempts = 3
+offline_failed_login_delay = 5
+
+[domain/{{ hx_ad_domain_lower }}]
+# Provider settings
+id_provider = ad
+auth_provider = ad
+access_provider = ad
+chpass_provider = ad
+
+# Domain settings
+ad_domain = {{ hx_ad_domain_lower }}
+krb5_realm = {{ hx_ad_realm_upper }}
+realmd_tags = manages-system joined-with-adcli
+
+# Cache settings
+cache_credentials = {{ hx_sssd_cache_credentials | ternary('True', 'False') }}
+krb5_store_password_if_offline = {{ hx_sssd_cache_credentials | ternary('True', 'False') }}
+
+# User and group settings
+case_sensitive = {{ hx_sssd_case_sensitive | ternary('True', 'False') }}
+use_fully_qualified_names = {{ hx_sssd_use_fully_qualified_names | ternary('True', 'False') }}
+fallback_homedir = {{ hx_login_fallback_homedir }}
+default_shell = {{ hx_login_shell }}
+
+# Enumeration settings
+enumerate = {{ hx_sssd_enumerate_users | ternary('True', 'False') }}
+
+# LDAP settings
+ldap_id_mapping = True
+{% if hx_domain_require_encryption %}
+ldap_id_use_start_tls = True
+ldap_tls_reqcert = demand
+{% endif %}
+
+# Access control
+{% if hx_sudo_enabled and (hx_sudo_groups | length > 0 or hx_sudo_users | length > 0) %}
+ad_access_filter = (|(memberOf=CN=Domain Admins,CN=Users,DC={{ hx_ad_domain_lower.split('.') | join(',DC=') }}){% for group in hx_sudo_groups %}(memberOf=CN={{ group }},CN=Users,DC={{ hx_ad_domain_lower.split('.') | join(',DC=') }}){% endfor %}{% for user in hx_sudo_users %}(sAMAccountName={{ user }}){% endfor %})
+{% endif %}
+
+# Performance tuning
+ldap_referrals = false
+ldap_page_size = 1000
+ldap_disable_paging = false
+
+# Debugging (adjust as needed)
+debug_level = {{ hx_domain_strict_validation | ternary('6', '1') }}

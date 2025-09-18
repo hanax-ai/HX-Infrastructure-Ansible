@@ -1,0 +1,45 @@
+
+---
+# HX Domain Join Role Internal Variables
+# Computed values and constants
+
+# Configuration Paths
+hx_sssd_conf_path: "/etc/sssd/sssd.conf"
+hx_krb5_conf_path: "/etc/krb5.conf"
+hx_realmd_conf_path: "/etc/realmd.conf"
+hx_nsswitch_conf_path: "/etc/nsswitch.conf"
+hx_pam_common_session_path: "/etc/pam.d/common-session"
+
+# Backup Paths
+hx_domain_backup_dir: "/var/backups/hx/domain-join"
+hx_domain_log_dir: "/var/log/hx/domain-join"
+hx_domain_backup_timestamp: "{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}{{ ansible_date_time.second }}"
+
+# Service Names
+hx_sssd_service: "sssd"
+hx_realmd_service: "realmd"
+
+# Required Directories
+hx_domain_required_directories:
+  - "{{ hx_domain_backup_dir }}"
+  - "{{ hx_domain_log_dir }}"
+  - "/etc/sssd"
+  - "/var/lib/sss"
+
+# Computed Configuration
+hx_ad_realm_upper: "{{ hx_ad_realm | upper }}"
+hx_ad_domain_lower: "{{ hx_ad_domain | lower }}"
+hx_ad_computer_fqdn: "{{ hx_ad_computer_name | lower }}.{{ hx_ad_domain_lower }}"
+
+# Discovery Commands
+hx_realm_discover_cmd: "realm discover {{ hx_ad_domain }}"
+hx_realm_join_cmd: "realm join --verbose {{ hx_ad_domain }} --user={{ hx_ad_admin_user }}"
+hx_realm_leave_cmd: "realm leave {{ hx_ad_domain }}"
+hx_realm_list_cmd: "realm list"
+
+# Validation Commands
+hx_domain_validation_commands:
+  realm_status: "{{ hx_realm_list_cmd }}"
+  kerberos_test: "kinit -V {{ hx_ad_admin_user }}@{{ hx_ad_realm_upper }}"
+  sssd_status: "systemctl status {{ hx_sssd_service }}"
+  dns_lookup: "nslookup {{ hx_ad_domain }}"

@@ -1,0 +1,42 @@
+
+---
+# Incident Response Role Defaults
+incident_response_enabled: true
+incident_monitoring_enabled: true
+
+# Critical Services to Monitor
+critical_services:
+  - nginx
+  - postgresql
+  - docker
+  - ssh
+
+# Application Endpoints to Monitor
+application_endpoints:
+  - "http://localhost/health"
+  - "http://localhost/api/status"
+
+# Incident Classification
+incident_severity_levels:
+  critical: 1
+  high: 2
+  medium: 3
+  low: 4
+
+# Auto-remediation Configuration
+auto_remediation_enabled: true
+max_remediation_attempts: 3
+remediation_delay: 30
+
+# Escalation Configuration
+escalation_enabled: true
+escalation_timeout: 300
+notification_channels:
+  - email
+  - slack
+  - pagerduty
+
+# Incident Documentation
+documentation_enabled: true
+incident_log_path: "/var/log/hx-infrastructure/incidents/"
+post_incident_analysis: true

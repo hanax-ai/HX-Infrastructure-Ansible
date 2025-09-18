@@ -1,0 +1,37 @@
+
+---
+# Traffic switching for blue-green deployment
+- name: Update load balancer configuration
+  template:
+    src: nginx_upstream.conf.j2
+    dest: /etc/nginx/conf.d/upstream.conf
+    backup: yes
+  vars:
+    active_environment: "{{ 'green' if green_deployment_successful else 'blue' }}"
+    active_port: "{{ green_port if green_deployment_successful else blue_port }}"
+  notify: reload nginx
+
+- name: Test new configuration
+  shell: nginx -t
+  register: nginx_test
+  failed_when: nginx_test.rc != 0
+
+- name: Reload nginx with new configuration
+  systemd:
+    name: nginx
+    state: reloaded
+  when: nginx_test.rc == 0
+
+- name: Verify traffic switch
+  uri:
+    url: "http://{{ ansible_default_ipv4.address }}/health"
+    method: GET
+    timeout: 10
+  register: traffic_verification
+  until: traffic_verification.status == 200
+  retries: 5
+  delay: 10
+
+- name: Set traffic switch status
+  set_fact:
+    traffic_switch_successful: "{{ traffic_verification.status == 200 }}"

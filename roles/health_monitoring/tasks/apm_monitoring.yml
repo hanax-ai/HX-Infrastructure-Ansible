@@ -1,0 +1,101 @@
+
+---
+# Application Performance Monitoring (APM)
+- name: Install APM monitoring tools
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python3-pip
+    - curl
+  when: apm_enabled | default(true)
+
+- name: Install APM Python libraries
+  pip:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - psutil
+    - requests
+    - prometheus_client
+  when: apm_enabled | default(true)
+
+- name: Create APM monitoring script
+  template:
+    src: apm_monitor.py.j2
+    dest: /opt/hx-infrastructure/scripts/apm_monitor.py
+    mode: '0755'
+  vars:
+    service_name: "{{ apm_service_name | default('hx-infrastructure') }}"
+    environment: "{{ apm_environment | default('production') }}"
+
+- name: Check application response times
+  uri:
+    url: "{{ item }}"
+    method: GET
+    timeout: "{{ health_check_timeout | default(30) }}"
+  register: response_time_check
+  loop: "{{ application_endpoints | default(['http://localhost/health']) }}"
+  failed_when: false
+
+- name: Calculate average response time
+  set_fact:
+    avg_response_time: "{{ (response_time_check.results | selectattr('elapsed', 'defined') | map(attribute='elapsed') | list | sum) / (response_time_check.results | selectattr('elapsed', 'defined') | list | length) }}"
+  when: response_time_check.results | selectattr('elapsed', 'defined') | list | length > 0
+
+- name: Check application error rates
+  shell: |
+    tail -n 1000 /var/log/nginx/access.log | \
+    awk '$9 >= 400 {errors++} END {print (errors+0)/NR*100}'
+  register: error_rate_check
+  changed_when: false
+  failed_when: false
+
+- name: Monitor database performance
+  postgresql_query:
+    db: "{{ database_name | default('hx_infrastructure') }}"
+    login_host: "{{ database_host | default('localhost') }}"
+    login_user: "{{ database_user | default('postgres') }}"
+    login_password: "{{ database_password }}"
+    query: |
+      SELECT 
+        count(*) as active_connections,
+        avg(extract(epoch from (now() - query_start))) as avg_query_time
+      FROM pg_stat_activity 
+      WHERE state = 'active';
+  register: db_performance
+  when: monitor_database | default(true)
+
+- name: Create APM metrics summary
+  set_fact:
+    apm_metrics:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      service_name: "{{ apm_service_name | default('hx-infrastructure') }}"
+      environment: "{{ apm_environment | default('production') }}"
+      response_time:
+        average: "{{ avg_response_time | default(0) }}"
+        threshold: "{{ alert_thresholds.response_time | default(2000) }}"
+        status: "{{ 'healthy' if (avg_response_time | default(0) * 1000) < (alert_thresholds.response_time | default(2000)) else 'critical' }}"
+      error_rate:
+        current: "{{ error_rate_check.stdout | default(0) | float }}"
+        threshold: "{{ alert_thresholds.error_rate | default(5) }}"
+        status: "{{ 'healthy' if (error_rate_check.stdout | default(0) | float) < (alert_thresholds.error_rate | default(5)) else 'critical' }}"
+      database:
+        active_connections: "{{ db_performance.query_result[0].active_connections if db_performance is succeeded else 0 }}"
+        avg_query_time: "{{ db_performance.query_result[0].avg_query_time if db_performance is succeeded else 0 }}"
+
+- name: Log APM metrics
+  copy:
+    content: "{{ apm_metrics | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/apm-metrics-{{ ansible_date_time.epoch }}.json"
+  when: log_apm_metrics | default(true)
+
+- name: Send APM alerts if thresholds exceeded
+  include_tasks: trigger_alert.yml
+  vars:
+    alert_type: "apm_performance"
+    alert_message: "APM performance thresholds exceeded on {{ inventory_hostname }}"
+    alert_data: "{{ apm_metrics }}"
+  when: 
+    - apm_metrics.response_time.status == 'critical' or apm_metrics.error_rate.status == 'critical'
+    - alerting_enabled | default(true)

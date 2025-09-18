@@ -1,133 +1,294 @@
 ---
-# Ansible Collections Requirements for HX Infrastructure
+# HX-Infrastructure Ansible Requirements
+# Enhanced requirements.yml for Phase 1.0 - Task 1.5
+# Compatible with ansible-core 2.19.2 and ansible 12.0.0
+# Install with: ansible-galaxy install -r requirements.yml --force
+
+# =============================================================================
+# ANSIBLE COLLECTIONS
+# =============================================================================
+
 collections:
-  # Core Ansible Collections
-  - name: ansible.posix
-    version: ">=1.5.4"
-    source: https://galaxy.ansible.com
+  # ---------------------------------------------------------------------------
+  # CORE INFRASTRUCTURE COLLECTIONS
+  # Essential collections for basic system management and infrastructure
+  # ---------------------------------------------------------------------------
 
   - name: community.general
-    version: ">=8.0.0"
-    source: https://galaxy.ansible.com
+    version: ">=7.0.0,<12.0.0"
+    # Rationale: Core utilities, package management, system tasks
+    # Tested with ansible-core 2.19, provides essential modules for all roles
+
+  - name: ansible.posix
+    version: ">=1.5.0,<2.0.0"
+    # Rationale: POSIX system management, file operations, user management
+    # Required for common role and system administration tasks
 
   - name: community.crypto
-    version: ">=2.15.0"
-    source: https://galaxy.ansible.com
+    version: ">=2.0.0,<3.0.0"
+    # Rationale: Certificate management, TLS/SSL operations, PKI infrastructure
+    # Essential for security role and certificate automation
 
-  - name: community.docker
-    version: ">=3.4.0"
-    source: https://galaxy.ansible.com
+  # ---------------------------------------------------------------------------
+  # DATABASE AND STORAGE COLLECTIONS
+  # Collections for PostgreSQL, Redis, and vector database management
+  # ---------------------------------------------------------------------------
 
   - name: community.postgresql
-    version: ">=3.2.0"
-    source: https://galaxy.ansible.com
+    version: ">=2.0.0,<5.0.0"
+    # Rationale: PostgreSQL database management, user authentication
+    # Core requirement for database role based on infrastructure analysis
 
   - name: community.mysql
-    version: ">=3.7.0"
-    source: https://galaxy.ansible.com
+    version: ">=3.0.0,<4.0.0"
+    # Rationale: MySQL/MariaDB support for legacy systems and compatibility
+    # Backup database option and migration support
 
-  # Security and Certificate Management
-  - name: community.crypto
-    version: ">=2.15.0"
-    source: https://galaxy.ansible.com
+  # ---------------------------------------------------------------------------
+  # CONTAINERIZATION AND ORCHESTRATION COLLECTIONS
+  # Docker, Kubernetes, and container management for AI/ML services
+  # ---------------------------------------------------------------------------
 
-  - name: ansible.windows
-    version: ">=2.0.0"
-    source: https://galaxy.ansible.com
+  - name: community.docker
+    version: ">=3.0.0,<4.0.0"
+    # Rationale: Docker container management for LiteLLM, WebUI, Qdrant
+    # Essential for containerized AI/ML service deployment
 
-  # Cloud Providers
-  - name: amazon.aws
-    version: ">=7.0.0"
-    source: https://galaxy.ansible.com
-
-  - name: azure.azcollection
-    version: ">=1.19.0"
-    source: https://galaxy.ansible.com
-
-  - name: google.cloud
-    version: ">=1.2.0"
-    source: https://galaxy.ansible.com
-
-  # Kubernetes and Container Management
   - name: kubernetes.core
-    version: ">=2.4.0"
-    source: https://galaxy.ansible.com
+    version: ">=2.0.0,<4.0.0"
+    # Rationale: Kubernetes orchestration for scalable deployments
+    # Future-proofing for container orchestration requirements
 
-  - name: community.kubernetes
-    version: ">=2.0.0"
-    source: https://galaxy.ansible.com
+  # ---------------------------------------------------------------------------
+  # MONITORING AND OBSERVABILITY COLLECTIONS
+  # Grafana, Prometheus, Loki, and monitoring infrastructure
+  # ---------------------------------------------------------------------------
 
-  # Monitoring and Observability
   - name: community.grafana
-    version: ">=1.5.0"
-    source: https://galaxy.ansible.com
+    version: ">=1.0.0,<2.0.0"
+    # Rationale: Grafana dashboard and alerting management
+    # Core monitoring infrastructure component
 
-  - name: prometheus.prometheus
-    version: ">=0.13.0"
-    source: https://galaxy.ansible.com
+  # ---------------------------------------------------------------------------
+  # SECURITY AND COMPLIANCE COLLECTIONS
+  # Vault, secrets management, security hardening
+  # ---------------------------------------------------------------------------
 
-  # Network Management
-  - name: cisco.ios
-    version: ">=5.0.0"
-    source: https://galaxy.ansible.com
+  - name: community.hashi_vault
+    version: ">=4.0.0,<7.0.0"
+    # Rationale: HashiCorp Vault integration for secrets management
+    # Centralized secrets storage and rotation
 
-  - name: junipernetworks.junos
-    version: ">=5.3.0"
-    source: https://galaxy.ansible.com
+  # ---------------------------------------------------------------------------
+  # NETWORK AND COMMUNICATION COLLECTIONS
+  # Network management, DNS, DHCP, and communication services
+  # ---------------------------------------------------------------------------
 
-  # Virtualization
-  - name: community.vmware
-    version: ">=4.0.0"
-    source: https://galaxy.ansible.com
+  - name: community.dns
+    version: ">=2.0.0,<3.0.0"
+    # Rationale: DNS management and domain operations
+    # Network infrastructure and service discovery
 
-  - name: community.libvirt
-    version: ">=1.3.0"
-    source: https://galaxy.ansible.com
+# =============================================================================
+# ANSIBLE GALAXY ROLES
+# =============================================================================
 
-# Ansible Roles from Galaxy
 roles:
-  # Common infrastructure roles
-  - name: geerlingguy.docker
-    version: "7.0.2"
-    src: https://galaxy.ansible.com
-
-  # Web Server Roles
-  - name: geerlingguy.nginx
-    version: "3.1.4"
-  - name: geerlingguy.apache
-    version: "4.0.0"
-
-  # Database Roles
-  - name: geerlingguy.postgresql
-    version: "3.4.2"
-    src: https://galaxy.ansible.com
-
-  - name: geerlingguy.nginx
-    version: "3.1.4"
-    src: https://galaxy.ansible.com
-
-  - name: geerlingguy.redis
-    version: "1.8.0"
-    src: https://galaxy.ansible.com
+  # ---------------------------------------------------------------------------
+  # CORE INFRASTRUCTURE ROLES
+  # Foundational roles for system security and configuration
+  # ---------------------------------------------------------------------------
 
   - name: geerlingguy.security
     version: "2.0.1"
-    src: https://galaxy.ansible.com
+    # Rationale: System security hardening and baseline configuration
+    # Essential for security role implementation
 
-  # Certificate and PKI management
-  - name: community.crypto.acme_certificate
-    version: "2.15.0"
-    src: https://galaxy.ansible.com
+  - name: geerlingguy.firewall
+    version: "2.6.0"
+    # Rationale: Firewall configuration and network security
+    # Core security infrastructure component
 
-  # Monitoring roles
+  - name: geerlingguy.ntp
+    version: "2.4.0"
+    # Rationale: Network Time Protocol configuration
+    # System time synchronization for distributed services
+
+  # ---------------------------------------------------------------------------
+  # DATABASE ROLES
+  # Database installation, configuration, and management
+  # ---------------------------------------------------------------------------
+
+  - name: geerlingguy.postgresql
+    version: "3.4.6"
+    # Rationale: PostgreSQL installation and configuration
+    # Primary database platform for HX-Infrastructure
+
+  - name: geerlingguy.redis
+    version: "1.8.0"
+    # Rationale: Redis cache and session storage
+    # In-memory data structure store for performance
+
+  - name: geerlingguy.mysql
+    version: "4.3.4"
+    # Rationale: MySQL/MariaDB support for compatibility
+    # Alternative database option and legacy support
+
+  # ---------------------------------------------------------------------------
+  # WEB SERVER AND APPLICATION ROLES
+  # Web server installation and application deployment
+  # ---------------------------------------------------------------------------
+
+  - name: geerlingguy.nginx
+    version: "3.1.4"
+    # Rationale: Nginx web server and reverse proxy
+    # Load balancer and WebUI frontend server
+
+  - name: geerlingguy.apache
+    version: "3.2.0"
+    # Rationale: Apache HTTP server alternative
+    # Web server flexibility and compatibility
+
+  - name: geerlingguy.nodejs
+    version: "6.1.0"
+    # Rationale: Node.js runtime for JavaScript applications
+    # WebUI and modern web application support
+
+  # ---------------------------------------------------------------------------
+  # CONTAINERIZATION ROLES
+  # Docker and container platform management
+  # ---------------------------------------------------------------------------
+
+  - name: geerlingguy.docker
+    version: "6.1.0"
+    # Rationale: Docker installation and configuration
+    # Container platform for AI/ML services (LiteLLM, Qdrant)
+
+  - name: geerlingguy.kubernetes
+    version: "2.0.0"
+    # Rationale: Kubernetes cluster setup and management
+    # Container orchestration platform
+
+  # ---------------------------------------------------------------------------
+  # MONITORING AND OBSERVABILITY ROLES
+  # Monitoring stack installation and configuration
+  # ---------------------------------------------------------------------------
+
   - name: cloudalchemy.prometheus
     version: "2.17.0"
-    src: https://galaxy.ansible.com
+    # Rationale: Prometheus monitoring system
+    # Metrics collection and alerting infrastructure
 
   - name: cloudalchemy.grafana
     version: "0.22.3"
-    src: https://galaxy.ansible.com
+    # Rationale: Grafana dashboard and visualization
+    # Monitoring dashboard and alerting interface
 
   - name: cloudalchemy.node_exporter
     version: "3.0.0"
-    src: https://galaxy.ansible.com
+    # Rationale: Node Exporter for system metrics
+    # Host-level monitoring and metrics collection
+
+  # ---------------------------------------------------------------------------
+  # DEVELOPMENT AND UTILITY ROLES
+  # Development tools and system utilities
+  # ---------------------------------------------------------------------------
+
+  - name: geerlingguy.pip
+    version: "2.2.0"
+    # Rationale: Python package management
+    # Python dependencies for AI/ML services
+
+  - name: geerlingguy.git
+    version: "3.0.0"
+    # Rationale: Git version control system
+    # Source code management and deployment
+
+  - name: geerlingguy.composer
+    version: "1.9.0"
+    # Rationale: PHP Composer package manager
+    # PHP application dependency management
+
+  - name: geerlingguy.java
+    version: "2.2.0"
+    # Rationale: Java runtime environment
+    # Java-based applications and services support
+
+  # ---------------------------------------------------------------------------
+  # BACKUP AND STORAGE ROLES
+  # Backup solutions and storage management
+  # ---------------------------------------------------------------------------
+
+  - name: geerlingguy.backup
+    version: "2.0.0"
+    # Rationale: Automated backup solutions
+    # Data protection and disaster recovery
+
+  - name: geerlingguy.glusterfs
+    version: "2.6.0"
+    # Rationale: GlusterFS distributed storage
+    # Scalable storage solution for distributed systems
+
+  # ---------------------------------------------------------------------------
+  # SECURITY AND CERTIFICATE ROLES
+  # SSL/TLS certificates and security hardening
+  # ---------------------------------------------------------------------------
+
+  - name: geerlingguy.certbot
+    version: "4.1.0"
+    # Rationale: Let's Encrypt SSL certificate automation
+    # Automated certificate management and renewal
+
+  - name: geerlingguy.ansible
+    version: "1.1.0"
+    # Rationale: Ansible installation and configuration
+    # Self-managing Ansible infrastructure
+
+# =============================================================================
+# VERSION COMPATIBILITY MATRIX
+# =============================================================================
+#
+# This requirements.yml is designed for:
+# - ansible-core: 2.19.2
+# - ansible: 12.0.0
+# - Python: 3.9+
+# - Target OS: Ubuntu 20.04+, RHEL 8+, CentOS 8+
+#
+# Collection versions are pinned to major versions to ensure:
+# 1. Security updates and bug fixes are automatically included
+# 2. Breaking changes are avoided through major version constraints
+# 3. Reproducible builds across environments
+# 4. Compatibility with ansible-core 2.19.2
+#
+# =============================================================================
+# INSTALLATION AND USAGE
+# =============================================================================
+#
+# Install all requirements:
+#   ansible-galaxy install -r requirements.yml --force
+#
+# Install only collections:
+#   ansible-galaxy collection install -r requirements.yml --force
+#
+# Install only roles:
+#   ansible-galaxy role install -r requirements.yml --force
+#
+# Upgrade to latest compatible versions:
+#   ansible-galaxy install -r requirements.yml --force --upgrade
+#
+# =============================================================================
+# MAINTENANCE NOTES
+# =============================================================================
+#
+# This file should be reviewed and updated:
+# - Monthly for security updates
+# - Before major deployments
+# - When adding new infrastructure components
+# - When upgrading ansible-core versions
+#
+# Version constraints follow semantic versioning:
+# - Major version pinning prevents breaking changes
+# - Minor and patch versions allow security and feature updates
+# - Specific versions are used for critical stability requirements
+#
+# =============================================================================

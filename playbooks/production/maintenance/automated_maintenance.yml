@@ -1,0 +1,48 @@
+
+---
+# Automated Maintenance Windows
+- name: Automated Maintenance Execution
+  hosts: "{{ maintenance_targets | default('all') }}"
+  become: true
+  gather_facts: true
+  vars:
+    maintenance_window_start: "{{ maintenance_start_time | default('02:00') }}"
+    maintenance_window_duration: "{{ maintenance_duration | default(120) }}"
+    
+  pre_tasks:
+    - name: Pre-maintenance validation
+      include_role:
+        name: maintenance_automation
+        tasks_from: pre_maintenance_validation
+        
+    - name: Schedule maintenance window
+      include_role:
+        name: maintenance_automation
+        tasks_from: schedule_maintenance
+        
+  tasks:
+    - name: Execute maintenance tasks
+      include_role:
+        name: maintenance_automation
+        tasks_from: execute_maintenance
+        
+    - name: Database maintenance
+      include_role:
+        name: maintenance_automation
+        tasks_from: database_maintenance
+        
+    - name: System optimization
+      include_role:
+        name: maintenance_automation
+        tasks_from: system_optimization
+        
+  post_tasks:
+    - name: Post-maintenance verification
+      include_role:
+        name: maintenance_automation
+        tasks_from: post_maintenance_verification
+        
+    - name: Generate maintenance report
+      include_role:
+        name: maintenance_automation
+        tasks_from: generate_maintenance_report

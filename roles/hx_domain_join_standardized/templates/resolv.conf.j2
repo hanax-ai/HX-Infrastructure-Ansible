@@ -1,0 +1,16 @@
+
+# {{ ansible_managed }}
+# DNS Configuration for HX Domain Join
+
+{% for nameserver in hx_dns_nameservers %}
+nameserver {{ nameserver }}
+{% endfor %}
+
+{% for domain in hx_dns_search_domains %}
+search {{ domain }}
+{% endfor %}
+
+options timeout:2
+options attempts:3
+options rotate
+options single-request-reopen

@@ -1,0 +1,107 @@
+
+---
+# Incident Escalation Procedures
+- name: Identify incidents requiring escalation
+  set_fact:
+    escalation_incidents: "{{ classified_incidents | selectattr('escalation_required', 'equalto', true) | list }}"
+  when: classified_incidents is defined
+
+- name: Create escalation notifications
+  set_fact:
+    escalation_notifications: []
+
+- name: Prepare critical incident escalations
+  set_fact:
+    escalation_notifications: "{{ escalation_notifications + [escalation_item] }}"
+  vars:
+    escalation_item:
+      incident_id: "{{ ansible_date_time.epoch }}-{{ ansible_loop.index }}"
+      type: "{{ item.type }}"
+      severity: "{{ item.severity }}"
+      description: "{{ item.type | replace('_', ' ') | title }} incident on {{ inventory_hostname }}"
+      affected_service: "{{ item.service | default(item.resource | default(item.endpoint)) }}"
+      escalation_level: 1
+      notification_channels: "{{ notification_channels | default(['email']) }}"
+      escalation_timeout: "{{ escalation_timeout | default(300) }}"
+  loop: "{{ escalation_incidents }}"
+  loop_control:
+    extended: yes
+
+- name: Send immediate escalation alerts
+  include_role:
+    name: health_monitoring
+    tasks_from: trigger_alert
+  vars:
+    alert_type: "incident_escalation"
+    alert_message: "ESCALATION: {{ item.description }}"
+    alert_data: "{{ item }}"
+    alert_severity: "critical"
+  loop: "{{ escalation_notifications }}"
+  when: escalation_notifications | length > 0
+
+- name: Create escalation tracking file
+  copy:
+    content: |
+      {
+        "escalation_id": "{{ ansible_date_time.epoch }}",
+        "timestamp": "{{ ansible_date_time.iso8601 }}",
+        "hostname": "{{ inventory_hostname }}",
+        "escalated_incidents": {{ escalation_notifications | to_json }},
+        "escalation_status": "active",
+        "acknowledgment_required": true,
+        "timeout_at": "{{ (ansible_date_time.epoch | int + escalation_timeout | default(300)) | strftime('%Y-%m-%dT%H:%M:%SZ') }}"
+      }
+    dest: "/var/log/hx-infrastructure/incidents/escalation-{{ ansible_date_time.epoch }}.json"
+  when: escalation_notifications | length > 0
+
+- name: Schedule escalation timeout check
+  cron:
+    name: "escalation_timeout_{{ ansible_date_time.epoch }}"
+    minute: "{{ ((ansible_date_time.epoch | int + escalation_timeout | default(300)) / 60) | int % 60 }}"
+    hour: "{{ ((ansible_date_time.epoch | int + escalation_timeout | default(300)) / 3600) | int % 24 }}"
+    job: "/opt/hx-infrastructure/scripts/check_escalation_timeout.sh {{ ansible_date_time.epoch }}"
+    state: present
+  when: escalation_notifications | length > 0
+
+- name: Send PagerDuty escalation
+  uri:
+    url: "https://events.pagerduty.com/v2/enqueue"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      routing_key: "{{ pagerduty_routing_key }}"
+      event_action: "trigger"
+      dedup_key: "hx-infrastructure-{{ inventory_hostname }}-{{ ansible_date_time.epoch }}"
+      payload:
+        summary: "Critical incident escalation on {{ inventory_hostname }}"
+        source: "{{ inventory_hostname }}"
+        severity: "critical"
+        component: "hx-infrastructure"
+        group: "incident_response"
+        class: "escalation"
+        custom_details:
+          incidents: "{{ escalation_notifications }}"
+          escalation_level: 1
+          hostname: "{{ inventory_hostname }}"
+  when: 
+    - pagerduty_alerts_enabled | default(false)
+    - pagerduty_routing_key is defined
+    - escalation_notifications | length > 0
+
+- name: Create escalation summary
+  set_fact:
+    escalation_summary:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      hostname: "{{ inventory_hostname }}"
+      escalation_triggered: "{{ escalation_notifications | length > 0 }}"
+      escalated_incidents_count: "{{ escalation_notifications | length }}"
+      escalation_channels: "{{ notification_channels | default(['email']) }}"
+      timeout_scheduled: "{{ escalation_notifications | length > 0 }}"
+      escalation_id: "{{ ansible_date_time.epoch if escalation_notifications | length > 0 else null }}"
+
+- name: Set escalation status
+  set_fact:
+    incidents_escalated: "{{ escalation_notifications | length > 0 }}"
+    escalation_timestamp: "{{ ansible_date_time.iso8601 }}"

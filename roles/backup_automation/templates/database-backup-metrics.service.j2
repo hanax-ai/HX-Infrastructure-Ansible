@@ -1,0 +1,43 @@
+#!/bin/bash
+umask 0077
+
+[Unit]
+Description=Database Backup Metrics Collection Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=backup
+Group=backup
+ExecStartPre=/usr/bin/test -x /usr/bin/python3
+ExecStart=/usr/bin/python3 /var/lib/backup/scripts/collect-database-backup-metrics.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ backup_automation.base_directory }} {{ backup_automation.log_directory }} /var/lib/backup
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+PrivateDevices=true
+ProtectClock=true
+ProtectHostname=true
+LockPersonality=true
+RestrictNamespaces=true
+CapabilityBoundingSet=
+
+# Resource limits
+MemoryLimit=256M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

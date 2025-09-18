@@ -1,0 +1,81 @@
+digraph TestingFramework {
+    rankdir=TB;
+    node [shape=box, style=filled];
+    edge [color=purple];
+    
+    // Testing layers
+    subgraph cluster_unit {
+        label="Unit Testing";
+        style=filled;
+        fillcolor=lightblue;
+        
+        role_tests [label="Role Structure Tests"];
+        variable_tests [label="Variable Validation"];
+        syntax_tests [label="Syntax Validation"];
+    }
+    
+    subgraph cluster_integration {
+        label="Integration Testing";
+        style=filled;
+        fillcolor=lightgreen;
+        
+        deployment_tests [label="Deployment Tests"];
+        molecule_tests [label="Molecule Tests"];
+        end_to_end [label="End-to-End Tests"];
+    }
+    
+    subgraph cluster_performance {
+        label="Performance Testing";
+        style=filled;
+        fillcolor=lightyellow;
+        
+        benchmark_tests [label="Benchmark Tests"];
+        scalability_tests [label="Scalability Tests"];
+        resource_tests [label="Resource Usage"];
+    }
+    
+    subgraph cluster_security {
+        label="Security Testing";
+        style=filled;
+        fillcolor=lightcoral;
+        
+        vulnerability_scan [label="Vulnerability Scanning"];
+        compliance_check [label="Compliance Checking"];
+        credential_audit [label="Credential Audit"];
+    }
+    
+    subgraph cluster_chaos {
+        label="Chaos Engineering";
+        style=filled;
+        fillcolor=lightpink;
+        
+        failure_simulation [label="Failure Simulation"];
+        resilience_tests [label="Resilience Tests"];
+        recovery_tests [label="Recovery Tests"];
+    }
+    
+    // CI/CD Pipeline
+    ci_pipeline [label="CI/CD Pipeline", fillcolor=orange, shape=ellipse];
+    
+    // Connections
+    ci_pipeline -> role_tests;
+    ci_pipeline -> deployment_tests;
+    ci_pipeline -> benchmark_tests;
+    ci_pipeline -> vulnerability_scan;
+    ci_pipeline -> failure_simulation;
+    
+    role_tests -> variable_tests;
+    variable_tests -> syntax_tests;
+    
+    deployment_tests -> molecule_tests;
+    molecule_tests -> end_to_end;
+    
+    benchmark_tests -> scalability_tests;
+    scalability_tests -> resource_tests;
+    
+    vulnerability_scan -> compliance_check;
+    compliance_check -> credential_audit;
+    
+    failure_simulation -> resilience_tests;
+    resilience_tests -> recovery_tests;
+}

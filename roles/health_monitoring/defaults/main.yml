@@ -1,0 +1,41 @@
+
+---
+# Health Monitoring Role Defaults
+health_monitoring_enabled: true
+dashboards_enabled: true
+alerting_enabled: true
+log_health_status: true
+
+# Monitoring Configuration
+monitoring_interval: 60
+health_check_timeout: 30
+metrics_retention_days: 30
+
+# Alert Thresholds
+alert_thresholds:
+  cpu_usage: 80
+  memory_usage: 85
+  disk_usage: 90
+  response_time: 2000
+  error_rate: 5
+  system_load: 5.0
+
+# APM Configuration
+apm_enabled: true
+apm_service_name: "hx-infrastructure"
+apm_environment: "production"
+
+# SLA Configuration
+sla_targets:
+  availability: 99.9
+  response_time: 1000
+  error_rate: 1
+
+# Predictive Monitoring
+predictive_monitoring_enabled: true
+ml_model_path: "/opt/hx-infrastructure/models/failure_prediction.pkl"
+prediction_threshold: 0.8
+
+# Dashboard Configuration
+grafana_url: "http://grafana:3000"
+prometheus_url: "http://prometheus:9090"

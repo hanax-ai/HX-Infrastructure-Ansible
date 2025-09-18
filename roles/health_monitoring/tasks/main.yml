@@ -1,0 +1,20 @@
+
+---
+# Health Monitoring Role - Main Tasks
+- name: Include health monitoring tasks
+  include_tasks: "{{ item }}"
+  with_items:
+    - system_health_check.yml
+    - apm_monitoring.yml
+    - infrastructure_monitoring.yml
+    - sla_monitoring.yml
+    - predictive_monitoring.yml
+  when: health_monitoring_enabled | default(true)
+
+- name: Setup monitoring dashboards
+  include_tasks: setup_dashboards.yml
+  when: dashboards_enabled | default(true)
+
+- name: Configure alerting rules
+  include_tasks: configure_alerts.yml
+  when: alerting_enabled | default(true)

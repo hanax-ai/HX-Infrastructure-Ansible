@@ -1,0 +1,27 @@
+digraph PlaybookFlow {
+    rankdir=TB;
+    node [shape=rectangle, style=filled];
+    edge [color=darkgreen];
+    
+    // Start node
+    start [label="Start Deployment", fillcolor=lightgreen, shape=ellipse];
+    
+    play_0 [label="HX Infrastructure Site Deployment", fillcolor=lightgray];
+    start -> play_0;
+    role_0_0 [label="common", fillcolor=lightsteelblue, shape=box];
+    play_0 -> role_0_0;
+    role_0_1 [label="security", fillcolor=lightsteelblue, shape=box];
+    play_0 -> role_0_1;
+    role_0_2 [label="monitoring", fillcolor=lightsteelblue, shape=box];
+    play_0 -> role_0_2;
+    role_0_3 [label="web_server", fillcolor=lightsteelblue, shape=box];
+    play_0 -> role_0_3;
+    role_0_4 [label="database", fillcolor=lightsteelblue, shape=box];
+    play_0 -> role_0_4;
+    role_0_5 [label="load_balancer", fillcolor=lightsteelblue, shape=box];
+    play_0 -> role_0_5;
+    role_0_6 [label="backup", fillcolor=lightsteelblue, shape=box];
+    play_0 -> role_0_6;
+    end [label="Deployment Complete", fillcolor=lightgreen, shape=ellipse];
+    play_0 -> end;
+}

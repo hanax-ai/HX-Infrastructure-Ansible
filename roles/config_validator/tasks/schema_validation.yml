@@ -1,0 +1,85 @@
+
+---
+# Schema Validation Tasks - Phase 3 Day 1
+
+- name: "Schema Validation | Validate environment configuration schema"
+  assert:
+    that:
+      - item in hostvars[inventory_hostname]
+    fail_msg: "Required environment configuration field '{{ item }}' is missing"
+    success_msg: "Environment configuration field '{{ item }}' is present"
+  loop: "{{ config_schemas.environment_config.required_fields }}"
+  when: config_schemas.environment_config.required_fields is defined
+
+- name: "Schema Validation | Validate environment_type values"
+  assert:
+    that:
+      - environment_type in config_schemas.environment_config.allowed_values.environment_type
+    fail_msg: "Invalid environment_type '{{ environment_type }}'. Allowed values: {{ config_schemas.environment_config.allowed_values.environment_type | join(', ') }}"
+    success_msg: "Environment type '{{ environment_type }}' is valid"
+  when:
+    - environment_type is defined
+    - config_schemas.environment_config.allowed_values.environment_type is defined
+
+- name: "Schema Validation | Validate security configuration presence"
+  assert:
+    that:
+      - item in hostvars[inventory_hostname]
+    fail_msg: "Required security configuration '{{ item }}' is missing"
+    success_msg: "Security configuration '{{ item }}' is present"
+  loop: "{{ config_schemas.security_config.required_fields }}"
+  when:
+    - environment_type == "production"
+    - config_schemas.security_config.required_fields is defined
+
+- name: "Schema Validation | Validate operational configuration presence"
+  assert:
+    that:
+      - item in hostvars[inventory_hostname]
+    fail_msg: "Required operational configuration '{{ item }}' is missing"
+    success_msg: "Operational configuration '{{ item }}' is present"
+  loop: "{{ config_schemas.operational_config.required_fields }}"
+  when:
+    - environment_type == "production"
+    - config_schemas.operational_config.required_fields is defined
+
+- name: "Schema Validation | Check required variables per environment"
+  assert:
+    that:
+      - item in hostvars[inventory_hostname]
+    fail_msg: "Required variable '{{ item }}' for {{ environment_type }} environment is missing"
+    success_msg: "Required variable '{{ item }}' is present"
+  loop: "{{ validation_rules.required_variables[environment_type] | default([]) }}"
+  when: validation_rules.required_variables is defined
+
+- name: "Schema Validation | Check forbidden variables per environment"
+  assert:
+    that:
+      - item not in hostvars[inventory_hostname]
+    fail_msg: "Forbidden variable '{{ item }}' found in {{ environment_type }} environment"
+    success_msg: "No forbidden variables detected"
+  loop: "{{ validation_rules.forbidden_variables[environment_type] | default([]) }}"
+  when: validation_rules.forbidden_variables is defined
+
+- name: "Schema Validation | Validate variable constraints"
+  assert:
+    that:
+      - hostvars[inventory_hostname][item.key] in item.value.allowed_values
+    fail_msg: "Variable '{{ item.key }}' has invalid value '{{ hostvars[inventory_hostname][item.key] }}'. Allowed: {{ item.value.allowed_values | join(', ') }}"
+    success_msg: "Variable '{{ item.key }}' has valid value"
+  loop: "{{ validation_rules.variable_constraints | dict2items }}"
+  when:
+    - validation_rules.variable_constraints is defined
+    - item.key in hostvars[inventory_hostname]
+    - item.value.allowed_values is defined
+
+- name: "Schema Validation | Schema validation summary"
+  debug:
+    msg:
+      - "Schema Validation Summary:"
+      - "  Environment Schema: ✓"
+      - "  Security Schema: {{ '✓' if environment_type != 'production' or 'security_hardening' in hostvars[inventory_hostname] else '✗' }}"
+      - "  Operational Schema: {{ '✓' if environment_type != 'production' or 'operational_safety' in hostvars[inventory_hostname] else '✗' }}"
+      - "  Required Variables: ✓"
+      - "  Variable Constraints: ✓"
+

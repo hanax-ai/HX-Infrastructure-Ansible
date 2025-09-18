@@ -1,0 +1,95 @@
+
+# SSH Client Configuration - Ansible Managed
+# Generated: {{ ansible_date_time.iso8601 }}
+# Environment: {{ environment_type | default('development') }}
+
+# Global SSH settings
+Host *
+{% for key, value in ssh_client_config.items() %}
+    {{ key }} {{ value }}
+{% endfor %}
+
+# Production environment specific settings
+{% if environment_type == 'production' %}
+Host *.hana-x.ai prod-*
+    IdentityFile {{ ssh_key_private_path }}
+    User {{ ansible_user }}
+    Port 22
+    StrictHostKeyChecking yes
+    UserKnownHostsFile ~/.ssh/known_hosts_production
+    ControlMaster auto
+    ControlPath ~/.ssh/control-prod-%h-%p-%r
+    ControlPersist 300s
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    ConnectTimeout 10
+    BatchMode yes
+    LogLevel ERROR
+{% endif %}
+
+# Staging environment settings
+{% if environment_type == 'staging' %}
+Host *.staging.hana-x.ai staging-*
+    IdentityFile {{ ssh_key_private_path }}
+    User {{ ansible_user }}
+    Port 22
+    StrictHostKeyChecking yes
+    UserKnownHostsFile ~/.ssh/known_hosts_staging
+    ControlMaster auto
+    ControlPath ~/.ssh/control-staging-%h-%p-%r
+    ControlPersist 300s
+{% endif %}
+
+# Development environment settings
+{% if environment_type == 'development' %}
+Host *.dev.hana-x.ai dev-*
+    IdentityFile {{ ssh_key_private_path }}
+    User {{ ansible_user }}
+    Port 22
+    StrictHostKeyChecking ask
+    UserKnownHostsFile ~/.ssh/known_hosts_dev
+    ControlMaster auto
+    ControlPath ~/.ssh/control-dev-%h-%p-%r
+    ControlPersist 300s
+{% endif %}
+
+# Bastion/Jump host configuration
+{% if bastion_host is defined %}
+Host bastion
+    HostName {{ bastion_host }}
+    User {{ bastion_user | default(ansible_user) }}
+    Port {{ bastion_port | default(22) }}
+    IdentityFile {{ bastion_key | default(ssh_key_private_path) }}
+    StrictHostKeyChecking yes
+    ControlMaster auto
+    ControlPath ~/.ssh/control-bastion-%h-%p-%r
+    ControlPersist 300s
+
+# Hosts accessed through bastion
+{% for host in groups['all'] | default([]) %}
+{% if hostvars[host]['ansible_host'] is defined %}
+Host {{ host }}
+    HostName {{ hostvars[host]['ansible_host'] }}
+    User {{ hostvars[host]['ansible_user'] | default(ansible_user) }}
+    Port {{ hostvars[host]['ansible_port'] | default(22) }}
+    ProxyJump bastion
+    IdentityFile {{ ssh_key_private_path }}
+    StrictHostKeyChecking yes
+{% endif %}
+{% endfor %}
+{% endif %}
+
+# Disable problematic features for security
+Host *
+    GSSAPIAuthentication no
+    GSSAPIDelegateCredentials no
+    HostbasedAuthentication no
+    RhostsRSAAuthentication no
+    RSAAuthentication yes
+    CheckHostIP yes
+    ForwardAgent no
+    ForwardX11 no
+    ForwardX11Trusted no
+    PermitLocalCommand no
+    Tunnel no
+    VisualHostKey no

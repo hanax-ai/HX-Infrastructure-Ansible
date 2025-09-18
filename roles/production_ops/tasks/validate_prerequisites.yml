@@ -1,0 +1,50 @@
+
+---
+# Validate deployment prerequisites
+- name: Check system resources
+  shell: |
+    echo "CPU Cores: $(nproc)"
+    echo "Memory: $(free -h | grep Mem | awk '{print $2}')"
+    echo "Disk Space: $(df -h / | tail -1 | awk '{print $4}')"
+  register: system_resources
+  changed_when: false
+
+- name: Validate minimum system requirements
+  assert:
+    that:
+      - ansible_processor_vcpus >= 2
+      - ansible_memtotal_mb >= 4096
+    fail_msg: "System does not meet minimum requirements for production deployment"
+    success_msg: "System meets production deployment requirements"
+
+- name: Check service dependencies
+  systemd:
+    name: "{{ item }}"
+    state: started
+  register: service_check
+  failed_when: false
+  loop:
+    - docker
+    - nginx
+    - postgresql
+  when: check_dependencies | default(true)
+
+- name: Validate network connectivity
+  uri:
+    url: "{{ item }}"
+    method: GET
+    timeout: 10
+  register: connectivity_check
+  failed_when: false
+  loop:
+    - "https://{{ ansible_default_ipv4.gateway }}"
+    - "https://8.8.8.8"
+  when: check_network | default(true)
+
+- name: Set prerequisite validation status
+  set_fact:
+    prerequisites_validated: true
+  when: 
+    - system_resources is succeeded
+    - service_check is not failed
+    - connectivity_check is not failed

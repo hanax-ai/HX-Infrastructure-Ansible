@@ -7,7 +7,10 @@
     "tables": false
   },
   "MD033": {
-    "allowed_elements": ["br", "details", "summary"]
+    "allowed_elements": ["br", "sub", "sup", "kbd"]
   },
-  "MD041": false
+  "MD041": false,
+  "MD046": {
+    "style": "fenced"
+  }
 }

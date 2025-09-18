@@ -1,0 +1,62 @@
+
+---
+# Service management tasks for backup automation
+# Manages backup-related services and daemons
+
+- name: Create backup service unit file
+  template:
+    src: backup.service.j2
+    dest: /etc/systemd/system/backup.service
+    mode: '0644'
+    owner: root
+    group: root
+  notify: reload systemd
+  tags: [backup, service, systemd]
+
+- name: Create backup timer unit file
+  template:
+    src: backup.timer.j2
+    dest: /etc/systemd/system/backup.timer
+    mode: '0644'
+    owner: root
+    group: root
+  notify: reload systemd
+  tags: [backup, service, systemd, timer]
+
+- name: Enable and start backup timer
+  systemd:
+    name: backup.timer
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  when: backup_systemd_timer_enabled | default(false)
+  tags: [backup, service, systemd, timer]
+
+- name: Create backup monitoring service
+  template:
+    src: backup-monitor.service.j2
+    dest: /etc/systemd/system/backup-monitor.service
+    mode: '0644'
+    owner: root
+    group: root
+  when: backup_monitoring_enabled | default(false)
+  notify: reload systemd
+  tags: [backup, service, systemd, monitoring]
+
+- name: Enable backup monitoring service
+  systemd:
+    name: backup-monitor.service
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  when: backup_monitoring_enabled | default(false)
+  tags: [backup, service, systemd, monitoring]
+
+- name: Configure logrotate for backup logs
+  template:
+    src: backup-logrotate.j2
+    dest: /etc/logrotate.d/backup
+    mode: '0644'
+    owner: root
+    group: root
+  tags: [backup, service, logrotate]

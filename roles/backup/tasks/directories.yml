@@ -1,0 +1,37 @@
+
+---
+# Directory setup tasks for backup automation
+# Creates necessary directories with proper permissions
+
+- name: Create backup base directory
+  file:
+    path: "{{ backup_base_dir | default('/opt/backups') }}"
+    state: directory
+    mode: '0750'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  tags: [backup, directories]
+
+- name: Create backup subdirectories
+  file:
+    path: "{{ backup_base_dir | default('/opt/backups') }}/{{ item }}"
+    state: directory
+    mode: '0750'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  loop:
+    - daily
+    - weekly
+    - monthly
+    - logs
+    - temp
+  tags: [backup, directories]
+
+- name: Create backup log directory
+  file:
+    path: "{{ backup_log_dir | default('/var/log/backup') }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  tags: [backup, directories, logging]

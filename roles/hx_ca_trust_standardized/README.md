@@ -1,254 +1,375 @@
 
 # HX CA Trust Standardized Role
 
-## Overview
-
-The `hx_ca_trust_standardized` role provides comprehensive Certificate Authority (CA) trust management for the HX Infrastructure platform. This role implements SOLID principles and follows enterprise security best practices for certificate lifecycle management.
+Professional-grade Certificate Authority trust management for HX Infrastructure, implementing SOLID principles and comprehensive security practices.
 
 ## Features
 
-- **Complete CA Lifecycle Management**: Creation, configuration, and maintenance of Certificate Authorities
-- **SOLID Architecture**: Single responsibility, extensible design with clear interfaces
-- **Security-First Design**: Comprehensive security hardening and compliance features
-- **Multi-Platform Support**: Ubuntu, CentOS, RedHat, and Debian compatibility
-- **Enterprise Integration**: Java keystore, system trust store, and service integration
-- **Monitoring & Alerting**: Certificate expiration monitoring and automated notifications
-- **Backup & Recovery**: Automated backup with encryption and retention policies
-- **Compliance Support**: FIPS mode, Common Criteria, and audit logging
+- **Automated CA Certificate Deployment**: Secure fetching and installation of root CA certificates
+- **System Trust Store Integration**: Automatic integration with system certificate trust store
+- **Security Validation**: SHA256 fingerprint verification and certificate chain validation
+- **Health Monitoring**: Comprehensive health checks and certificate expiry monitoring
+- **Audit Logging**: Complete audit trail of certificate operations
+- **Backup Management**: Automated backup of certificate changes
+- **Multi-Platform Support**: Ubuntu 20.04+, Debian 11+ compatibility
+- **SOLID Architecture**: Modular, extensible, and maintainable design
 
 ## Requirements
 
-- Ansible 2.15+
-- Python 3.6+
-- OpenSSL 1.1.1+
-- Target OS: Ubuntu 20.04+, CentOS 8+, RedHat 8+, Debian 11+
-- Sudo privileges on target systems
+- **Ansible**: >= 2.9
+- **Target Systems**: Ubuntu 20.04+, Debian 11+
+- **Dependencies**: None (standalone role)
+- **Privileges**: Root access required for certificate installation
 
 ## Role Variables
 
-### Required Variables
-
-| Variable | Type | Description | Example |
-|----------|------|-------------|---------|
-| `hx_ca_trust_ca_name` | string | Name of the Certificate Authority | `"HX-Root-CA"` |
-| `hx_ca_trust_ca_organization` | string | Organization name for CA | `"Hanax AI"` |
-| `hx_ca_trust_ca_country` | string | Country code for CA | `"US"` |
-
-### Optional Variables
+### Core Configuration
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `hx_ca_trust_key_size` | integer | `4096` | RSA key size in bits |
-| `hx_ca_trust_validity_days` | integer | `3650` | Certificate validity in days |
-| `hx_ca_trust_digest` | string | `"sha256"` | Digest algorithm |
-| `hx_ca_trust_backup_enabled` | boolean | `true` | Enable certificate backup |
-| `hx_ca_trust_update_system_store` | boolean | `true` | Update system certificate store |
+| `hx_ca_trust_enabled` | boolean | `true` | Enable/disable CA trust management |
+| `hx_ca_host` | string | `hx-ca-server.dev-test.hana-x.ai` | Certificate Authority server hostname |
+| `hx_ca_root_ca_path_on_ca` | string | `/home/agent0/easy-rsa/pki/ca.crt` | Path to root CA on CA server |
+| `hx_ca_root_ca_filename` | string | `hx-rootCA.crt` | Local certificate filename |
+| `hx_ca_local_cert_path` | string | `/usr/local/share/ca-certificates/hx-root-ca.crt` | Local certificate path |
 
-For a complete list of variables, see [defaults/main.yml](defaults/main.yml).
+### Security Settings
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `hx_ca_security_enabled` | boolean | `true` | Enable security features |
+| `hx_ca_expected_sha256` | string | `""` | Expected SHA256 fingerprint (optional) |
+| `hx_ca_verify_chain` | boolean | `true` | Enable certificate chain verification |
+| `hx_ca_strict_permissions` | boolean | `true` | Enforce strict file permissions |
+
+### Validation and Monitoring
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `hx_ca_validation_enabled` | boolean | `true` | Enable certificate validation |
+| `hx_ca_health_checks_enabled` | boolean | `true` | Enable health checks |
+| `hx_ca_monitoring_enabled` | boolean | `false` | Enable certificate monitoring |
+| `hx_ca_san_check_targets` | list | `[]` | SAN validation targets |
+
+### Feature Flags
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `hx_ca_backup_enabled` | boolean | `true` | Enable certificate backups |
+| `hx_ca_audit_logging_enabled` | boolean | `true` | Enable audit logging |
+
+### Advanced Configuration
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `hx_ca_update_timeout` | integer | `30` | CA update timeout (seconds) |
+| `hx_ca_validation_retries` | integer | `3` | Validation retry attempts |
+| `hx_ca_validation_delay` | integer | `5` | Delay between retries (seconds) |
 
 ## Dependencies
 
-- `common` role (optional)
-- `ansible.posix` collection
-- `community.general` collection
-- `community.crypto` collection
+This role has no external dependencies and can be used standalone.
 
 ## Example Playbook
 
 ### Basic Usage
 
 ```yaml
-- hosts: ca_servers
+---
+- hosts: servers
+  become: true
   roles:
     - role: hx_ca_trust_standardized
       vars:
-        hx_ca_trust_ca_name: "HX-Production-CA"
-        hx_ca_trust_ca_organization: "Hanax AI"
-        hx_ca_trust_ca_country: "US"
-        hx_ca_trust_ca_state: "California"
-        hx_ca_trust_ca_locality: "San Francisco"
+        hx_ca_host: "ca.example.com"
+        hx_ca_root_ca_path_on_ca: "/etc/ssl/certs/root-ca.crt"
+        hx_ca_root_ca_filename: "example-root-ca.crt"
 ```
 
-### Advanced Configuration
+### Production Configuration with Security
 
 ```yaml
-- hosts: ca_servers
+---
+- hosts: production
+  become: true
   roles:
     - role: hx_ca_trust_standardized
       vars:
-        hx_ca_trust_ca_name: "HX-Enterprise-CA"
-        hx_ca_trust_ca_organization: "Hanax AI"
-        hx_ca_trust_ca_country: "US"
-        hx_ca_trust_key_size: 4096
-        hx_ca_trust_validity_days: 7300
-        hx_ca_trust_backup_enabled: true
-        hx_ca_trust_check_expiration: true
-        hx_ca_trust_expiration_warning_days: 60
-        hx_ca_trust_java_keystore_update: true
-        hx_ca_trust_crl_enabled: true
-        hx_ca_trust_ocsp_enabled: true
-        hx_ca_trust_notifications_enabled: true
-        hx_ca_trust_notification_email: "security@hanax.ai"
-        hx_ca_trust_intermediate_cas:
-          - name: "HX-Intermediate-CA"
-            cert_path: "/etc/ssl/certs/hx-intermediate.crt"
-            key_path: "/etc/ssl/private/hx-intermediate.key"
-            parent_ca: "HX-Enterprise-CA"
+        # Core settings
+        hx_ca_host: "ca.production.example.com"
+        hx_ca_root_ca_path_on_ca: "/opt/ca/certs/root-ca.crt"
+        hx_ca_root_ca_filename: "production-root-ca.crt"
+        
+        # Security settings
+        hx_ca_security_enabled: true
+        hx_ca_expected_sha256: "SHA256:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99"
+        hx_ca_verify_chain: true
+        hx_ca_strict_permissions: true
+        
+        # Monitoring and validation
+        hx_ca_monitoring_enabled: true
+        hx_ca_health_checks_enabled: true
+        hx_ca_san_check_targets:
+          - name: "Web Server"
+            address: "web.example.com"
+            port: 443
+            servername: "web.example.com"
+            health_url: "https://web.example.com/health"
+          - name: "API Server"
+            address: "api.example.com"
+            port: 8443
+            servername: "api.example.com"
+        
+        # Operational settings
+        hx_ca_backup_enabled: true
+        hx_ca_audit_logging_enabled: true
 ```
 
-### Multi-Environment Setup
+### Integration with Vault
 
 ```yaml
-- hosts: production_ca
+---
+- hosts: secure_servers
+  become: true
   roles:
     - role: hx_ca_trust_standardized
       vars:
-        hx_ca_trust_ca_name: "HX-Production-CA"
-        hx_ca_trust_compliance_mode: "strict"
-        hx_ca_trust_fips_mode: true
-        hx_ca_trust_audit_enabled: true
-
-- hosts: staging_ca
-  roles:
-    - role: hx_ca_trust_standardized
-      vars:
-        hx_ca_trust_ca_name: "HX-Staging-CA"
-        hx_ca_trust_validity_days: 1095
-        hx_ca_trust_compliance_mode: "standard"
+        hx_ca_host: "{{ vault_ca_host }}"
+        hx_ca_expected_sha256: "{{ vault_ca_fingerprint }}"
+        hx_ca_security_enabled: true
+        hx_ca_audit_logging_enabled: true
 ```
 
-## Task Structure
+## Architecture
 
-The role follows SOLID principles with a clear task structure:
-
-1. **validate.yml**: Input validation and system compatibility checks
-2. **prepare.yml**: System preparation and dependency installation
-3. **install.yml**: Certificate Authority creation and installation
-4. **configure.yml**: Post-installation configuration and integration
-5. **security.yml**: Security hardening and compliance measures
-6. **verify.yml**: Comprehensive testing and validation
-
-## Security Features
-
-### File Security
-- Secure file permissions (0600 for private keys, 0644 for certificates)
-- Immutable file attributes for critical files
-- SELinux/AppArmor integration
-- Secure temporary file cleanup
-
-### Audit and Monitoring
-- Comprehensive audit logging
-- Certificate expiration monitoring
-- Intrusion detection integration (AIDE)
-- Real-time file integrity monitoring
-
-### Compliance
-- FIPS 140-2 mode support
-- Common Criteria compliance
-- SOC 2 audit trail
-- Configurable security policies
-
-### Network Security
-- Firewall rule management
-- Secure communication protocols
-- Certificate pinning support
-- OCSP responder integration
-
-## Integration
-
-### System Integration
-- System certificate store updates
-- Java keystore integration
-- Service integration (Nginx, Apache, PostgreSQL)
-- Docker registry integration
-
-### Monitoring Integration
-- Prometheus metrics export
-- Grafana dashboard templates
-- Alert manager integration
-- SIEM log forwarding
-
-## Backup and Recovery
-
-### Automated Backup
-- Scheduled certificate backups
-- Encrypted backup storage
-- Configurable retention policies
-- Recovery testing procedures
-
-### Disaster Recovery
-- Certificate restoration procedures
-- Emergency certificate issuance
-- Cross-site replication support
-- Recovery time optimization
+```mermaid
+graph TB
+    subgraph "HX CA Trust Role Architecture"
+        V[Variables & Validation] --> I[Installation Tasks]
+        I --> C[Configuration Tasks]
+        C --> S[Security Tasks]
+        S --> H[Health Checks]
+        
+        subgraph "Core Components"
+            I --> P[Package Installation]
+            I --> F[Certificate Fetching]
+            I --> D[Directory Creation]
+        end
+        
+        subgraph "Security Layer"
+            S --> FP[File Permissions]
+            S --> CV[Certificate Validation]
+            S --> CE[Expiry Checking]
+            S --> SC[SAN Validation]
+        end
+        
+        subgraph "Monitoring"
+            H --> TS[Trust Store Check]
+            H --> SSL[SSL Connection Test]
+            H --> HE[Health Endpoints]
+            H --> R[Report Generation]
+        end
+    end
+    
+    subgraph "External Dependencies"
+        CA[Certificate Authority]
+        TS_SYS[System Trust Store]
+        LOG[Log Files]
+        BACKUP[Backup Storage]
+    end
+    
+    F --> CA
+    C --> TS_SYS
+    H --> LOG
+    I --> BACKUP
+```
 
 ## Testing
 
-### Validation Tests
-- Certificate creation and validation
-- Certificate chain verification
-- System integration testing
-- Performance benchmarking
+### Running Tests with Molecule
 
-### Continuous Testing
-- Automated test execution
-- Integration with CI/CD pipelines
-- Regression testing
-- Security testing
+```bash
+# Install molecule and dependencies
+pip install molecule[docker] ansible-lint yamllint
+
+# Run all tests
+molecule test
+
+# Run specific test scenarios
+molecule test -s default
+
+# Test on specific platforms
+molecule test -s ubuntu-focal
+molecule test -s ubuntu-jammy
+```
+
+### Test Scenarios
+
+The role includes comprehensive testing covering:
+
+- **Unit Tests**: Variable validation, task logic verification
+- **Integration Tests**: Certificate deployment, trust store integration
+- **Security Tests**: Permission validation, fingerprint verification
+- **Health Tests**: Service functionality, endpoint validation
+- **Multi-Platform Tests**: Ubuntu 20.04, Ubuntu 22.04, Debian 11+
+
+### Manual Testing
+
+```bash
+# Verify certificate installation
+sudo openssl x509 -in /usr/local/share/ca-certificates/hx-root-ca.crt -text -noout
+
+# Check trust store integration
+cert_hash=$(openssl x509 -in /usr/local/share/ca-certificates/hx-root-ca.crt -hash -noout)
+ls -la /etc/ssl/certs/${cert_hash}.0
+
+# Test SSL connection
+openssl s_client -connect example.com:443 -CAfile /usr/local/share/ca-certificates/hx-root-ca.crt
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### Certificate Generation Fails
+#### Certificate Not Found in Trust Store
+
+**Symptoms**: SSL connections fail with certificate verification errors
+
+**Diagnosis**:
 ```bash
-# Check OpenSSL version
-openssl version
+# Check if certificate file exists
+ls -la /usr/local/share/ca-certificates/hx-root-ca.crt
 
-# Verify permissions
-ls -la /etc/ssl/private/
+# Verify trust store update
+sudo update-ca-certificates --verbose
 
-# Check disk space
-df -h /etc/ssl/
+# Check trust store links
+cert_hash=$(openssl x509 -in /usr/local/share/ca-certificates/hx-root-ca.crt -hash -noout)
+ls -la /etc/ssl/certs/${cert_hash}.0
 ```
 
-#### System Trust Store Issues
+**Solutions**:
+- Ensure certificate file has correct permissions (644)
+- Run `update-ca-certificates` manually
+- Check certificate format with `openssl x509 -text -noout`
+
+#### SHA256 Fingerprint Mismatch
+
+**Symptoms**: Role fails with fingerprint validation error
+
+**Diagnosis**:
 ```bash
-# Update certificate store manually
-sudo update-ca-certificates  # Debian/Ubuntu
-sudo update-ca-trust         # RedHat/CentOS
-
-# Verify certificate installation
-openssl verify -CApath /etc/ssl/certs /path/to/certificate
+# Get actual certificate fingerprint
+openssl x509 -in /usr/local/share/ca-certificates/hx-root-ca.crt -fingerprint -sha256 -noout
 ```
 
-#### Permission Errors
+**Solutions**:
+- Update `hx_ca_expected_sha256` variable with correct fingerprint
+- Verify certificate source integrity
+- Disable fingerprint checking temporarily for debugging
+
+#### Certificate Fetch Failures
+
+**Symptoms**: Cannot fetch certificate from CA server
+
+**Diagnosis**:
 ```bash
-# Fix certificate directory permissions
-sudo chown -R root:root /etc/ssl/
-sudo chmod 755 /etc/ssl/certs/
-sudo chmod 700 /etc/ssl/private/
+# Test connectivity to CA server
+ping ca-server.example.com
+telnet ca-server.example.com 22
+
+# Check file permissions on CA server
+ssh ca-server.example.com "ls -la /path/to/ca.crt"
 ```
 
-### Debug Mode
+**Solutions**:
+- Verify network connectivity to CA server
+- Check SSH key authentication
+- Ensure certificate file exists and is readable on CA server
 
-Enable debug logging:
-```yaml
-hx_ca_trust_enable_logging: true
-hx_ca_trust_log_level: "DEBUG"
-```
+### Log Analysis
 
-### Performance Issues
-
-Monitor certificate operations:
+#### Deployment Logs
 ```bash
-# Check certificate generation time
-time openssl genrsa -out test.key 4096
+# View deployment log
+sudo tail -f /var/log/hx/ca-trust/deployment.log
 
-# Monitor system resources
-htop
-iotop
+# Check security audit
+sudo cat /var/log/hx/ca-trust/security_audit_*.txt
+
+# Monitor health checks
+sudo tail -f /var/log/hx/ca-trust/monitor.log
 ```
+
+#### System Logs
+```bash
+# Check system certificate updates
+sudo journalctl -u update-ca-certificates
+
+# View Ansible execution logs
+sudo journalctl -u ansible*
+```
+
+### Performance Optimization
+
+#### Large Certificate Files
+- Increase `hx_ca_update_timeout` for slow networks
+- Use local certificate caching
+- Implement certificate compression
+
+#### Multiple Target Validation
+- Adjust `hx_ca_validation_retries` and `hx_ca_validation_delay`
+- Parallelize SAN checks where possible
+- Use health endpoint checks for faster validation
+
+## Security Considerations
+
+### Certificate Security
+- **Fingerprint Validation**: Always configure `hx_ca_expected_sha256` in production
+- **Chain Verification**: Enable `hx_ca_verify_chain` for complete validation
+- **File Permissions**: Use `hx_ca_strict_permissions` for enhanced security
+
+### Network Security
+- **Secure Transport**: Ensure CA server uses secure protocols (SSH, HTTPS)
+- **Network Isolation**: Restrict CA server access to authorized systems
+- **Certificate Rotation**: Implement regular certificate rotation procedures
+
+### Audit and Compliance
+- **Audit Logging**: Enable `hx_ca_audit_logging_enabled` for compliance
+- **Backup Management**: Regular backup verification and testing
+- **Access Control**: Restrict access to certificate files and logs
+
+## Performance Tuning
+
+### Resource Optimization
+- **Memory Usage**: Minimal memory footprint (~10MB during execution)
+- **CPU Usage**: Low CPU usage, primarily I/O bound operations
+- **Network Usage**: Efficient certificate transfer with retry logic
+
+### Scaling Considerations
+- **Concurrent Deployments**: Role supports parallel execution across multiple hosts
+- **Large Environments**: Batch processing for hundreds of servers
+- **Certificate Updates**: Efficient update mechanisms with change detection
+
+## Best Practices
+
+### Development
+- Use variable validation for all inputs
+- Implement comprehensive error handling
+- Follow SOLID principles for maintainability
+- Include extensive testing coverage
+
+### Operations
+- Monitor certificate expiry dates
+- Implement automated certificate rotation
+- Maintain backup and recovery procedures
+- Use centralized logging for audit trails
+
+### Security
+- Regular security audits and reviews
+- Principle of least privilege
+- Secure certificate storage and transport
+- Incident response procedures
 
 ## License
 
@@ -256,31 +377,28 @@ MIT
 
 ## Author Information
 
-**HX Infrastructure Team**
-- Email: infrastructure@hanax.ai
-- Documentation: [HX Infrastructure Docs](https://docs.hanax.ai)
-- Support: [GitHub Issues](https://github.com/hanax-ai/HX-Infrastructure-Ansible/issues)
+**HX Infrastructure Team**  
+Hanax AI  
+infrastructure@hana-x.ai
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
+3. Make changes following the established patterns
+4. Add comprehensive tests
+5. Update documentation
 6. Submit a pull request
 
 ## Changelog
 
-### Version 1.0.0
-- Initial release with complete CA management
-- SOLID architecture implementation
-- Comprehensive security features
-- Multi-platform support
-- Enterprise integration capabilities
+### v1.0.0 (2024-01-XX)
+- Initial standardized implementation
+- SOLID principles architecture
+- Comprehensive testing framework
+- Security hardening features
+- Professional documentation
 
-### Version 1.1.0 (Planned)
-- Enhanced OCSP support
-- Certificate transparency integration
-- Advanced monitoring features
-- Performance optimizations
+---
+
+*This role is part of the HX Infrastructure Ansible collection, providing enterprise-grade automation for modern infrastructure management.*

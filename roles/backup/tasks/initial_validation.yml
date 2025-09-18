@@ -1,0 +1,67 @@
+
+---
+# Initial validation tasks for backup automation
+# Validates prerequisites and system readiness
+
+- name: Check required commands are available
+  command: which {{ item }}
+  register: command_check
+  failed_when: command_check.rc != 0
+  loop:
+    - rsync
+    - tar
+    - gzip
+    - openssl
+    - cron
+    - sha256sum
+  tags: [backup, validation, prerequisites]
+
+- name: Validate backup configuration variables
+  assert:
+    that:
+      - backup_base_dir is defined
+      - backup_base_dir | length > 0
+      - backup_user is defined
+      - backup_user | length > 0
+      - backup_group is defined
+      - backup_group | length > 0
+    fail_msg: "Required backup configuration variables are not properly defined"
+    success_msg: "Backup configuration validation passed"
+  tags: [backup, validation, configuration]
+
+- name: Check available disk space
+  shell: |
+    AVAILABLE=$(df {{ backup_base_dir | default('/opt/backups') | dirname }} | tail -1 | awk '{print $4}')
+    REQUIRED={{ backup_min_space_kb | default('1048576') }}  # 1GB default
+    if [ "$AVAILABLE" -lt "$REQUIRED" ]; then
+      echo "Insufficient disk space: ${AVAILABLE}KB available, ${REQUIRED}KB required"
+      exit 1
+    else
+      echo "Sufficient disk space: ${AVAILABLE}KB available"
+    fi
+  register: disk_space_check
+  tags: [backup, validation, disk_space]
+
+- name: Validate backup user permissions
+  file:
+    path: "{{ backup_base_dir | default('/opt/backups') }}"
+    state: directory
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+    mode: '0750'
+  tags: [backup, validation, permissions]
+
+- name: Test backup script execution
+  command: /usr/local/bin/backup-system.sh --test
+  become_user: "{{ backup_user | default('backup') }}"
+  register: script_test
+  failed_when: script_test.rc != 0
+  tags: [backup, validation, scripts]
+
+- name: Log validation results
+  lineinfile:
+    path: "{{ backup_log_dir | default('/var/log/backup') }}/validation.log"
+    line: "{{ ansible_date_time.iso8601 }} - Initial validation completed successfully"
+    create: yes
+    mode: '0644'
+  tags: [backup, validation, logging]

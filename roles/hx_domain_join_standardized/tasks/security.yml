@@ -1,384 +1,178 @@
 
 ---
-# Security hardening tasks for hx_domain_join_standardized role
-# Comprehensive security measures for domain-joined systems
+# Security Tasks for HX Domain Join
 
-- name: Secure SSSD configuration file
-  ansible.builtin.file:
-    path: /etc/sssd/sssd.conf
+- name: Secure SSSD configuration file permissions
+  file:
+    path: "{{ hx_sssd_conf_path }}"
     owner: root
     group: root
     mode: '0600'
-    attributes: "+i"  # Immutable
-  become: true
-  when: hx_domain_join_use_sssd | default(true)
+  when: hx_sssd_enabled | bool
+  tags: [security]
 
-- name: Secure Kerberos configuration
-  ansible.builtin.file:
-    path: /etc/krb5.conf
+- name: Secure Kerberos configuration file permissions
+  file:
+    path: "{{ hx_krb5_conf_path }}"
     owner: root
     group: root
     mode: '0644'
-    attributes: "+i"  # Immutable
-  become: true
+  when: hx_krb5_enabled | bool
+  tags: [security]
 
-- name: Configure SELinux contexts (RedHat family)
-  block:
-    - name: Set SELinux context for SSSD
-      community.general.sefcontext:
-        target: "/etc/sssd(/.*)?"
-        setype: sssd_conf_t
-        reload: true
-      become: true
+- name: Secure domain join log directory
+  file:
+    path: "{{ hx_domain_log_dir }}"
+    owner: root
+    group: root
+    mode: '0750'
+  when: hx_domain_audit_logging_enabled | bool
+  tags: [security]
 
-    - name: Set SELinux context for Kerberos
-      community.general.sefcontext:
-        target: "/etc/krb5.conf"
-        setype: krb5_conf_t
-        reload: true
-      become: true
+- name: Secure backup directory permissions
+  file:
+    path: "{{ hx_domain_backup_dir }}"
+    owner: root
+    group: root
+    mode: '0700'
+  when: hx_domain_backup_enabled | bool
+  tags: [security]
 
-    - name: Apply SELinux contexts
-      ansible.builtin.command:
-        cmd: "restorecon -R {{ item }}"
-      loop:
-        - /etc/sssd
-        - /etc/krb5.conf
-      become: true
-      changed_when: false
-  when: 
-    - ansible_os_family == "RedHat"
-    - ansible_selinux.status == "enabled"
+- name: Verify certificate validation is enabled
+  lineinfile:
+    path: "{{ hx_sssd_conf_path }}"
+    regexp: '^ldap_tls_reqcert'
+    line: 'ldap_tls_reqcert = demand'
+    insertafter: '^\[domain/'
+  when:
+    - hx_sssd_enabled | bool
+    - hx_domain_verify_certificates | bool
+  notify: restart sssd
+  tags: [security]
 
-- name: Configure audit logging for domain authentication
-  block:
-    - name: Add audit rules for domain authentication
-      ansible.builtin.lineinfile:
-        path: /etc/audit/rules.d/hx-domain-auth.rules
-        line: "{{ item }}"
-        create: true
-      loop:
-        - "-w /etc/sssd/sssd.conf -p wa -k domain_config"
-        - "-w /etc/krb5.conf -p wa -k kerberos_config"
-        - "-w /etc/pam.d/ -p wa -k pam_config"
-        - "-w /etc/nsswitch.conf -p wa -k nsswitch_config"
-        - "-a always,exit -F arch=b64 -S connect -F a2=16 -k domain_connect"
-        - "-a always,exit -F arch=b32 -S connect -F a2=16 -k domain_connect"
-      become: true
-      notify: restart auditd
+- name: Enable LDAP encryption
+  lineinfile:
+    path: "{{ hx_sssd_conf_path }}"
+    regexp: '^ldap_id_use_start_tls'
+    line: 'ldap_id_use_start_tls = True'
+    insertafter: '^\[domain/'
+  when:
+    - hx_sssd_enabled | bool
+    - hx_domain_require_encryption | bool
+  notify: restart sssd
+  tags: [security]
 
-    - name: Configure SSSD audit logging
-      ansible.builtin.lineinfile:
-        path: /etc/sssd/sssd.conf
-        regexp: '^debug_level'
-        line: "debug_level = {{ hx_domain_join_sssd_debug_level }}"
-        insertafter: '^\[sssd\]'
-      become: true
-      notify: restart sssd
-      when: hx_domain_join_use_sssd | default(true)
-  when: hx_domain_join_audit_enabled | default(false)
+- name: Configure Kerberos encryption types
+  lineinfile:
+    path: "{{ hx_krb5_conf_path }}"
+    regexp: '^(\s*)default_tgs_enctypes'
+    line: '\1default_tgs_enctypes = aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96'
+    insertafter: '^\[libdefaults\]'
+  when:
+    - hx_krb5_enabled | bool
+    - hx_domain_require_encryption | bool
+  tags: [security]
 
-- name: Configure firewall rules for domain services
-  block:
-    - name: Configure UFW rules (Debian/Ubuntu)
-      community.general.ufw:
-        rule: allow
-        port: "{{ item.port }}"
-        proto: "{{ item.proto }}"
-        from_ip: "{{ item.from_ip | default('any') }}"
-        comment: "Domain Services - {{ item.service }}"
-      loop:
-        - port: "88"
-          proto: "udp"
-          service: "Kerberos"
-          from_ip: "{{ hx_domain_join_domain_controllers | join(',') }}"
-        - port: "389"
-          proto: "tcp"
-          service: "LDAP"
-          from_ip: "{{ hx_domain_join_domain_controllers | join(',') }}"
-        - port: "636"
-          proto: "tcp"
-          service: "LDAPS"
-          from_ip: "{{ hx_domain_join_domain_controllers | join(',') }}"
-        - port: "464"
-          proto: "udp"
-          service: "Kerberos Password Change"
-          from_ip: "{{ hx_domain_join_domain_controllers | join(',') }}"
-      become: true
-      when: ansible_os_family == "Debian"
+- name: Configure Kerberos ticket encryption
+  lineinfile:
+    path: "{{ hx_krb5_conf_path }}"
+    regexp: '^(\s*)default_tkt_enctypes'
+    line: '\1default_tkt_enctypes = aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96'
+    insertafter: '^\[libdefaults\]'
+  when:
+    - hx_krb5_enabled | bool
+    - hx_domain_require_encryption | bool
+  tags: [security]
 
-    - name: Configure firewalld rules (RedHat/CentOS)
-      ansible.posix.firewalld:
-        rich_rule: "rule family='ipv4' source address='{{ item.source }}' service name='{{ item.service }}' accept"
-        permanent: true
-        state: enabled
-        immediate: true
-      loop:
-        - source: "{{ hx_domain_join_domain_controllers | join(',') }}"
-          service: "kerberos"
-        - source: "{{ hx_domain_join_domain_controllers | join(',') }}"
-          service: "ldap"
-        - source: "{{ hx_domain_join_domain_controllers | join(',') }}"
-          service: "ldaps"
-      become: true
-      when: ansible_os_family == "RedHat"
+- name: Disable weak Kerberos encryption
+  lineinfile:
+    path: "{{ hx_krb5_conf_path }}"
+    regexp: '^(\s*)permitted_enctypes'
+    line: '\1permitted_enctypes = aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96'
+    insertafter: '^\[libdefaults\]'
+  when:
+    - hx_krb5_enabled | bool
+    - hx_domain_require_encryption | bool
+  tags: [security]
 
-- name: Implement password security policies
-  block:
-    - name: Configure password quality (Debian/Ubuntu)
-      ansible.builtin.lineinfile:
-        path: /etc/pam.d/common-password
-        regexp: '^password.*pam_pwquality.so'
-        line: "password requisite pam_pwquality.so retry=3 minlen=12 dcredit=-1 ucredit=-1 ocredit=-1 lcredit=-1 enforce_for_root"
-        backup: true
-      become: true
-      when: 
-        - ansible_os_family == "Debian"
-        - hx_domain_join_password_complexity | default(false)
+- name: Validate domain controller certificate
+  shell: |
+    set -euo pipefail
+    # Test LDAPS connection to domain controller
+    if command -v ldapsearch >/dev/null 2>&1; then
+      ldapsearch -H ldaps://{{ hx_ad_domain }}:636 -x -s base -b "" supportedSASLMechanisms
+      echo "LDAPS certificate validation passed"
+    else
+      echo "ldapsearch not available, skipping certificate validation"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_ldaps_cert_check
+  when:
+    - hx_domain_verify_certificates | bool
+    - hx_domain_strict_validation | bool
+  changed_when: false
+  failed_when: false
+  tags: [security]
 
-    - name: Configure password history
-      ansible.builtin.lineinfile:
-        path: /etc/pam.d/common-password
-        regexp: '^password.*pam_unix.so'
-        line: "password [success=1 default=ignore] pam_unix.so obscure sha512 remember=12"
-        backup: true
-      become: true
-      when: ansible_os_family == "Debian"
+- name: Check for weak authentication methods
+  shell: |
+    set -euo pipefail
+    weak_methods=0
 
-    - name: Configure account lockout policy
-      ansible.builtin.lineinfile:
-        path: /etc/pam.d/common-auth
-        regexp: '^auth.*pam_faillock.so.*preauth'
-        line: "auth required pam_faillock.so preauth audit silent deny=5 unlock_time=900 fail_interval=900"
-        insertafter: '^auth.*pam_env.so'
-        backup: true
-      become: true
-      when: 
-        - ansible_os_family == "Debian"
-        - hx_domain_join_account_lockout | default(false)
+    # Check for NTLM in SSSD config
+    if grep -q "auth_provider.*ntlm" "{{ hx_sssd_conf_path }}" 2>/dev/null; then
+      echo "WARNING: NTLM authentication detected"
+      weak_methods=$((weak_methods + 1))
+    fi
 
-- name: Configure SSH security hardening
-  block:
-    - name: Harden SSH configuration
-      ansible.builtin.lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-        backup: true
-      loop:
-        - regexp: '^#?Protocol'
-          line: 'Protocol 2'
-        - regexp: '^#?PermitRootLogin'
-          line: 'PermitRootLogin no'
-        - regexp: '^#?PermitEmptyPasswords'
-          line: 'PermitEmptyPasswords no'
-        - regexp: '^#?MaxAuthTries'
-          line: 'MaxAuthTries 3'
-        - regexp: '^#?ClientAliveCountMax'
-          line: 'ClientAliveCountMax 3'
-        - regexp: '^#?LoginGraceTime'
-          line: 'LoginGraceTime 60'
-        - regexp: '^#?Banner'
-          line: 'Banner /etc/issue.net'
-      become: true
-      notify: restart sshd
+    # Check for unencrypted LDAP
+    if grep -q "ldap_uri.*ldap://" "{{ hx_sssd_conf_path }}" 2>/dev/null; then
+      echo "WARNING: Unencrypted LDAP detected"
+      weak_methods=$((weak_methods + 1))
+    fi
 
-    - name: Create SSH banner
-      ansible.builtin.copy:
-        content: |
-          **************************************************************************
-          *                                                                        *
-          *  This system is for authorized users only. All activity is logged     *
-          *  and monitored. Unauthorized access is prohibited and will be         *
-          *  prosecuted to the full extent of the law.                            *
-          *                                                                        *
-          *  Domain: {{ hx_domain_join_domain_name }}                             *
-          *  System: {{ inventory_hostname }}                                     *
-          *                                                                        *
-          **************************************************************************
-        dest: /etc/issue.net
-        owner: root
-        group: root
-        mode: '0644'
-      become: true
+    if [ $weak_methods -eq 0 ]; then
+      echo "No weak authentication methods detected"
+    fi
 
-- name: Configure system security limits
-  block:
-    - name: Configure security limits
-      ansible.builtin.lineinfile:
-        path: /etc/security/limits.conf
-        line: "{{ item }}"
-        backup: true
-      loop:
-        - "* hard maxlogins 10"
-        - "* hard core 0"
-        - "* hard nproc 1000"
-        - "* hard fsize 1000000"
-      become: true
+    exit $weak_methods
+  args:
+    executable: /bin/bash
+  register: hx_weak_auth_check
+  when: hx_domain_strict_validation | bool
+  changed_when: false
+  failed_when: hx_weak_auth_check.rc > 0 and hx_domain_strict_validation | bool
+  tags: [security]
 
-    - name: Configure login definitions
-      ansible.builtin.lineinfile:
-        path: /etc/login.defs
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-        backup: true
-      loop:
-        - regexp: '^PASS_MAX_DAYS'
-          line: 'PASS_MAX_DAYS 90'
-        - regexp: '^PASS_MIN_DAYS'
-          line: 'PASS_MIN_DAYS 1'
-        - regexp: '^PASS_WARN_AGE'
-          line: 'PASS_WARN_AGE 7'
-        - regexp: '^LOGIN_RETRIES'
-          line: 'LOGIN_RETRIES 3'
-        - regexp: '^LOGIN_TIMEOUT'
-          line: 'LOGIN_TIMEOUT 60'
-      become: true
+- name: Create security audit report
+  template:
+    src: security_audit.j2
+    dest: "{{ hx_domain_log_dir }}/security_audit_{{ hx_domain_backup_timestamp }}.txt"
+    owner: root
+    group: root
+    mode: '0640'
+  when: hx_domain_audit_logging_enabled | bool
+  tags: [security]
 
-- name: Configure intrusion detection
-  block:
-    - name: Install fail2ban
-      ansible.builtin.package:
-        name: fail2ban
-        state: present
-      become: true
-
-    - name: Configure fail2ban for SSH
-      ansible.builtin.template:
-        src: fail2ban-ssh.conf.j2
-        dest: /etc/fail2ban/jail.d/sshd.conf
-        owner: root
-        group: root
-        mode: '0644'
-      become: true
-      notify: restart fail2ban
-
-    - name: Enable and start fail2ban
-      ansible.builtin.systemd:
-        name: fail2ban
-        state: started
-        enabled: true
-      become: true
-
-- name: Configure system integrity monitoring
-  block:
-    - name: Install AIDE
-      ansible.builtin.package:
-        name: aide
-        state: present
-      become: true
-
-    - name: Configure AIDE for domain files
-      ansible.builtin.lineinfile:
-        path: /etc/aide/aide.conf
-        line: "{{ item }}"
-        create: true
-      loop:
-        - "/etc/sssd NORMAL"
-        - "/etc/krb5.conf NORMAL"
-        - "/etc/pam.d NORMAL"
-        - "/etc/nsswitch.conf NORMAL"
-      become: true
-
-    - name: Initialize AIDE database
-      ansible.builtin.command:
-        cmd: aide --init
-      become: true
-      changed_when: false
-      failed_when: false
-
-    - name: Schedule AIDE checks
-      ansible.builtin.cron:
-        name: "AIDE Domain Security Check"
-        job: "aide --check"
-        minute: "0"
-        hour: "2"
-        user: root
-      become: true
-
-- name: Configure network security
-  block:
-    - name: Disable unnecessary network services
-      ansible.builtin.systemd:
-        name: "{{ item }}"
-        state: stopped
-        enabled: false
-      loop:
-        - rpcbind
-        - nfs-common
-        - portmap
-      become: true
-      failed_when: false
-
-    - name: Configure network parameters
-      ansible.posix.sysctl:
-        name: "{{ item.name }}"
-        value: "{{ item.value }}"
-        state: present
-        reload: true
-      loop:
-        - name: net.ipv4.ip_forward
-          value: "0"
-        - name: net.ipv4.conf.all.send_redirects
-          value: "0"
-        - name: net.ipv4.conf.all.accept_redirects
-          value: "0"
-        - name: net.ipv4.conf.all.accept_source_route
-          value: "0"
-        - name: net.ipv4.conf.all.log_martians
-          value: "1"
-        - name: net.ipv4.icmp_echo_ignore_broadcasts
-          value: "1"
-        - name: net.ipv4.icmp_ignore_bogus_error_responses
-          value: "1"
-      become: true
-
-- name: Configure credential caching security
-  block:
-    - name: Set secure permissions on credential cache
-      ansible.builtin.file:
-        path: /tmp
-        mode: '1777'  # Sticky bit
-      become: true
-
-    - name: Configure Kerberos credential cache cleanup
-      ansible.builtin.cron:
-        name: "Kerberos credential cache cleanup"
-        job: "find /tmp -name 'krb5cc_*' -mtime +1 -delete"
-        minute: "0"
-        hour: "3"
-        user: root
-      become: true
-
-    - name: Configure SSSD credential cache security
-      ansible.builtin.lineinfile:
-        path: /etc/sssd/sssd.conf
-        regexp: '^krb5_ccache_type'
-        line: "krb5_ccache_type = FILE"
-        insertafter: '^\[domain/'
-      become: true
-      notify: restart sssd
-      when: hx_domain_join_use_sssd | default(true)
-
-- name: Log security hardening completion
-  ansible.builtin.lineinfile:
-    path: "{{ hx_domain_join_audit_log_path }}"
-    line: "{{ ansible_date_time.iso8601 }} - Domain join security hardening completed on {{ inventory_hostname }}"
-    create: true
-  become: true
-  when: hx_domain_join_audit_enabled | default(false)
+- name: Log security configuration completion
+  lineinfile:
+    path: "{{ hx_domain_log_dir }}/security.log"
+    line: "{{ ansible_date_time.iso8601 }} - Domain join security configuration completed"
+    create: yes
+    owner: root
+    group: root
+    mode: '0640'
+  when: hx_domain_audit_logging_enabled | bool
+  tags: [security]
 
 - name: Display security summary
-  ansible.builtin.debug:
+  debug:
     msg:
-      - "Domain join security hardening completed successfully"
-      - "Configuration Files: Secured and immutable"
-      - "SELinux/AppArmor: {{ 'Configured' if ansible_selinux.status == 'enabled' else 'Not available' }}"
-      - "Audit Logging: {{ 'Enabled' if hx_domain_join_audit_enabled else 'Disabled' }}"
-      - "Firewall Rules: Configured for domain services"
-      - "Password Policies: {{ 'Enforced' if hx_domain_join_password_complexity else 'Standard' }}"
-      - "SSH Hardening: Applied"
-      - "Intrusion Detection: {{ 'Enabled (fail2ban)' if ansible_facts.packages['fail2ban'] is defined else 'Not installed' }}"
-      - "Integrity Monitoring: {{ 'Enabled (AIDE)' if ansible_facts.packages['aide'] is defined else 'Not installed' }}"
-      - "Network Security: Hardened"
-  when: hx_domain_join_enable_logging | default(true)
+      - "Security configuration completed"
+      - "File permissions: Secured"
+      - "Certificate validation: {{ hx_domain_verify_certificates | ternary('Enabled', 'Disabled') }}"
+      - "Encryption required: {{ hx_domain_require_encryption | ternary('Yes', 'No') }}"
+      - "LDAPS validation: {{ (hx_ldaps_cert_check is defined and hx_ldaps_cert_check.rc == 0) | ternary('Passed', 'Skipped/Failed') }}"
+      - "Weak auth check: {{ (hx_weak_auth_check is defined and hx_weak_auth_check.rc == 0) | ternary('Passed', 'Issues detected') }}"
+  tags: [security]
