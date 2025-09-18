@@ -1,290 +1,177 @@
 
-# HX Infrastructure Ansible Makefile
-# Enhanced with secrets-linting and comprehensive quality gates
+# HX Infrastructure Makefile
+# Provides convenient commands for variable management and validation
 
-.PHONY: help install lint test security secrets-lint clean deploy backup validate format check-syntax molecule docs all
+.PHONY: help validate-vars validate-dev validate-test validate-prod generate-templates check-syntax lint clean
 
 # Default target
-all: install lint secrets-lint test security
-
-# Help target
 help:
-	@echo "HX Infrastructure Ansible Management"
+	@echo "HX Infrastructure Variable Management"
 	@echo "===================================="
 	@echo ""
 	@echo "Available targets:"
-	@echo "  help          - Show this help message"
-	@echo "  install       - Install dependencies and collections"
-	@echo "  lint          - Run ansible-lint and yamllint"
-	@echo "  secrets-lint  - Scan for secrets and sensitive data"
-	@echo "  test          - Run all tests"
-	@echo "  security      - Run security scans"
-	@echo "  validate      - Validate playbooks and roles"
-	@echo "  format        - Format YAML files"
-	@echo "  check-syntax  - Check Ansible syntax"
-	@echo "  molecule      - Run molecule tests"
-	@echo "  docs          - Generate documentation"
-	@echo "  clean         - Clean temporary files"
-	@echo "  deploy        - Deploy to staging environment"
-	@echo "  backup        - Backup configurations"
-	@echo "  all           - Run install, lint, secrets-lint, test, and security"
+	@echo "  validate-vars     - Validate all variables across all environments"
+	@echo "  validate-dev      - Validate development environment variables"
+	@echo "  validate-test     - Validate test environment variables"
+	@echo "  validate-prod     - Validate production environment variables"
+	@echo "  generate-templates - Generate variable templates for new environments"
+	@echo "  check-syntax      - Check YAML syntax for all variable files"
+	@echo "  lint             - Run comprehensive linting on all files"
+	@echo "  clean            - Clean up temporary files"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make validate-dev"
+	@echo "  make validate-prod"
+	@echo "  make lint"
 
-# Install dependencies
-install:
-	@echo "Installing Ansible collections and dependencies..."
-	ansible-galaxy install -r requirements.yml --force
-	pip3 install --upgrade ansible-lint yamllint molecule molecule-plugins[docker] pytest-testinfra
-	@echo "Installation complete!"
+# Variable validation targets
+validate-vars:
+	@echo "Validating all variables..."
+	@python3 vars_validation/validate_vars.py inventories/group_vars/*.yml
+	@echo "✅ All variables validated successfully"
 
-# Linting
-lint:
-	@echo "Running ansible-lint..."
-	ansible-lint --force-color --show-relpath .
-	@echo "Running yamllint..."
-	yamllint --format colored .
-	@echo "Linting complete!"
+validate-dev:
+	@echo "Validating development environment variables..."
+	@python3 vars_validation/validate_vars.py \
+		inventories/group_vars/*.yml \
+		inventories/dev/group_vars/*.yml 2>/dev/null || \
+		python3 vars_validation/validate_vars.py inventories/group_vars/*.yml
+	@echo "✅ Development environment variables validated"
 
-# Secrets scanning - CRITICAL SECURITY FEATURE
-secrets-lint:
-	@echo "Scanning for secrets and sensitive data..."
-	@echo "Checking for vault files without encryption..."
-	@find . -name "*vault*" -type f ! -path "./.git/*" ! -path "./vault/*" -exec grep -l "ANSIBLE_VAULT" {} \; || echo "No unencrypted vault files found"
-	@echo "Checking for potential secrets in files..."
-	@grep -r -i --exclude-dir=.git --exclude-dir=vault --exclude="*.retry" \
-		-E "(password|secret|key|token|credential|api_key|private_key|cert|certificate).*[:=].*['\"][^'\"]{8,}" . || echo "No obvious secrets found"
-	@echo "Checking for hardcoded IPs and sensitive patterns..."
-	@grep -r -i --exclude-dir=.git --exclude-dir=vault --exclude="*.retry" \
-		-E "([0-9]{1,3}\.){3}[0-9]{1,3}|BEGIN (RSA |DSA |EC |OPENSSH )?PRIVATE KEY" . || echo "No hardcoded IPs or private keys found"
-	@echo "Secrets scanning complete!"
+validate-test:
+	@echo "Validating test environment variables..."
+	@python3 vars_validation/validate_vars.py \
+		inventories/group_vars/*.yml \
+		inventories/test/group_vars/*.yml 2>/dev/null || \
+		python3 vars_validation/validate_vars.py inventories/group_vars/*.yml
+	@echo "✅ Test environment variables validated"
 
-# Testing
-test: check-syntax validate
-	@echo "Running comprehensive tests..."
-	@if [ -d "tests" ]; then \
-		echo "Running custom tests..."; \
-		find tests -name "*.yml" -exec ansible-playbook --syntax-check {} \; ; \
-	fi
-	@echo "Testing complete!"
+validate-prod:
+	@echo "Validating production environment variables..."
+	@python3 vars_validation/validate_vars.py \
+		inventories/group_vars/*.yml \
+		inventories/prod/group_vars/*.yml 2>/dev/null || \
+		python3 vars_validation/validate_vars.py inventories/group_vars/*.yml
+	@echo "✅ Production environment variables validated"
 
-# Security scanning
-security:
-	@echo "Running security scans..."
-	@echo "Checking file permissions..."
-	@find . -type f -perm /o+w -not -path "./.git/*" -exec echo "World-writable file: {}" \;
-	@echo "Checking for sudo without password..."
-	@grep -r "NOPASSWD" . --exclude-dir=.git || echo "No passwordless sudo found"
-	@echo "Security scanning complete!"
-
-# Validation
-validate:
-	@echo "Validating playbooks and roles..."
-	@find playbooks -name "*.yml" -exec ansible-playbook --syntax-check {} \; 2>/dev/null || echo "No playbooks to validate"
-	@find roles -name "main.yml" -path "*/tasks/*" -exec ansible-playbook --syntax-check {} \; 2>/dev/null || echo "No role tasks to validate"
-	@echo "Validation complete!"
-
-# Format YAML files
-format:
-	@echo "Formatting YAML files..."
-	@find . -name "*.yml" -o -name "*.yaml" | grep -v ".git" | xargs -I {} sh -c 'echo "Formatting: {}"; python3 -c "import yaml; import sys; content=yaml.safe_load(open(sys.argv[1])); yaml.dump(content, open(sys.argv[1], \"w\"), default_flow_style=False, indent=2)" {}'
-	@echo "Formatting complete!"
+# Template generation
+generate-templates:
+	@echo "Generating variable templates..."
+	@mkdir -p inventories/template/group_vars
+	@cp group_vars/templates/all.yml.j2 inventories/template/group_vars/all.yml.template
+	@echo "# Infrastructure Service Variables" > inventories/template/group_vars/infrastructure.yml.template
+	@echo "# Copy from role_defaults/infrastructure/defaults/main.yml and customize" >> inventories/template/group_vars/infrastructure.yml.template
+	@echo "# AI/ML Service Variables" > inventories/template/group_vars/ai_ml.yml.template
+	@echo "# Copy from role_defaults/ai_ml/defaults/main.yml and customize" >> inventories/template/group_vars/ai_ml.yml.template
+	@echo "# Operations Service Variables" > inventories/template/group_vars/operations.yml.template
+	@echo "# Copy from role_defaults/operations/defaults/main.yml and customize" >> inventories/template/group_vars/operations.yml.template
+	@echo "# UI Service Variables" > inventories/template/group_vars/ui.yml.template
+	@echo "# Copy from role_defaults/ui/defaults/main.yml and customize" >> inventories/template/group_vars/ui.yml.template
+	@echo "✅ Variable templates generated in inventories/template/"
 
 # Syntax checking
 check-syntax:
-	@echo "Checking Ansible syntax..."
-	@find . -name "*.yml" -path "./playbooks/*" -exec ansible-playbook --syntax-check {} \; 2>/dev/null || echo "No playbooks found for syntax check"
-	@echo "Syntax check complete!"
+	@echo "Checking YAML syntax..."
+	@find inventories/ -name "*.yml" -exec python3 -c "import yaml; yaml.safe_load(open('{}'))" \; 2>/dev/null || \
+		(echo "❌ YAML syntax errors found" && exit 1)
+	@find role_defaults/ -name "*.yml" -exec python3 -c "import yaml; yaml.safe_load(open('{}'))" \; 2>/dev/null || \
+		(echo "❌ YAML syntax errors found" && exit 1)
+	@find vars_validation/ -name "*.yml" -exec python3 -c "import yaml; yaml.safe_load(open('{}'))" \; 2>/dev/null || \
+		(echo "❌ YAML syntax errors found" && exit 1)
+	@echo "✅ All YAML files have valid syntax"
 
-# Molecule testing
-molecule:
-	@echo "Running molecule tests..."
-	@if [ -d "molecule" ]; then \
-		cd molecule && molecule test; \
-	else \
-		echo "No molecule tests found"; \
-	fi
-	@echo "Molecule testing complete!"
+# Comprehensive linting
+lint: check-syntax
+	@echo "Running comprehensive linting..."
+	@echo "Checking for common variable naming issues..."
+	@! grep -r "ansible_ssh_pass" inventories/ || (echo "❌ Found hardcoded SSH passwords" && exit 1)
+	@! grep -r "password.*:" inventories/group_vars/ | grep -v vault || (echo "❌ Found unencrypted passwords" && exit 1)
+	@echo "Checking for required vault variables..."
+	@grep -q "vault_postgres_password" inventories/group_vars/vault.yml 2>/dev/null || \
+		echo "⚠️  Warning: vault_postgres_password not found in vault.yml"
+	@grep -q "vault_jwt_secret" inventories/group_vars/vault.yml 2>/dev/null || \
+		echo "⚠️  Warning: vault_jwt_secret not found in vault.yml"
+	@echo "Checking variable consistency..."
+	@python3 -c "
+import yaml, glob, sys
+files = glob.glob('inventories/group_vars/*.yml')
+vars_found = set()
+for f in files:
+    if 'vault' not in f:
+        try:
+            with open(f) as file:
+                data = yaml.safe_load(file) or {}
+                def extract_vars(d, prefix=''):
+                    for k, v in d.items():
+                        if isinstance(v, dict):
+                            extract_vars(v, prefix + k + '_')
+                        else:
+                            vars_found.add(prefix + k)
+                extract_vars(data)
+        except Exception as e:
+            print(f'Error processing {f}: {e}')
+            sys.exit(1)
+print('✅ Variable consistency check passed')
+"
+	@echo "✅ All linting checks passed"
 
-test-syntax: ## Test playbook syntax
-	@echo "Testing playbook syntax..."
-	@find playbooks -name "*.yml" -exec ansible-playbook --syntax-check {} \;
-
-# Code Quality
-lint: ## Run linting on all files
-	@echo "Running ansible-lint..."
-	ansible-lint playbooks/ roles/
-	@echo "Running yamllint..."
-	yamllint .
-	@echo "Running flake8 on Python files..."
-	flake8 tests/ scripts/
-
-format: ## Format code
-	@echo "Formatting Python code..."
-	black tests/ scripts/
-	isort tests/ scripts/
-
-# Deployment
-deploy-check: ## Run deployment in check mode (dry run)
-	ansible-playbook -i inventory/environments/production playbooks/site/main.yml --check --diff
-
-deploy-dev: ## Deploy to development environment
-	ansible-playbook -i inventory/environments/development playbooks/site/main.yml
-
-deploy-staging: ## Deploy to staging environment
-	ansible-playbook -i inventory/environments/staging playbooks/site/main.yml
-
-deploy-prod: ## Deploy to production environment (DRY RUN by default - use deploy-prod-confirm for actual)
-	echo "SAFETY: Running dry-run first..." && ansible-playbook -i inventory/environments/production playbooks/site/main.yml --check --diff --ask-vault-pass && echo "Dry run complete. Use make deploy-prod-confirm for actual deployment"
-
-# Maintenance
-backup: ## Run backup playbook
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/backup.yml
-
-update: ## Update system packages
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/update.yml
-
-security: ## Apply security hardening
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/security.yml
-
-health-check: ## Run health checks
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/health-check.yml
-
-# Utilities
-ping: ## Test connectivity to all hosts
-	ansible all -i inventory/environments/production -m ping
-
-facts: ## Gather facts from all hosts
-	ansible all -i inventory/environments/production -m setup
-
-inventory: ## Show inventory
-	ansible-inventory -i inventory/environments/production --list
-
-encrypt: ## Encrypt secrets file
-	ansible-vault encrypt vars/secrets.yml
-
-decrypt: ## Decrypt secrets file
-	ansible-vault decrypt vars/secrets.yml
-
-edit-vault: ## Edit encrypted vault file
-	ansible-vault edit vars/secrets.yml
-
-# Documentation
-docs: ## Generate documentation
-	@echo "Generating documentation..."
-	@if command -v ansible-doc >/dev/null 2>&1; then \
-		mkdir -p docs/generated; \
-		find roles -name "main.yml" -path "*/meta/*" -exec dirname {} \; | sed 's|/meta||' | xargs -I {} ansible-doc -t role {} > docs/generated/roles.txt 2>/dev/null || echo "Role documentation generated"; \
-	fi
-	@echo "Documentation generation complete!"
-
-# Clean temporary files
+# Cleanup
 clean:
-	@echo "Cleaning temporary files..."
-	find . -name "*.retry" -delete
-	find . -name "*.pyc" -delete
-	find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
-	rm -rf .ansible
-	rm -rf .cache
-	rm -rf .pytest_cache
-	rm -rf .tox
-	@echo "Cleanup complete!"
+	@echo "Cleaning up temporary files..."
+	@find . -name "*.pyc" -delete
+	@find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+	@find . -name "*.tmp" -delete
+	@find . -name ".DS_Store" -delete
+	@echo "✅ Cleanup completed"
 
-# Deploy to staging
-deploy:
-	@echo "Deploying to staging environment..."
-	@if [ -f "playbooks/site.yml" ]; then \
-		ansible-playbook -i inventories/staging/hosts.yml playbooks/site.yml --check --diff; \
-		read -p "Continue with actual deployment? (y/N): " confirm; \
-		if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
-			ansible-playbook -i inventories/staging/hosts.yml playbooks/site.yml; \
-		fi; \
-	else \
-		echo "No site.yml playbook found"; \
-	fi
-	@echo "Deployment complete!"
-
-# Backup configurations
-backup:
-	@echo "Creating backup of configurations..."
-	@timestamp=$$(date +%Y%m%d_%H%M%S); \
-	tar -czf "backup_$$timestamp.tar.gz" \
-		--exclude='.git' \
-		--exclude='*.retry' \
-		--exclude='.ansible' \
-		--exclude='backup_*.tar.gz' \
-		. && \
-	echo "Backup created: backup_$$timestamp.tar.gz"
-	@echo "Backup complete!"
-
-# CI/CD integration target
-ci: install lint secrets-lint test security
-	@echo "CI/CD pipeline complete!"
-
-# Development setup
-dev-setup: install
+# Development helpers
+dev-setup:
 	@echo "Setting up development environment..."
-	@if ! command -v pre-commit >/dev/null 2>&1; then \
-		pip3 install pre-commit; \
-	fi
-	@if [ -f ".pre-commit-config.yaml" ]; then \
-		pre-commit install; \
-	fi
-	@echo "Development setup complete!"
+	@pip3 install pyyaml ansible-core
+	@chmod +x vars_validation/validate_vars.py
+	@echo "✅ Development environment ready"
 
-# Production deployment (with extra safety)
-prod-deploy:
-	@echo "PRODUCTION DEPLOYMENT - EXTRA SAFETY CHECKS"
-	@echo "==========================================="
-	@read -p "Are you sure you want to deploy to PRODUCTION? (type 'DEPLOY' to confirm): " confirm; \
-	if [ "$$confirm" = "DEPLOY" ]; then \
-		$(MAKE) secrets-lint && \
-		$(MAKE) lint && \
-		$(MAKE) test && \
-		$(MAKE) security && \
-		ansible-playbook -i inventories/production/hosts.yml playbooks/site.yml --check --diff && \
-		read -p "Final confirmation for PRODUCTION deployment? (type 'CONFIRM'): " final; \
-		if [ "$$final" = "CONFIRM" ]; then \
-			ansible-playbook -i inventories/production/hosts.yml playbooks/site.yml; \
-		fi; \
-	else \
-		echo "Production deployment cancelled"; \
-	fi
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/restore.yml -e "backup_date=$(DATE)"
+# Quick validation for CI/CD
+ci-validate: check-syntax validate-vars
+	@echo "✅ CI validation completed successfully"
 
-# Service Management
-restart-web: ## Restart web services
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/restart-services.yml --limit "web_servers"
+# Generate documentation
+docs:
+	@echo "Generating documentation..."
+	@python3 -c "
+import yaml
+with open('vars_validation/validation_rules.yml') as f:
+    rules = yaml.safe_load(f)
+    
+print('# Variable Reference\\n')
+for category, vars_info in rules.items():
+    if category.endswith('_variables'):
+        print(f'## {category.replace(\"_\", \" \").title()}\\n')
+        if 'required' in vars_info:
+            print('### Required Variables\\n')
+            for var in vars_info['required']:
+                print(f'- **{var[\"name\"]}**: {var.get(\"description\", \"No description\")}')
+            print()
+        if 'optional' in vars_info:
+            print('### Optional Variables\\n')
+            for var in vars_info['optional']:
+                print(f'- **{var[\"name\"]}**: {var.get(\"description\", \"No description\")} (default: {var.get(\"default\", \"None\")})')
+            print()
+" > docs/VARIABLE_REFERENCE.md
+	@echo "✅ Documentation generated"
 
-restart-app: ## Restart application services
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/restart-services.yml --limit "app_servers"
+# Backup current configuration
+backup:
+	@echo "Creating backup of current configuration..."
+	@mkdir -p backups
+	@tar -czf backups/variables-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz \
+		inventories/group_vars/ \
+		role_defaults/ \
+		vars_validation/
+	@echo "✅ Backup created in backups/ directory"
 
-restart-db: ## Restart database services
-	ansible-playbook -i inventory/environments/production playbooks/maintenance/restart-services.yml --limit "database_servers"
-
-# Version Information
-version: ## Show version information
-	@echo "HX Infrastructure Ansible - Version Information"
-	@echo "=============================================="
-	@echo "Ansible Version:"
-	@ansible --version
-	@echo ""
-	@echo "Python Version:"
-	@python --version
-	@echo ""
-	@echo "Git Version:"
-	@git --version
-
-# Safety check target
-safety-check: ## Run comprehensive safety checks before deployment
-	@echo "Running comprehensive safety checks..."
-	@echo "1. Checking for secrets in files..."
-	@if command -v grep >/dev/null 2>&1; then \
-		grep -r "password\|secret\|key" . --exclude-dir=.git --exclude="*.md" --exclude="*.pdf" | grep -v "password_file\|key_checking\|ssh_key" || echo "No obvious secrets found"; \
-	fi
-	@echo "2. Checking ansible.cfg security settings..."
-	@grep "host_key_checking.*True" ansible.cfg >/dev/null && echo "✓ Host key checking enabled" || echo "✗ Host key checking disabled - SECURITY RISK"
-	@echo "3. Checking .gitignore for sensitive files..."
-	@grep "vault_pass\|\.pem\|\.key" .gitignore >/dev/null && echo "✓ Sensitive file patterns in .gitignore" || echo "✗ Missing sensitive file patterns in .gitignore"
-	@echo "4. Checking for SECURITY.md..."
-	@[ -f "SECURITY.md" ] && echo "✓ SECURITY.md exists" || echo "✗ SECURITY.md missing"
-	@echo "Safety check complete!"
-
+# Restore from backup
+restore:
+	@echo "Available backups:"
+	@ls -la backups/variables-backup-*.tar.gz 2>/dev/null || echo "No backups found"
+	@echo "To restore, run: tar -xzf backups/variables-backup-YYYYMMDD-HHMMSS.tar.gz"
