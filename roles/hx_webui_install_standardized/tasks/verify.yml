@@ -1,0 +1,130 @@
+
+---
+- name: "Hx | Web UI | Verify web server service is running"
+  service:
+    name: "{{ hx_webui_service_name[hx_webui_server_type] }}"
+    state: started
+    enabled: true
+  vars:
+    hx_webui_service_name:
+      nginx: "nginx"
+      apache: "apache2"
+      custom: "{{ hx_webui_app_name }}"
+  tags: ['verify']
+
+- name: "Hx | Web UI | Test HTTP connection"
+  uri:
+    url: "http://{{ hx_webui_server_name }}:{{ hx_webui_listen_port }}"
+    method: GET
+    timeout: 10
+    status_code: [200, 301, 302]
+  register: hx_webui_http_test
+  tags: ['verify']
+
+- name: "Hx | Web UI | Test HTTPS connection"
+  uri:
+    url: "https://{{ hx_webui_server_name }}:{{ hx_webui_ssl_port }}"
+    method: GET
+    timeout: 10
+    status_code: [200, 301, 302]
+    validate_certs: false
+  register: hx_webui_https_test
+  when: hx_webui_ssl_enabled | default(false) | bool
+  tags: ['verify']
+
+- name: "Hx | Web UI | Test health check endpoint"
+  uri:
+    url: "http://{{ hx_webui_server_name }}:{{ hx_webui_listen_port }}{{ hx_webui_health_check_path }}"
+    method: GET
+    timeout: 5
+    status_code: 200
+  when: hx_webui_health_check_enabled | default(false) | bool
+  tags: ['verify']
+
+- name: "Hx | Web UI | Verify static file serving"
+  uri:
+    url: "http://{{ hx_webui_server_name }}:{{ hx_webui_listen_port }}{{ item.path }}/test.txt"
+    method: GET
+    timeout: 5
+    status_code: [200, 404]  # 404 is acceptable if test file doesn't exist
+  loop: "{{ hx_webui_static_dirs }}"
+  failed_when: false
+  tags: ['verify']
+
+- name: "Hx | Web UI | Check configuration syntax"
+  command: "{{ hx_webui_test_command[hx_webui_server_type] }}"
+  vars:
+    hx_webui_test_command:
+      nginx: "nginx -t"
+      apache: "apache2ctl configtest"
+      custom: "echo 'Configuration test not available for custom server'"
+  changed_when: false
+  tags: ['verify']
+
+- name: "Hx | Web UI | Verify SSL certificate"
+  openssl_certificate_info:
+    path: "{{ hx_webui_ssl_cert_file }}"
+  register: hx_webui_cert_info
+  when: hx_webui_ssl_enabled | default(false) | bool
+  tags: ['verify']
+
+- name: "Hx | Web UI | Check SSL certificate expiration"
+  assert:
+    that:
+      - hx_webui_cert_info.not_after | to_datetime('%Y%m%d%H%M%SZ') > (ansible_date_time.epoch | int + 86400 * 30) | to_datetime('%s')
+    fail_msg: "SSL certificate expires within 30 days"
+    success_msg: "SSL certificate is valid for more than 30 days"
+  when: 
+    - hx_webui_ssl_enabled | default(false) | bool
+    - hx_webui_cert_info is defined
+  tags: ['verify']
+
+- name: "Hx | Web UI | Verify log files are being created"
+  stat:
+    path: "{{ item }}"
+  register: hx_webui_log_files
+  loop:
+    - "{{ hx_webui_access_log }}"
+    - "{{ hx_webui_error_log }}"
+  tags: ['verify']
+
+- name: "Hx | Web UI | Check log file permissions"
+  assert:
+    that:
+      - item.stat.exists
+      - item.stat.mode == "0644" or item.stat.mode == "0640"
+    fail_msg: "Log file {{ item.item }} has incorrect permissions"
+    success_msg: "Log file {{ item.item }} has correct permissions"
+  loop: "{{ hx_webui_log_files.results }}"
+  when: item.stat.exists
+  tags: ['verify']
+
+- name: "Hx | Web UI | Test security headers"
+  uri:
+    url: "http://{{ hx_webui_server_name }}:{{ hx_webui_listen_port }}"
+    method: HEAD
+    timeout: 5
+  register: hx_webui_headers_test
+  tags: ['verify']
+
+- name: "Hx | Web UI | Verify security headers are present"
+  assert:
+    that:
+      - "'x-frame-options' in hx_webui_headers_test.headers or 'X-Frame-Options' in hx_webui_headers_test.headers"
+      - "'x-content-type-options' in hx_webui_headers_test.headers or 'X-Content-Type-Options' in hx_webui_headers_test.headers"
+    fail_msg: "Required security headers are missing"
+    success_msg: "Security headers are properly configured"
+  tags: ['verify']
+
+- name: "Hx | Web UI | Display verification summary"
+  debug:
+    msg:
+      - "Web UI verification completed successfully"
+      - "Server type: {{ hx_webui_server_type }}"
+      - "Server name: {{ hx_webui_server_name }}"
+      - "HTTP status: {{ hx_webui_http_test.status | default('unknown') }}"
+      - "HTTPS enabled: {{ hx_webui_ssl_enabled | default(false) }}"
+      - "HTTPS status: {{ hx_webui_https_test.status | default('N/A') }}"
+      - "Health check enabled: {{ hx_webui_health_check_enabled | default(false) }}"
+      - "Security headers configured: {{ hx_webui_security_headers | length }}"
+  tags: ['verify']

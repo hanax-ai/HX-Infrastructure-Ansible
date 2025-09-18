@@ -1,0 +1,63 @@
+
+---
+- name: "Hx | PostgreSQL Auth | Ensure PostgreSQL extensions are installed"
+  package:
+    name:
+      - postgresql-contrib
+      - postgresql-client
+    state: present
+  tags: ['install']
+
+- name: "Hx | PostgreSQL Auth | Install additional security packages"
+  package:
+    name:
+      - fail2ban
+      - logrotate
+    state: present
+  tags: ['install']
+
+- name: "Hx | PostgreSQL Auth | Configure fail2ban for PostgreSQL"
+  template:
+    src: postgresql-fail2ban.conf.j2
+    dest: /etc/fail2ban/jail.d/postgresql.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart fail2ban
+  tags: ['install']
+
+- name: "Hx | PostgreSQL Auth | Configure logrotate for PostgreSQL"
+  template:
+    src: postgresql-logrotate.j2
+    dest: /etc/logrotate.d/postgresql
+    owner: root
+    group: root
+    mode: '0644'
+  tags: ['install']
+
+- name: "Hx | PostgreSQL Auth | Create monitoring user"
+  postgresql_user:
+    name: "monitoring"
+    password: "{{ vault_monitoring_password | default('monitoring_change_me') }}"
+    role_attr_flags: "NOSUPERUSER,NOCREATEDB,NOCREATEROLE"
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  become: true
+  become_user: postgres
+  when: "'CHANGE_ME' not in (vault_monitoring_password | default('monitoring_change_me'))"
+  tags: ['install']
+
+- name: "Hx | PostgreSQL Auth | Grant monitoring permissions"
+  postgresql_privs:
+    database: "postgres"
+    roles: "monitoring"
+    privs: "CONNECT"
+    type: "database"
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  become: true
+  become_user: postgres
+  when: "'CHANGE_ME' not in (vault_monitoring_password | default('monitoring_change_me'))"
+  tags: ['install']

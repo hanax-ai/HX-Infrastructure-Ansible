@@ -1,26 +1,45 @@
+
 ---
 galaxy_info:
   author: HX Infrastructure Team
-  description: Standardized LiteLLM Proxy installation with enhanced security and validation
-  company: Hanax AI
+  description: Enterprise LiteLLM proxy with multi-provider support
+  company: HX AI
   license: MIT
   min_ansible_version: "2.12"
+  
   platforms:
     - name: Ubuntu
       versions:
-        - "20.04"
-        - "22.04"
-        - "24.04"
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+
   galaxy_tags:
-    - litellm
-    - proxy
     - llm
     - ai
-    - standardized
+    - proxy
+    - openai
+    - anthropic
+    - machine-learning
 
-dependencies: []
+dependencies:
+  - role: geerlingguy.postgresql
+    when: hx_litellm_database_enabled | default(false)
+    vars:
+      postgresql_version: "14"
+      postgresql_databases:
+        - name: "{{ hx_litellm_database_name | default('litellm') }}"
+          owner: "{{ hx_litellm_database_user | default('litellm') }}"
+      postgresql_users:
+        - name: "{{ hx_litellm_database_user | default('litellm') }}"
+          password: "{{ vault_litellm_db_password | default('CHANGE_ME_VAULT_REQUIRED') }}"
+          priv: "ALL"
 
 collections:
+  - community.postgresql
+  - community.docker
   - community.general
   - ansible.posix
-  - community.postgresql

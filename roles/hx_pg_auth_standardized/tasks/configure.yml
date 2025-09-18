@@ -1,0 +1,101 @@
+
+---
+- name: "Hx | PostgreSQL Auth | Configure postgresql.conf"
+  template:
+    src: postgresql.conf.j2
+    dest: "{{ hx_pg_config_dir }}/postgresql.conf"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+    backup: true
+  notify: restart postgresql
+  tags: ['configure']
+
+- name: "Hx | PostgreSQL Auth | Configure pg_hba.conf"
+  template:
+    src: pg_hba.conf.j2
+    dest: "{{ hx_pg_config_dir }}/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: '0640'
+    backup: true
+  notify: reload postgresql
+  tags: ['configure']
+
+- name: "Hx | PostgreSQL Auth | Create databases"
+  postgresql_db:
+    name: "{{ item.name }}"
+    owner: "{{ item.owner | default(omit) }}"
+    encoding: "{{ item.encoding | default('UTF8') }}"
+    lc_collate: "{{ item.lc_collate | default('en_US.UTF-8') }}"
+    lc_ctype: "{{ item.lc_ctype | default('en_US.UTF-8') }}"
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  loop: "{{ hx_pg_databases }}"
+  become: true
+  become_user: postgres
+  when: hx_pg_databases | length > 0
+  tags: ['configure']
+
+- name: "Hx | PostgreSQL Auth | Create database users"
+  postgresql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    role_attr_flags: "{{ item.role_attr_flags | default('NOSUPERUSER') }}"
+    db: "{{ item.db | default(omit) }}"
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+    expires: "{{ item.expires | default(omit) }}"
+  loop: "{{ hx_pg_users }}"
+  become: true
+  become_user: postgres
+  when: 
+    - hx_pg_users | length > 0
+    - "'CHANGE_ME' not in item.password"
+  no_log: true
+  tags: ['configure']
+
+- name: "Hx | PostgreSQL Auth | Grant database privileges"
+  postgresql_privs:
+    database: "{{ item.db }}"
+    roles: "{{ item.name }}"
+    privs: "{{ item.priv | default('ALL') }}"
+    type: "database"
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  loop: "{{ hx_pg_users }}"
+  become: true
+  become_user: postgres
+  when: 
+    - hx_pg_users | length > 0
+    - item.db is defined
+    - "'CHANGE_ME' not in item.password"
+  tags: ['configure']
+
+- name: "Hx | PostgreSQL Auth | Create backup user"
+  postgresql_user:
+    name: "{{ hx_pg_backup_user }}"
+    password: "{{ hx_pg_backup_password }}"
+    role_attr_flags: "NOSUPERUSER,NOCREATEDB,NOCREATEROLE,REPLICATION"
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  become: true
+  become_user: postgres
+  when: "'CHANGE_ME' not in hx_pg_backup_password"
+  no_log: true
+  tags: ['configure']
+
+- name: "Hx | PostgreSQL Auth | Validate configuration syntax"
+  command: >
+    {{ postgresql_bin_path | default('/usr/lib/postgresql/14/bin') }}/postgres
+    --config-file={{ hx_pg_config_dir }}/postgresql.conf
+    --check-config
+  become: true
+  become_user: postgres
+  when: hx_pg_validate_config | default(true) | bool
+  changed_when: false
+  tags: ['configure']

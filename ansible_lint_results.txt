@@ -1,0 +1,16 @@
+[WARNING]: log file at '/var/log/ansible.log' is not writeable and we cannot create it, aborting
+
+usage: ansible-lint [-h] [-P | -L | -T]
+                    [-f {brief,full,md,json,codeclimate,quiet,pep8,sarif}]
+                    [--sarif-file SARIF_FILE] [-q]
+                    [--profile {min,basic,moderate,safety,shared,production}]
+                    [-p] [--project-dir PROJECT_DIR] [-r RULESDIR] [-R] [-s]
+                    [--fix [WRITE_LIST]] [--show-relpath] [-t TAGS] [-v]
+                    [-x SKIP_LIST] [--generate-ignore] [-w WARN_LIST]
+                    [--enable-list ENABLE_LIST] [--nocolor] [--force-color]
+                    [--exclude EXCLUDE_PATHS [EXCLUDE_PATHS ...]]
+                    [-c CONFIG_FILE] [-i IGNORE_FILE]
+                    [--yamllint-file YAMLLINT_FILE] [--offline | --no-offline]
+                    [--version]
+                    [lintables ...]
+ansible-lint: error: argument -f/--format: invalid choice: 'parsable' (choose from 'brief', 'full', 'md', 'json', 'codeclimate', 'quiet', 'pep8', 'sarif')

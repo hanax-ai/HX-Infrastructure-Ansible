@@ -1,0 +1,78 @@
+
+---
+# PostgreSQL Authentication Role - Handlers
+# HX Infrastructure Ansible
+
+- name: restart postgresql
+  systemd:
+    name: postgresql
+    state: restarted
+    daemon_reload: true
+  become: true
+  listen: "restart postgresql"
+
+- name: reload postgresql
+  systemd:
+    name: postgresql
+    state: reloaded
+  become: true
+  listen: "reload postgresql"
+
+- name: restart pgbouncer
+  systemd:
+    name: pgbouncer
+    state: restarted
+    daemon_reload: true
+  become: true
+  when: hx_pg_enable_connection_pooling | default(false)
+  listen: "restart pgbouncer"
+
+- name: reload pgbouncer
+  systemd:
+    name: pgbouncer
+    state: reloaded
+  become: true
+  when: hx_pg_enable_connection_pooling | default(false)
+  listen: "reload pgbouncer"
+
+- name: validate postgresql config
+  command: >
+    sudo -u postgres {{ postgresql_bin_path | default('/usr/bin') }}/postgres
+    --config-file={{ hx_pg_data_directory }}/postgresql.conf
+    --check-config
+  become: true
+  register: pg_config_validation
+  failed_when: pg_config_validation.rc != 0
+  listen: "validate postgresql config"
+
+- name: backup postgresql config
+  copy:
+    src: "{{ hx_pg_data_directory }}/{{ item }}"
+    dest: "{{ hx_pg_backup_directory }}/config_backup_{{ ansible_date_time.epoch }}_{{ item }}"
+    remote_src: true
+    owner: postgres
+    group: postgres
+    mode: '0600'
+  become: true
+  loop:
+    - postgresql.conf
+    - pg_hba.conf
+    - pg_ident.conf
+  listen: "backup postgresql config"
+
+- name: update postgresql statistics
+  postgresql_query:
+    db: postgres
+    query: "ANALYZE;"
+  become: true
+  become_user: postgres
+  listen: "update postgresql statistics"
+
+- name: refresh postgresql extensions
+  postgresql_query:
+    db: "{{ item.database }}"
+    query: "CREATE EXTENSION IF NOT EXISTS {{ item.name }};"
+  become: true
+  become_user: postgres
+  loop: "{{ hx_pg_extensions | default([]) }}"
+  listen: "refresh postgresql extensions"

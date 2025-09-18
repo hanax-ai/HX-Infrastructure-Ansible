@@ -1,0 +1,149 @@
+
+---
+- name: "Hx | LiteLLM | Generate main configuration file"
+  template:
+    src: config.yaml.j2
+    dest: "{{ hx_litellm_config_dir }}/config.yaml"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0640"
+    backup: true
+  notify: restart litellm
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Create database schema"
+  command: >
+    {{ hx_litellm_venv_path }}/bin/litellm --config {{ hx_litellm_config_dir }}/config.yaml --create_db
+  become_user: "{{ hx_litellm_user }}"
+  when: 
+    - hx_litellm_database_enabled | default(false) | bool
+    - hx_litellm_install_method == "pip"
+  changed_when: false
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Create model configuration files"
+  template:
+    src: models.yaml.j2
+    dest: "{{ hx_litellm_config_dir }}/models.yaml"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0640"
+    backup: true
+  notify: restart litellm
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Create router configuration"
+  template:
+    src: router.yaml.j2
+    dest: "{{ hx_litellm_config_dir }}/router.yaml"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0640"
+    backup: true
+  when: hx_litellm_load_balancing_enabled | default(false) | bool
+  notify: restart litellm
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Create API keys configuration"
+  template:
+    src: api-keys.yaml.j2
+    dest: "{{ hx_litellm_config_dir }}/api-keys.yaml"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0600"
+    backup: true
+  when: hx_litellm_api_keys | length > 0
+  notify: restart litellm
+  no_log: true
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Create rate limiting configuration"
+  template:
+    src: rate-limits.yaml.j2
+    dest: "{{ hx_litellm_config_dir }}/rate-limits.yaml"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0640"
+    backup: true
+  when: hx_litellm_rate_limiting_enabled | default(false) | bool
+  notify: restart litellm
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Create logging configuration"
+  template:
+    src: logging.yaml.j2
+    dest: "{{ hx_litellm_config_dir }}/logging.yaml"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0644"
+    backup: true
+  notify: restart litellm
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Create monitoring configuration"
+  template:
+    src: monitoring.yaml.j2
+    dest: "{{ hx_litellm_config_dir }}/monitoring.yaml"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0644"
+    backup: true
+  when: hx_litellm_monitoring_enabled | default(false) | bool
+  notify: restart litellm
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Create custom configuration files"
+  copy:
+    content: "{{ hx_litellm_custom_config | to_nice_yaml }}"
+    dest: "{{ hx_litellm_config_dir }}/custom.yaml"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0640"
+    backup: true
+  when: hx_litellm_custom_config | length > 0
+  notify: restart litellm
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Validate configuration syntax"
+  command: >
+    {{ hx_litellm_venv_path }}/bin/python -c "
+    import yaml
+    with open('{{ hx_litellm_config_dir }}/config.yaml', 'r') as f:
+        yaml.safe_load(f)
+    print('Configuration syntax is valid')
+    "
+  become_user: "{{ hx_litellm_user }}"
+  when: hx_litellm_install_method == "pip"
+  changed_when: false
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Create SSL certificates directory"
+  file:
+    path: "{{ item | dirname }}"
+    state: directory
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0750"
+  loop:
+    - "{{ hx_litellm_ssl_cert_file }}"
+    - "{{ hx_litellm_ssl_key_file }}"
+  when: hx_litellm_ssl_enabled | default(false) | bool
+  tags: ['configure']
+
+- name: "Hx | LiteLLM | Set SSL certificate permissions"
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ hx_litellm_ssl_cert_file }}"
+      owner: "{{ hx_litellm_user }}"
+      group: "{{ hx_litellm_group }}"
+      mode: "0644"
+    - path: "{{ hx_litellm_ssl_key_file }}"
+      owner: "{{ hx_litellm_user }}"
+      group: "{{ hx_litellm_group }}"
+      mode: "0600"
+  when: hx_litellm_ssl_enabled | default(false) | bool
+  tags: ['configure']

@@ -1,253 +1,59 @@
 
 ---
-# Validation tasks for hx_pg_auth_standardized role
-# Comprehensive input validation and system compatibility checks
-
-- name: Validate PostgreSQL version
-  ansible.builtin.assert:
+- name: "Hx | PostgreSQL Auth | Validate required variables"
+  assert:
     that:
-      - hx_pg_auth_version is defined
-      - hx_pg_auth_version | string | regex_search('^\d+(\.\d+)?$')
-      - hx_pg_auth_version | int >= 12
-      - hx_pg_auth_version | int <= 16
-    fail_msg: "PostgreSQL version must be between 12 and 16"
-    success_msg: "PostgreSQL version validation passed"
+      - hx_pg_auth_method is defined
+      - hx_pg_auth_method in ['md5', 'scram-sha-256', 'cert', 'trust']
+      - hx_pg_port is defined
+      - hx_pg_port is number
+      - hx_pg_port > 1024
+      - hx_pg_port < 65536
+    fail_msg: "Required PostgreSQL authentication variables are missing or invalid"
+    success_msg: "PostgreSQL authentication variables validated successfully"
+  tags: ['validate']
 
-- name: Validate connection settings
-  ansible.builtin.assert:
+- name: "Hx | PostgreSQL Auth | Validate SSL configuration"
+  assert:
     that:
-      - hx_pg_auth_port | int > 1024
-      - hx_pg_auth_port | int < 65536
-      - hx_pg_auth_max_connections | int > 0
-      - hx_pg_auth_max_connections | int <= 1000
-      - hx_pg_auth_listen_addresses is defined
-      - hx_pg_auth_listen_addresses | length > 0
-    fail_msg: "Connection settings must be valid"
-    success_msg: "Connection settings validation passed"
+      - hx_pg_ssl_cert_file is defined
+      - hx_pg_ssl_key_file is defined
+    fail_msg: "SSL certificate files must be defined when SSL is enabled"
+    success_msg: "SSL configuration validated successfully"
+  when: hx_pg_ssl_enabled | default(false) | bool
+  tags: ['validate']
 
-- name: Validate memory settings
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_shared_buffers | regex_search('^\d+(MB|GB)$')
-      - hx_pg_auth_effective_cache_size | regex_search('^\d+(MB|GB)$')
-      - hx_pg_auth_work_mem | regex_search('^\d+(MB|GB|kB)$')
-      - hx_pg_auth_maintenance_work_mem | regex_search('^\d+(MB|GB)$')
-    fail_msg: "Memory settings must be in valid format (e.g., 128MB, 4GB)"
-    success_msg: "Memory settings validation passed"
-
-- name: Validate authentication methods
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_method_local in ['trust', 'reject', 'md5', 'password', 'scram-sha-256', 'gss', 'sspi', 'ident', 'peer', 'ldap', 'radius', 'cert', 'pam', 'bsd']
-      - hx_pg_auth_method_host in ['trust', 'reject', 'md5', 'password', 'scram-sha-256', 'gss', 'sspi', 'ident', 'peer', 'ldap', 'radius', 'cert', 'pam', 'bsd']
-      - hx_pg_auth_method_hostssl in ['trust', 'reject', 'md5', 'password', 'scram-sha-256', 'gss', 'sspi', 'ident', 'peer', 'ldap', 'radius', 'cert', 'pam', 'bsd']
-      - hx_pg_auth_method_hostnossl in ['trust', 'reject', 'md5', 'password', 'scram-sha-256', 'gss', 'sspi', 'ident', 'peer', 'ldap', 'radius', 'cert', 'pam', 'bsd']
-    fail_msg: "Authentication methods must be valid PostgreSQL auth methods"
-    success_msg: "Authentication methods validation passed"
-
-- name: Validate SSL configuration
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_ssl_cert_file is defined
-      - hx_pg_auth_ssl_cert_file | length > 0
-      - hx_pg_auth_ssl_key_file is defined
-      - hx_pg_auth_ssl_key_file | length > 0
-      - hx_pg_auth_ssl_min_protocol_version in ['TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3']
-    fail_msg: "SSL configuration must be properly defined"
-    success_msg: "SSL configuration validation passed"
-  when: hx_pg_auth_ssl_enabled | default(false)
-
-- name: Validate user credentials
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_superuser is defined
-      - hx_pg_auth_superuser | length > 0
-      - hx_pg_auth_superuser_password is defined
-      - hx_pg_auth_superuser_password | length >= 8
-    fail_msg: "Superuser credentials must be properly defined with minimum 8 character password"
-    success_msg: "User credentials validation passed"
-
-- name: Validate database users configuration
-  ansible.builtin.assert:
+- name: "Hx | PostgreSQL Auth | Validate user configuration"
+  assert:
     that:
       - item.name is defined
       - item.name | length > 0
       - item.password is defined
-      - item.password | length >= hx_pg_auth_password_min_length | default(8)
-      - item.role_attr_flags is defined
-      - item.db is defined
-    fail_msg: "Database user configuration is invalid for {{ item.name | default('undefined') }}"
-    success_msg: "Database user {{ item.name }} validation passed"
-  loop: "{{ hx_pg_auth_users }}"
-  when: hx_pg_auth_users | length > 0
+      - "'CHANGE_ME' not in item.password"
+    fail_msg: "User {{ item.name | default('undefined') }} has invalid configuration or default password"
+    success_msg: "User {{ item.name }} configuration validated"
+  loop: "{{ hx_pg_users }}"
+  when: hx_pg_users | length > 0
+  tags: ['validate']
 
-- name: Validate database configuration
-  ansible.builtin.assert:
+- name: "Hx | PostgreSQL Auth | Check PostgreSQL service status"
+  service_facts:
+  tags: ['validate']
+
+- name: "Hx | PostgreSQL Auth | Validate PostgreSQL is installed"
+  assert:
     that:
-      - item.name is defined
-      - item.name | length > 0
-      - item.owner is defined
-      - item.encoding in ['UTF8', 'LATIN1', 'SQL_ASCII']
-      - item.template in ['template0', 'template1']
-    fail_msg: "Database configuration is invalid for {{ item.name | default('undefined') }}"
-    success_msg: "Database {{ item.name }} validation passed"
-  loop: "{{ hx_pg_auth_databases }}"
-  when: hx_pg_auth_databases | length > 0
+      - "'postgresql' in services or 'postgresql.service' in services"
+    fail_msg: "PostgreSQL service not found. Please install PostgreSQL first."
+    success_msg: "PostgreSQL service detected"
+  tags: ['validate']
 
-- name: Validate password encryption method
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_password_encryption in ['md5', 'scram-sha-256']
-    fail_msg: "Password encryption method must be md5 or scram-sha-256"
-    success_msg: "Password encryption method validation passed"
-
-- name: Validate logging settings
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_log_statement in ['none', 'ddl', 'mod', 'all']
-      - hx_pg_auth_log_min_duration_statement | int >= -1
-      - hx_pg_auth_log_level in ['DEBUG', 'INFO', 'WARN', 'ERROR']
-    fail_msg: "Logging settings must be valid"
-    success_msg: "Logging settings validation passed"
-
-- name: Validate allowed hosts format
-  ansible.builtin.assert:
-    that:
-      - item | regex_search('^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$') or item | regex_search('^([0-9a-fA-F:]+)\/\d{1,3}$')
-    fail_msg: "Host pattern {{ item }} is not in valid CIDR format"
-    success_msg: "Host pattern {{ item }} validation passed"
-  loop: "{{ hx_pg_auth_allowed_hosts }}"
-  when: hx_pg_auth_allowed_hosts | length > 0
-
-- name: Validate backup settings
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_backup_retention_days | int > 0
-      - hx_pg_auth_backup_retention_days | int <= 365
-      - hx_pg_auth_backup_dir is defined
-      - hx_pg_auth_backup_dir | length > 0
-      - hx_pg_auth_backup_schedule | regex_search('^\S+\s+\S+\s+\S+\s+\S+\s+\S+$')
-    fail_msg: "Backup settings must be valid"
-    success_msg: "Backup settings validation passed"
-  when: hx_pg_auth_backup_enabled | default(false)
-
-- name: Validate replication settings
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_replication_user is defined
-      - hx_pg_auth_replication_user | length > 0
-      - hx_pg_auth_replication_password is defined
-      - hx_pg_auth_replication_password | length >= 8
-      - hx_pg_auth_wal_level in ['minimal', 'replica', 'logical']
-      - hx_pg_auth_max_wal_senders | int >= 0
-      - hx_pg_auth_max_wal_senders | int <= 10
-    fail_msg: "Replication settings must be valid"
-    success_msg: "Replication settings validation passed"
-  when: hx_pg_auth_replication_enabled | default(false)
-
-- name: Validate performance settings
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_checkpoint_completion_target | float > 0
-      - hx_pg_auth_checkpoint_completion_target | float <= 1.0
-      - hx_pg_auth_random_page_cost | float > 0
-      - hx_pg_auth_effective_io_concurrency | int > 0
-      - hx_pg_auth_max_worker_processes | int > 0
-      - hx_pg_auth_max_parallel_workers | int >= 0
-    fail_msg: "Performance settings must be valid"
-    success_msg: "Performance settings validation passed"
-
-- name: Validate extensions configuration
-  ansible.builtin.assert:
-    that:
-      - item.name is defined
-      - item.name | length > 0
-      - item.database is defined
-      - item.database | length > 0
-    fail_msg: "Extension configuration is invalid for {{ item.name | default('undefined') }}"
-    success_msg: "Extension {{ item.name }} validation passed"
-  loop: "{{ hx_pg_auth_extensions }}"
-  when: hx_pg_auth_extensions | length > 0
-
-- name: Validate timeout settings
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_connection_timeout | int > 0
-      - hx_pg_auth_connection_timeout | int <= 300
-      - hx_pg_auth_query_timeout | int > 0
-      - hx_pg_auth_query_timeout | int <= 3600
-    fail_msg: "Timeout settings must be positive integers within reasonable ranges"
-    success_msg: "Timeout settings validation passed"
-
-- name: Validate compliance mode
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_compliance_mode in ['standard', 'strict', 'custom']
-    fail_msg: "Compliance mode must be standard, strict, or custom"
-    success_msg: "Compliance mode validation passed"
-
-- name: Check system compatibility
-  ansible.builtin.assert:
-    that:
-      - ansible_os_family in ['Debian', 'RedHat']
-      - ansible_python_version is version('3.6', '>=')
-      - ansible_architecture in ['x86_64', 'aarch64']
-    fail_msg: "System must be Debian/RedHat family with Python 3.6+ on x86_64/aarch64"
-    success_msg: "System compatibility validation passed"
-
-- name: Check available disk space
-  ansible.builtin.shell:
-    cmd: "df {{ hx_pg_auth_data_dir | dirname }} | awk 'NR==2 {print $4}'"
-  register: available_space
-  changed_when: false
-
-- name: Validate disk space
-  ansible.builtin.assert:
-    that:
-      - available_space.stdout | int > 1048576  # At least 1GB available
-    fail_msg: "Insufficient disk space available (need at least 1GB)"
-    success_msg: "Disk space validation passed"
-
-- name: Check memory availability
-  ansible.builtin.assert:
-    that:
-      - ansible_memtotal_mb > 1024  # At least 1GB RAM
-    fail_msg: "Insufficient memory available (need at least 1GB RAM)"
-    success_msg: "Memory availability validation passed"
-
-- name: Validate notification settings
-  ansible.builtin.assert:
-    that:
-      - hx_pg_auth_notification_email | regex_search('@')
-      - hx_pg_auth_notification_events is defined
-      - hx_pg_auth_notification_events | length > 0
-    fail_msg: "Notification settings must be valid"
-    success_msg: "Notification settings validation passed"
-  when: hx_pg_auth_notifications_enabled | default(false)
-
-- name: Check for conflicting PostgreSQL installations
-  ansible.builtin.shell:
-    cmd: "ps aux | grep -v grep | grep postgres || true"
-  register: existing_postgres
-  changed_when: false
-
-- name: Warn about existing PostgreSQL processes
-  ansible.builtin.debug:
-    msg: "Warning: Existing PostgreSQL processes detected. This may cause conflicts."
-  when: 
-    - existing_postgres.stdout | length > 0
-    - "'postgres' in existing_postgres.stdout"
-
-- name: Log validation completion
-  ansible.builtin.debug:
-    msg:
-      - "PostgreSQL authentication validation completed successfully"
-      - "Version: {{ hx_pg_auth_version }}"
-      - "Port: {{ hx_pg_auth_port }}"
-      - "SSL Enabled: {{ hx_pg_auth_ssl_enabled }}"
-      - "Users to create: {{ hx_pg_auth_users | length }}"
-      - "Databases to create: {{ hx_pg_auth_databases | length }}"
-      - "Backup Enabled: {{ hx_pg_auth_backup_enabled }}"
-      - "Replication Enabled: {{ hx_pg_auth_replication_enabled }}"
-      - "Compliance Mode: {{ hx_pg_auth_compliance_mode }}"
-  when: hx_pg_auth_enable_logging | default(true)
+- name: "Hx | PostgreSQL Auth | Validate configuration directories exist"
+  stat:
+    path: "{{ item }}"
+  register: hx_pg_dir_check
+  failed_when: not hx_pg_dir_check.stat.exists
+  loop:
+    - "{{ hx_pg_config_dir }}"
+    - "{{ hx_pg_data_dir }}"
+  tags: ['validate']

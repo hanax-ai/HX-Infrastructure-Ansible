@@ -1,29 +1,52 @@
-
 ---
-# Main tasks for hx_pg_auth_standardized role
-# Implements SOLID principles with comprehensive PostgreSQL authentication and security
+- name: "Hx | PostgreSQL Authentication | Main task orchestration"
+  block:
+    - name: "Hx | Include validation tasks"
+      include_tasks: validate.yml
+      tags: ['validate', 'always']
 
-- name: Include validation tasks
-  ansible.builtin.include_tasks: validate.yml
-  tags: [validation, always]
+    - name: "Hx | Include preparation tasks"
+      include_tasks: prepare.yml
+      tags: ['prepare']
 
-- name: Include preparation tasks
-  ansible.builtin.include_tasks: prepare.yml
-  tags: [preparation, setup]
+    - name: "Hx | Include installation tasks"
+      include_tasks: installation.yml
+      tags: ['install', 'installation']
 
-- name: Include installation tasks
-  ansible.builtin.include_tasks: install.yml
-  tags: [installation, postgresql]
+    - name: "Hx | Include legacy installation tasks"
+      include_tasks: install.yml
+      tags: ['install']
 
-- name: Include configuration tasks
-  ansible.builtin.include_tasks: configure.yml
-  tags: [configuration, setup]
+    - name: "Hx | Include configuration tasks"
+      include_tasks: configuration.yml
+      tags: ['configure', 'configuration']
 
-- name: Include security tasks
-  ansible.builtin.include_tasks: security.yml
-  tags: [security, hardening]
+    - name: "Hx | Include legacy configuration tasks"
+      include_tasks: configure.yml
+      tags: ['configure']
 
-- name: Include verification tasks
-  ansible.builtin.include_tasks: verify.yml
-  tags: [verification, testing]
-  when: hx_pg_auth_run_tests | default(true)
+    - name: "Hx | Include user management tasks"
+      include_tasks: users.yml
+      tags: ['users', 'security']
+
+    - name: "Hx | Include backup tasks"
+      include_tasks: backup.yml
+      tags: ['backup']
+
+    - name: "Hx | Include security tasks"
+      include_tasks: security.yml
+      tags: ['security']
+
+    - name: "Hx | Include health check tasks"
+      include_tasks: health_checks.yml
+      tags: ['health_checks', 'monitoring']
+
+    - name: "Hx | Include verification tasks"
+      include_tasks: verify.yml
+      tags: ['verify']
+
+  rescue:
+    - name: "Hx | Handle PostgreSQL authentication setup failure"
+      fail:
+        msg: "PostgreSQL authentication setup failed: {{ ansible_failed_result.msg | default('Unknown error') }}"
+      tags: ['always']

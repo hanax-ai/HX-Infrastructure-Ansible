@@ -1,0 +1,118 @@
+
+---
+- name: "Hx | Web UI | Create application user"
+  user:
+    name: "{{ hx_webui_app_user }}"
+    group: "{{ hx_webui_app_group }}"
+    system: true
+    shell: "/bin/false"
+    home: "{{ hx_webui_app_home }}"
+    create_home: true
+  tags: ['prepare']
+
+- name: "Hx | Web UI | Create required directories"
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(hx_webui_app_user) }}"
+    group: "{{ item.group | default(hx_webui_app_group) }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop:
+    - path: "{{ hx_webui_root_dir }}"
+      owner: "{{ hx_webui_app_user }}"
+      group: "{{ hx_webui_app_group }}"
+    - path: "{{ hx_webui_app_home }}"
+      owner: "{{ hx_webui_app_user }}"
+      group: "{{ hx_webui_app_group }}"
+    - path: "/var/log/{{ hx_webui_server_type }}"
+      owner: "root"
+      group: "adm"
+      mode: "0755"
+    - path: "/etc/{{ hx_webui_server_type }}/sites-available"
+      owner: "root"
+      group: "root"
+    - path: "/etc/{{ hx_webui_server_type }}/sites-enabled"
+      owner: "root"
+      group: "root"
+  tags: ['prepare']
+
+- name: "Hx | Web UI | Create static file directories"
+  file:
+    path: "{{ item.location }}"
+    state: directory
+    owner: "{{ hx_webui_app_user }}"
+    group: "{{ hx_webui_app_group }}"
+    mode: "0755"
+  loop: "{{ hx_webui_static_dirs }}"
+  tags: ['prepare']
+
+- name: "Hx | Web UI | Create backup directory"
+  file:
+    path: "{{ hx_webui_backup_dir }}"
+    state: directory
+    owner: "{{ hx_webui_app_user }}"
+    group: "{{ hx_webui_app_group }}"
+    mode: "0750"
+  when: hx_webui_backup_enabled | default(false) | bool
+  tags: ['prepare']
+
+- name: "Hx | Web UI | Install required packages"
+  package:
+    name:
+      - curl
+      - wget
+      - unzip
+      - rsync
+      - logrotate
+    state: present
+  tags: ['prepare']
+
+- name: "Hx | Web UI | Check SSL certificate files"
+  stat:
+    path: "{{ item }}"
+  register: hx_webui_ssl_files
+  loop:
+    - "{{ hx_webui_ssl_cert_file }}"
+    - "{{ hx_webui_ssl_key_file }}"
+  when: hx_webui_ssl_enabled | default(false) | bool
+  tags: ['prepare']
+
+- name: "Hx | Web UI | Validate SSL certificate files exist"
+  assert:
+    that:
+      - item.stat.exists
+    fail_msg: "SSL certificate file {{ item.item }} does not exist"
+    success_msg: "SSL certificate file {{ item.item }} found"
+  loop: "{{ hx_webui_ssl_files.results }}"
+  when: 
+    - hx_webui_ssl_enabled | default(false) | bool
+    - hx_webui_ssl_files is defined
+  tags: ['prepare']
+
+- name: "Hx | Web UI | Set SSL file permissions"
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ hx_webui_ssl_cert_file }}"
+      owner: "root"
+      group: "{{ hx_webui_app_group }}"
+      mode: "0644"
+    - path: "{{ hx_webui_ssl_key_file }}"
+      owner: "root"
+      group: "{{ hx_webui_app_group }}"
+      mode: "0640"
+  when: hx_webui_ssl_enabled | default(false) | bool
+  tags: ['prepare']
+
+- name: "Hx | Web UI | Create environment file"
+  template:
+    src: environment.j2
+    dest: "{{ hx_webui_app_home }}/.env"
+    owner: "{{ hx_webui_app_user }}"
+    group: "{{ hx_webui_app_group }}"
+    mode: "0640"
+  when: hx_webui_env_vars | length > 0
+  tags: ['prepare']

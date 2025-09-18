@@ -1,51 +1,47 @@
 
 ---
-# Role Metadata for hx_pg_auth_standardized
 galaxy_info:
-  role_name: hx_pg_auth_standardized
   author: HX Infrastructure Team
-  description: Standardized role for PostgreSQL authentication and security with SOLID principles
-  company: Hanax AI
+  description: Enterprise PostgreSQL authentication and security management
+  company: HX AI
   license: MIT
-  min_ansible_version: "2.15"
+  min_ansible_version: "2.12"
   
   platforms:
     - name: Ubuntu
       versions:
-        - "20.04"
-        - "22.04"
-        - "24.04"
-    - name: CentOS
-      versions:
-        - "8"
-        - "9"
-    - name: RedHat
-      versions:
-        - "8"
-        - "9"
+        - focal
+        - jammy
     - name: Debian
       versions:
-        - "11"
-        - "12"
+        - bullseye
+        - bookworm
+    - name: EL
+      versions:
+        - "8"
+        - "9"
 
   galaxy_tags:
-    - database
     - postgresql
-    - authentication
+    - database
     - security
+    - authentication
     - ssl
-    - encryption
-    - backup
-    - monitoring
-    - infrastructure
-    - hx
 
 dependencies:
-  - role: common
-    when: hx_pg_auth_use_common | default(true)
+  - role: geerlingguy.postgresql
+    vars:
+      postgresql_version: "14"
+      postgresql_data_dir: "/var/lib/postgresql/14/main"
+      postgresql_bin_path: "/usr/lib/postgresql/14/bin"
+      postgresql_config_path: "/etc/postgresql/14/main"
+      postgresql_daemon: postgresql
+      postgresql_packages:
+        - postgresql
+        - postgresql-contrib
+        - libpq-dev
+        - python3-psycopg2
 
 collections:
-  - ansible.posix
-  - community.general
   - community.postgresql
-  - community.crypto
+  - ansible.posix

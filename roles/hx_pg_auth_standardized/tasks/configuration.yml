@@ -1,0 +1,37 @@
+---
+# PostgreSQL Configuration Tasks
+- name: "Hx | PostgreSQL Auth | Configure postgresql.conf"
+  template:
+    src: postgresql.conf.j2
+    dest: "{{ hx_pg_data_directory }}/postgresql.conf"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+    backup: true
+  become: true
+  notify: restart postgresql
+  tags: ['configuration']
+
+- name: "Hx | PostgreSQL Auth | Configure pg_hba.conf"
+  template:
+    src: pg_hba.conf.j2
+    dest: "{{ hx_pg_data_directory }}/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+    backup: true
+  become: true
+  notify: restart postgresql
+  tags: ['configuration']
+
+- name: "Hx | PostgreSQL Auth | Configure connection pooling"
+  template:
+    src: pgbouncer.ini.j2
+    dest: /etc/pgbouncer/pgbouncer.ini
+    owner: postgres
+    group: postgres
+    mode: '0600'
+  become: true
+  when: hx_pg_enable_connection_pooling | default(false)
+  notify: restart pgbouncer
+  tags: ['configuration']

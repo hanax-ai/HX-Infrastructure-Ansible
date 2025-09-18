@@ -1,0 +1,14 @@
+[Unit]
+Description=Hx Webui Install Standardized Service
+After=network.target
+
+[Service]
+Type=simple
+User={{ service_user | default('root') }}
+Group={{ service_group | default('root') }}
+ExecStart={{ service_exec_start }}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

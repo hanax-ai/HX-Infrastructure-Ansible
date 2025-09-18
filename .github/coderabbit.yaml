@@ -1,141 +1,92 @@
+
 # CodeRabbit Configuration for HX Infrastructure Ansible
-# Comprehensive code review and quality assurance
-
-# Language and framework configuration
-language: yaml
-framework: ansible
-
-# Review configuration
+language: en-US
+early_access: false
 reviews:
-  # Enable comprehensive reviews
-  auto_review: true
-  
-  # Review scope
-  review_level: comprehensive
-  
-  # File patterns to review
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: true
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
   path_filters:
-    include:
-      - "**/*.yml"
-      - "**/*.yaml" 
-      - "**/*.j2"
-      - "**/*.py"
-      - "**/*.sh"
-      - "**/Dockerfile*"
-      - "**/*.md"
-    exclude:
-      - ".git/**"
-      - "**/.ansible/**"
-      - "**/molecule/**/.*"
-      - "**/__pycache__/**"
-      - "**/*.pyc"
-
-# Quality gates
-quality_gates:
-  # Security checks
-  security:
-    enabled: true
-    severity_threshold: medium
-    checks:
-      - secrets_detection
-      - vulnerability_scanning
-      - security_best_practices
-      - credential_exposure
-      - hardcoded_passwords
-      
-  # Code quality checks  
-  code_quality:
-    enabled: true
-    severity_threshold: medium
-    checks:
-      - ansible_lint
-      - yaml_lint
-      - syntax_validation
-      - best_practices
-      - complexity_analysis
-      - maintainability
-
-# Ansible-specific configuration
-ansible:
-  # Linting configuration
-  lint:
-    enabled: true
-    config_file: ".ansible-lint"
-    rules:
-      - yaml
-      - braces
-      - brackets
-      - colons
-      - commas
-      - comments
-      - comments-indentation
-      - document-start
-      - empty-lines
-      - hyphens
-      - indentation
-      - key-duplicates
-      - line-length
-      - new-line-at-end-of-file
-      - trailing-spaces
-      - truthy
-      
-  # Role validation
-  roles:
-    validate_structure: true
-    required_directories:
-      - tasks
-      - defaults
-      - handlers
-      - templates
-      - meta
-    required_files:
-      - tasks/main.yml
-      - defaults/main.yml
-      - handlers/main.yml
-      - meta/main.yml
-
-# Security scanning
-security:
-  # Secret scanning
-  secrets:
-    enabled: true
-    patterns:
-      - password
-      - secret
-      - key
-      - token
-      - credential
-    exclude_patterns:
-      - "# Example:"
-      - "# TODO:"
-      - "# FIXME:"
-
-# Custom rules for HX Infrastructure
-custom_rules:
-  # Naming conventions
-  naming:
-    roles:
-      pattern: "^hx_[a-z_]+$"
-      message: "Role names must start with 'hx_' and use snake_case"
-    variables:
-      pattern: "^[a-z][a-z0-9_]*$"
-      message: "Variables must use snake_case"
-    tasks:
-      require_name: true
-      message: "All tasks must have descriptive names"
-
-# Reporting configuration
-reporting:
-  # Report format
-  format: detailed
-  
-  # Include metrics
-  include_metrics: true
-  
-  # Severity levels
-  severity_levels:
-    critical: 0
-    high: 2
-    medium: 5
-    low: 10
-    info: unlimited
+    - "!**/*.log"
+    - "!**/*.tmp"
+    - "!**/molecule/*/cache/**"
+    - "!**/.ansible/**"
+    - "!**/ansible.log"
+  path_instructions:
+    - path: "roles/*/tasks/*.yml"
+      instructions: |
+        Review Ansible task files for:
+        - YAML syntax and formatting compliance
+        - Ansible best practices and idempotency
+        - Security hardening compliance (CIS benchmarks)
+        - Variable safety using | default() patterns
+        - Task naming conventions (descriptive, action-oriented)
+        - Error handling and when conditions
+        - Proper use of become and privilege escalation
+        - Handler notifications and service management
+        - Tag usage for selective execution
+    - path: "roles/*/defaults/*.yml"
+      instructions: |
+        Review default variable files for:
+        - No hardcoded secrets or passwords (use vault or lookups)
+        - Proper variable categorization and organization
+        - Type definitions and validation patterns
+        - Environment-specific overrides capability
+        - Secure default values (principle of least privilege)
+        - Documentation and comments for complex variables
+    - path: "roles/*/templates/*.j2"
+      instructions: |
+        Review Jinja2 templates for:
+        - Proper variable substitution with safety checks
+        - Security configurations and hardening
+        - Template validation logic and error handling
+        - Version compatibility considerations
+        - Performance optimization
+        - Proper escaping and sanitization
+    - path: "roles/*/handlers/*.yml"
+      instructions: |
+        Review handler files for:
+        - Proper service management patterns
+        - Idempotent restart/reload operations
+        - Error handling for service failures
+        - Dependency management between handlers
+        - Security considerations for service operations
+    - path: "roles/*/meta/*.yml"
+      instructions: |
+        Review role metadata for:
+        - Proper dependency declarations
+        - Platform and version compatibility
+        - Role information completeness
+        - Galaxy metadata standards compliance
+    - path: "roles/*/molecule/**/*.yml"
+      instructions: |
+        Review Molecule test configurations for:
+        - Comprehensive test scenario coverage
+        - Security validation tests
+        - Integration testing between components
+        - Performance and load testing considerations
+        - Proper test isolation and cleanup
+    - path: ".github/workflows/*.yml"
+      instructions: |
+        Review GitHub Actions workflows for:
+        - Security best practices and secret management
+        - Proper CI/CD pipeline design and efficiency
+        - Quality gate implementation and enforcement
+        - Comprehensive testing strategy
+        - Artifact management and retention policies
+    - path: "**/*.md"
+      instructions: |
+        Review documentation for:
+        - Clarity and completeness of instructions
+        - Proper markdown formatting and structure
+        - Security considerations and warnings
+        - Example configurations and usage patterns
+        - Troubleshooting and maintenance guidance
+chat:
+  auto_reply: true
