@@ -13,11 +13,11 @@
   systemd:
     name: backup-metrics
     state: restarted
-  when: backup_automation.monitoring.prometheus_metrics
+  when: (backup_automation.monitoring.prometheus_metrics | default(false)) | bool
 
 - name: reload cron
   service:
-    name: cron
+    name: "{{ (ansible_os_family == 'RedHat') | ternary('crond', 'cron') }}"
     state: reloaded
 
 - name: restart rsyslog
@@ -27,4 +27,5 @@
 
 - name: reload backup configuration
   command: /var/lib/backup/scripts/reload-backup-config.sh
+  become: yes
   become_user: backup

@@ -20,7 +20,6 @@
   user:
     name: backup
     password_lock: yes
-  when: backup_security.access_control is defined
 
 - name: Create backup sudoers configuration
   template:
@@ -41,19 +40,20 @@
 
 - name: Create backup security directories
   file:
-    path: "{{ item }}"
+    path: "{{ item.path }}"
     state: directory
-    owner: backup
-    group: backup
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
     mode: "{{ backup_security.directory_permissions }}"
   loop:
-    - /etc/hx-backup
-    - /var/lib/backup/.ssh
-    - /var/lib/backup/scripts
+    - { path: "/etc/hx-backup", owner: "root", group: "root" }
+    - { path: "/var/lib/backup/.ssh", owner: "backup", group: "backup" }
+    - { path: "/var/lib/backup/scripts", owner: "backup", group: "backup" }
 
 - name: Generate backup encryption key
   command: openssl rand -base64 32
   register: backup_encryption_key
+  no_log: true
   when: 
     - backup_automation.encryption.enabled
     - not ansible_check_mode
@@ -65,6 +65,7 @@
     owner: backup
     group: backup
     mode: "{{ backup_security.file_permissions }}"
+  no_log: true
   when: 
     - backup_automation.encryption.enabled
     - backup_encryption_key is defined
@@ -80,16 +81,17 @@
 
 - name: Configure SELinux contexts for backup directories
   sefcontext:
-    target: "{{ item }}"
-    setype: admin_home_t
+    target: "{{ item.target }}"
+    setype: "{{ item.setype }}"
     state: present
-  loop:
-    - "{{ backup_automation.base_directory }}(/.*)?"
-    - "/var/lib/backup(/.*)?"
-    - "/etc/hx-backup(/.*)?"
+  loop: "{{ backup_security.selinux_contexts | default([
+    {'target': (backup_automation.base_directory + '(/.*)?'), 'setype': 'var_lib_t'},
+    {'target': '/var/lib/backup(/.*)?', 'setype': 'var_lib_t'},
+    {'target': '/etc/hx-backup(/.*)?', 'setype': 'etc_t'}
+  ]) }}"
   when: 
     - ansible_selinux.status == "enabled"
-    - backup_security.selinux_context is defined
+    - backup_security.selinux_contexts is defined
 
 - name: Apply SELinux contexts
   command: restorecon -R {{ item }}
@@ -99,7 +101,7 @@
     - "/etc/hx-backup"
   when: 
     - ansible_selinux.status == "enabled"
-    - backup_security.selinux_context is defined
+    - backup_security.selinux_contexts is defined
 
 - name: Configure backup file permissions
   file:
@@ -150,6 +152,7 @@
 - name: Create backup integrity verification key
   command: openssl rand -hex 32
   register: backup_integrity_key
+  no_log: true
   when: 
     - verification.enabled
     - not ansible_check_mode
@@ -161,6 +164,7 @@
     owner: backup
     group: backup
     mode: "{{ backup_security.file_permissions }}"
+  no_log: true
   when: 
     - verification.enabled
     - backup_integrity_key is defined

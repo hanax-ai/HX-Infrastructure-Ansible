@@ -12,6 +12,7 @@
     - "{{ backup_automation.base_directory }}/database/postgresql"
     - "{{ backup_automation.base_directory }}/database/redis"
     - "{{ backup_automation.temp_directory }}/database"
+    - "/var/lib/backup/scripts"
 
 - name: Create PostgreSQL backup script
   template:
@@ -79,18 +80,22 @@
   command: /var/lib/backup/scripts/test-postgresql-connection.sh
   register: postgresql_test
   failed_when: postgresql_test.rc != 0
+  become: yes
   become_user: backup
+  changed_when: false
   when: 
-    - database_backup.databases.postgresql.enabled
+    - (database_backup is defined) and (database_backup.databases.postgresql.enabled | default(false))
     - not ansible_check_mode
 
 - name: Test Redis connectivity
   command: /var/lib/backup/scripts/test-redis-connection.sh
   register: redis_test
   failed_when: redis_test.rc != 0
+  become: yes
   become_user: backup
+  changed_when: false
   when: 
-    - database_backup.databases.redis.enabled
+    - (database_backup is defined) and (database_backup.databases.redis.enabled | default(false))
     - not ansible_check_mode
 
 - name: Create database backup verification script
@@ -147,8 +152,8 @@
     name: "Redis Daily Backup"
     user: backup
     job: "/var/lib/backup/scripts/redis-backup.sh daily"
-    minute: "{{ (backup_schedule.database.daily.split()[0] | int + 15) % 60 }}"
-    hour: "{{ backup_schedule.database.daily.split()[1] }}"
+    minute: "{{ ((backup_schedule.database.daily.split()[0] | int) + 15) % 60 }}"
+    hour: "{{ ((backup_schedule.database.daily.split()[1] | int) + (((backup_schedule.database.daily.split()[0] | int) + 15) // 60)) % 24 }}"
     state: present
   when: database_backup.databases.redis.enabled
 
@@ -177,7 +182,7 @@
     job: "/var/lib/backup/scripts/monitor-database-backups.sh"
     minute: "*/15"
     state: present
-  when: backup_monitoring.enabled
+  when: (backup_monitoring is defined) and (backup_monitoring.enabled | default(false))
 
 - name: Create database backup metrics collection script
   template:
@@ -186,7 +191,9 @@
     owner: backup
     group: backup
     mode: '0750'
-  when: backup_automation.monitoring.prometheus_metrics
+  when: (backup_automation is defined) and
+        (backup_automation.monitoring is defined) and
+        (backup_automation.monitoring.prometheus_metrics | default(false))
 
 - name: Install database backup metrics collection service
   template:
@@ -195,8 +202,9 @@
     owner: root
     group: root
     mode: '0644'
-  when: backup_automation.monitoring.prometheus_metrics
-  notify: reload systemd
+  when: (backup_automation is defined) and
+        (backup_automation.monitoring is defined) and
+        (backup_automation.monitoring.prometheus_metrics | default(false))
 
 - name: Enable and start database backup metrics service
   systemd:
@@ -205,5 +213,7 @@
     state: started
     daemon_reload: yes
   when: 
-    - backup_automation.monitoring.prometheus_metrics
+    - (backup_automation is defined) and
+      (backup_automation.monitoring is defined) and
+      (backup_automation.monitoring.prometheus_metrics | default(false))
     - not ansible_check_mode

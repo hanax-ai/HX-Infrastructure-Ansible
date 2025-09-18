@@ -19,13 +19,14 @@
       - backup_automation.retention.weekly | int > 0
       - backup_automation.retention.monthly is defined
       - backup_automation.retention.monthly | int > 0
+      - (backup_automation.retention.yearly is not defined) or (backup_automation.retention.yearly | int > 0)
     fail_msg: "Invalid retention policy configuration"
     success_msg: "Retention policy configuration validated"
 
 - name: Validate encryption configuration
   assert:
     that:
-      - backup_automation.encryption.algorithm in ['AES-256-CBC', 'AES-192-CBC', 'AES-128-CBC']
+      - backup_automation.encryption.algorithm in ['AES-256-GCM', 'AES-256-CBC', 'AES-192-CBC', 'AES-128-CBC']
       - backup_automation.encryption.key_file is defined
     fail_msg: "Invalid encryption configuration"
     success_msg: "Encryption configuration validated"
@@ -38,7 +39,7 @@
       - database_backup.databases.postgresql is defined or database_backup.databases.redis is defined
     fail_msg: "At least one database type must be configured for backup"
     success_msg: "Database backup configuration validated"
-  when: database_backup.enabled
+  when: (database_backup is defined) and (database_backup.enabled | default(false))
 
 - name: Validate PostgreSQL configuration
   assert:
@@ -63,7 +64,7 @@
     fail_msg: "Application backup paths configuration is invalid"
     success_msg: "Application backup paths validated"
   loop: "{{ application_backup.paths }}"
-  when: application_backup.enabled
+  when: (application_backup is defined) and (application_backup.enabled | default(false))
 
 - name: Validate remote storage configuration
   assert:
@@ -74,11 +75,12 @@
     fail_msg: "Remote storage configuration is invalid"
     success_msg: "Remote storage configuration validated"
   when: 
-    - remote_storage.enabled
+    - (remote_storage is defined) and (remote_storage.enabled | default(false))
     - remote_storage.type == 's3'
+    - remote_storage.s3 is defined
 
 - name: Check available disk space
-  shell: df {{ backup_automation.base_directory | dirname }} | tail -1 | awk '{print $4}'
+  shell: df "{{ backup_automation.base_directory | dirname }}" | tail -1 | awk '{print $4}'
   register: available_space
   changed_when: false
 
@@ -95,7 +97,15 @@
       - item.value | regex_search('^[0-9*,-/]+ [0-9*,-/]+ [0-9*,-/]+ [0-9*,-/]+ [0-9*,-/]+$')
     fail_msg: "Invalid cron schedule format: {{ item.key }} = {{ item.value }}"
     success_msg: "Valid cron schedule format for {{ item.key }}"
-  loop: "{{ backup_schedule | dict2items | selectattr('value', 'string') | list }}"
+  loop: >
+    {{
+    [
+    {'key': 'database.daily',   'value': backup_schedule.database.daily | default('') },
+    {'key': 'database.weekly',  'value': backup_schedule.database.weekly | default('') },
+    {'key': 'database.monthly', 'value': backup_schedule.database.monthly | default('') },
+    {'key': 'application.daily','value': backup_schedule.application.daily | default('') }
+    ]
+    }}
   loop_control:
     label: "{{ item.key }}"
 
@@ -107,4 +117,4 @@
       - backup_monitoring.health_checks | length > 0
     fail_msg: "Backup monitoring configuration is incomplete"
     success_msg: "Backup monitoring configuration validated"
-  when: backup_monitoring.enabled
+  when: (backup_monitoring is defined) and (backup_monitoring.enabled | default(false))

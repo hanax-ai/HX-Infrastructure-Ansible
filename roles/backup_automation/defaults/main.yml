@@ -1,3 +1,4 @@
+
 ---
 # Backup Automation Configuration
 backup_automation:
@@ -14,10 +15,10 @@ backup_automation:
     monthly: 12
     yearly: 3
   
-  # Encryption settings
+  # Encryption settings - FIXED: Use GCM for authenticated encryption
   encryption:
     enabled: true
-    algorithm: "AES-256-CBC"
+    algorithm: "AES-256-GCM"
     key_file: "/etc/hx-backup/encryption.key"
     
   # Compression settings
@@ -34,10 +35,10 @@ backup_automation:
       - "backup-alerts@hanax.ai"
     slack_webhook: ""
     
-  # Monitoring integration
+  # Monitoring integration - FIXED: Use unique port to avoid node_exporter conflict
   monitoring:
     prometheus_metrics: true
-    metrics_port: 9100
+    metrics_port: 9798
     health_check_endpoint: "/backup-health"
 
 # Database backup configuration
@@ -46,18 +47,21 @@ database_backup:
   databases:
     postgresql:
       enabled: true
-      host: "{{ groups['database'][0] }}"
+      # FIXED: Safe inventory group access with fallback
+      host: "{{ (groups['database'] | default([])) | first | default('localhost') }}"
       port: 5432
       databases:
         - "hx_production"
         - "hx_analytics"
         - "hx_audit"
+      # FIXED: Parallel jobs incompatible with custom format
       backup_format: "custom"
-      parallel_jobs: 4
+      parallel_jobs: 1
       
     redis:
       enabled: true
-      host: "{{ groups['cache'][0] }}"
+      # FIXED: Safe inventory group access with fallback
+      host: "{{ (groups['cache'] | default([])) | first | default('localhost') }}"
       port: 6379
       backup_type: "rdb"
       
@@ -139,6 +143,9 @@ verification:
   integrity_checks: true
   checksum_algorithm: "sha256"
   verify_encryption: true
+  max_age_hours: 48
+  min_size_mb: 1
+  max_size_gb: 100
   
 # Remote storage configuration
 remote_storage:
@@ -179,13 +186,19 @@ backup_monitoring:
       severity: "critical"
       channels: ["email", "slack", "pager"]
 
-# Security settings
+# Security settings - FIXED: Proper SELinux contexts
 backup_security:
   file_permissions: "0600"
   directory_permissions: "0700"
   owner: "backup"
   group: "backup"
-  selinux_context: "system_u:object_r:admin_home_t:s0"
+  selinux_contexts:
+    - target: "{{ backup_automation.base_directory }}(/.*)?"
+      setype: "var_lib_t"
+    - target: "/var/lib/backup(/.*)?"
+      setype: "var_lib_t"
+    - target: "/etc/hx-backup(/.*)?"
+      setype: "etc_t"
   
   # Access control
   access_control:

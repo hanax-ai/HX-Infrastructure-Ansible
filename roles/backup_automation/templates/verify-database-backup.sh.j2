@@ -6,7 +6,7 @@ set -euo pipefail
 
 BACKUP_FILE="$1"
 LOG_FILE="{{ backup_automation.log_directory }}/backup-verification.log"
-TEMP_DIR="{{ backup_automation.temp_directory }}/verification"
+TEMP_DIR="$(mktemp -d "{{ backup_automation.temp_directory }}/verification.XXXX")"
 ENCRYPTION_KEY="{{ backup_automation.encryption.key_file }}"
 
 # Logging function
@@ -22,15 +22,12 @@ error_exit() {
 
 # Cleanup function
 cleanup() {
-    if [[ -d "$TEMP_DIR" ]]; then
-        rm -rf "$TEMP_DIR"
-    fi
+    [[ -n "${TEMP_DIR:-}" && -d "$TEMP_DIR" ]] && rm -rf "$TEMP_DIR"
 }
 
 trap cleanup EXIT
 
-# Create temp directory
-mkdir -p "$TEMP_DIR"
+# mktemp already created the directory
 
 log "INFO" "Starting backup verification for: $BACKUP_FILE"
 
