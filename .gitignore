@@ -131,3 +131,100 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+.tmp/
+.temp/
+
+# Secrets and Sensitive Data
+secrets.yml
+vault_pass.txt
+.vault_pass
+*.pem
+*.key
+*.crt
+id_rsa*
+*.p12
+*.pfx
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Cache
+.cache/
+*.cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Molecule
+.molecule/
+molecule/*/molecule.yml.bak
+
+# Terraform (if used)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Docker
+.dockerignore
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Documentation build
+site/
+docs/_build/
+
+# Test results
+test-results/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Ansible Vault Password Files
+.ansible_vault_pass
+ansible_vault_pass
+~/.ansible_vault_pass
+vault_password_file
+.vault_password_file

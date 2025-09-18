@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: Hanax AI Infrastructure Team
+  description: Common configuration for HX Infrastructure
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: EL
+      versions:
+        - 8
+        - 9
+  galaxy_tags:
+    - system
+    - common
+    - hx
+
+dependencies: []

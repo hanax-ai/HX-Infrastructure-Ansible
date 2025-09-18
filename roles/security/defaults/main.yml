@@ -1,0 +1,23 @@
+---
+# Security role defaults with hx_ prefix
+hx_security_ssh_port: 22
+hx_security_ssh_password_auth: false
+hx_security_ssh_root_login: false
+hx_security_ssh_permit_empty_passwords: false
+hx_security_ssh_challenge_response_auth: false
+hx_security_ssh_gss_api_authentication: false
+hx_security_ssh_x11_forwarding: false
+
+hx_security_fail2ban_enabled: true
+hx_security_fail2ban_bantime: 3600
+hx_security_fail2ban_findtime: 600
+hx_security_fail2ban_maxretry: 3
+
+hx_security_firewall_enabled: true
+hx_security_firewall_default_policy: "deny"
+
+hx_security_automatic_updates: true
+hx_security_unattended_upgrades: true
+
+hx_security_audit_enabled: true
+hx_security_audit_log_file: "/var/log/audit/audit.log"
