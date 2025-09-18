@@ -1,0 +1,15 @@
+---
+- name: Apply Security Hardening
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Update all packages
+      package:
+        name: "*"
+        state: latest
+      when: ansible_os_family in ['Debian', 'RedHat']
+
+    - name: Apply security role
+      include_role:
+        name: security

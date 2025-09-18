@@ -1,0 +1,41 @@
+---
+# Common tasks for all HX Infrastructure hosts
+- name: Set timezone
+  timezone:
+    name: "{{ hx_timezone }}"
+  notify: restart rsyslog
+
+- name: Install common packages
+  package:
+    name: "{{ hx_common_packages }}"
+    state: present
+  become: yes
+
+- name: Create HX system user
+  user:
+    name: "{{ hx_system_user }}"
+    group: "{{ hx_system_group }}"
+    shell: "{{ hx_user_shell }}"
+    create_home: yes
+    system: yes
+  become: yes
+
+- name: Create HX directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ hx_system_user }}"
+    group: "{{ hx_system_group }}"
+    mode: '0755'
+  loop:
+    - "{{ hx_log_directory }}"
+    - "{{ hx_config_directory }}"
+    - "{{ hx_data_directory }}"
+  become: yes
+
+- name: Configure system locale
+  locale_gen:
+    name: "{{ hx_locale }}"
+    state: present
+  when: ansible_os_family == "Debian"
+  become: yes

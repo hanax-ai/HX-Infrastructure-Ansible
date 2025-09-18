@@ -1,0 +1,29 @@
+---
+# Common role defaults with hx_ prefix for consistency
+hx_common_packages:
+  - curl
+  - wget
+  - vim
+  - htop
+  - git
+  - unzip
+  - tree
+
+hx_timezone: "UTC"
+hx_locale: "en_US.UTF-8"
+
+hx_user_shell: "/bin/bash"
+hx_system_user: "hx-admin"
+hx_system_group: "hx-admin"
+
+hx_log_directory: "/var/log/hx"
+hx_config_directory: "/etc/hx"
+hx_data_directory: "/opt/hx"
+
+hx_service_enabled: true
+hx_service_state: "started"
+
+# Security defaults
+hx_security_updates: true
+hx_firewall_enabled: true
+hx_ssh_hardening: true

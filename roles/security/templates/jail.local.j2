@@ -1,0 +1,9 @@
+[DEFAULT]
+bantime = {{ hx_security_fail2ban_bantime }}
+findtime = {{ hx_security_fail2ban_findtime }}
+maxretry = {{ hx_security_fail2ban_maxretry }}
+
+[sshd]
+enabled = true
+port = {{ hx_security_ssh_port }}
+logpath = /var/log/auth.log

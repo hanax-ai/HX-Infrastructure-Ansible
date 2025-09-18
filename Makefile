@@ -104,8 +104,71 @@ molecule:
 	fi
 	@echo "Molecule testing complete!"
 
-# Documentation generation
-docs:
+test-syntax: ## Test playbook syntax
+	@echo "Testing playbook syntax..."
+	@find playbooks -name "*.yml" -exec ansible-playbook --syntax-check {} \;
+
+# Code Quality
+lint: ## Run linting on all files
+	@echo "Running ansible-lint..."
+	ansible-lint playbooks/ roles/
+	@echo "Running yamllint..."
+	yamllint .
+	@echo "Running flake8 on Python files..."
+	flake8 tests/ scripts/
+
+format: ## Format code
+	@echo "Formatting Python code..."
+	black tests/ scripts/
+	isort tests/ scripts/
+
+# Deployment
+deploy-check: ## Run deployment in check mode (dry run)
+	ansible-playbook -i inventory/environments/production playbooks/site/main.yml --check --diff
+
+deploy-dev: ## Deploy to development environment
+	ansible-playbook -i inventory/environments/development playbooks/site/main.yml
+
+deploy-staging: ## Deploy to staging environment
+	ansible-playbook -i inventory/environments/staging playbooks/site/main.yml
+
+deploy-prod: ## Deploy to production environment (DRY RUN by default - use deploy-prod-confirm for actual)
+	echo "SAFETY: Running dry-run first..." && ansible-playbook -i inventory/environments/production playbooks/site/main.yml --check --diff --ask-vault-pass && echo "Dry run complete. Use make deploy-prod-confirm for actual deployment"
+
+# Maintenance
+backup: ## Run backup playbook
+	ansible-playbook -i inventory/environments/production playbooks/maintenance/backup.yml
+
+update: ## Update system packages
+	ansible-playbook -i inventory/environments/production playbooks/maintenance/update.yml
+
+security: ## Apply security hardening
+	ansible-playbook -i inventory/environments/production playbooks/maintenance/security.yml
+
+health-check: ## Run health checks
+	ansible-playbook -i inventory/environments/production playbooks/maintenance/health-check.yml
+
+# Utilities
+ping: ## Test connectivity to all hosts
+	ansible all -i inventory/environments/production -m ping
+
+facts: ## Gather facts from all hosts
+	ansible all -i inventory/environments/production -m setup
+
+inventory: ## Show inventory
+	ansible-inventory -i inventory/environments/production --list
+
+encrypt: ## Encrypt secrets file
+	ansible-vault encrypt vars/secrets.yml
+
+decrypt: ## Decrypt secrets file
+	ansible-vault decrypt vars/secrets.yml
+
+edit-vault: ## Edit encrypted vault file
+	ansible-vault edit vars/secrets.yml
+
+# Documentation
+docs: ## Generate documentation
 	@echo "Generating documentation..."
 	@if command -v ansible-doc >/dev/null 2>&1; then \
 		mkdir -p docs/generated; \
@@ -185,3 +248,43 @@ prod-deploy:
 	else \
 		echo "Production deployment cancelled"; \
 	fi
+	ansible-playbook -i inventory/environments/production playbooks/maintenance/restore.yml -e "backup_date=$(DATE)"
+
+# Service Management
+restart-web: ## Restart web services
+	ansible-playbook -i inventory/environments/production playbooks/maintenance/restart-services.yml --limit "web_servers"
+
+restart-app: ## Restart application services
+	ansible-playbook -i inventory/environments/production playbooks/maintenance/restart-services.yml --limit "app_servers"
+
+restart-db: ## Restart database services
+	ansible-playbook -i inventory/environments/production playbooks/maintenance/restart-services.yml --limit "database_servers"
+
+# Version Information
+version: ## Show version information
+	@echo "HX Infrastructure Ansible - Version Information"
+	@echo "=============================================="
+	@echo "Ansible Version:"
+	@ansible --version
+	@echo ""
+	@echo "Python Version:"
+	@python --version
+	@echo ""
+	@echo "Git Version:"
+	@git --version
+
+# Safety check target
+safety-check: ## Run comprehensive safety checks before deployment
+	@echo "Running comprehensive safety checks..."
+	@echo "1. Checking for secrets in files..."
+	@if command -v grep >/dev/null 2>&1; then \
+		grep -r "password\|secret\|key" . --exclude-dir=.git --exclude="*.md" --exclude="*.pdf" | grep -v "password_file\|key_checking\|ssh_key" || echo "No obvious secrets found"; \
+	fi
+	@echo "2. Checking ansible.cfg security settings..."
+	@grep "host_key_checking.*True" ansible.cfg >/dev/null && echo "✓ Host key checking enabled" || echo "✗ Host key checking disabled - SECURITY RISK"
+	@echo "3. Checking .gitignore for sensitive files..."
+	@grep "vault_pass\|\.pem\|\.key" .gitignore >/dev/null && echo "✓ Sensitive file patterns in .gitignore" || echo "✗ Missing sensitive file patterns in .gitignore"
+	@echo "4. Checking for SECURITY.md..."
+	@[ -f "SECURITY.md" ] && echo "✓ SECURITY.md exists" || echo "✗ SECURITY.md missing"
+	@echo "Safety check complete!"
+

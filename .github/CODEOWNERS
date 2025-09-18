@@ -1,0 +1,29 @@
+# HX Infrastructure Ansible Code Owners
+# These owners will be requested for review when anyone opens a pull request.
+
+# Global owners
+* @hanax-ai/infrastructure-team
+
+# Ansible configuration
+ansible.cfg @hanax-ai/infrastructure-team @hanax-ai/security-team
+.ansible-lint @hanax-ai/infrastructure-team
+.yamllint.yml @hanax-ai/infrastructure-team
+
+# Security-related files
+SECURITY.md @hanax-ai/security-team
+roles/security/ @hanax-ai/security-team
+playbooks/security/ @hanax-ai/security-team
+
+# Inventory and sensitive configurations
+inventory/ @hanax-ai/infrastructure-team @hanax-ai/security-team
+group_vars/ @hanax-ai/infrastructure-team @hanax-ai/security-team
+host_vars/ @hanax-ai/infrastructure-team @hanax-ai/security-team
+
+# Documentation
+*.md @hanax-ai/infrastructure-team @hanax-ai/documentation-team
+docs/ @hanax-ai/documentation-team
+
+# CI/CD and automation
+.github/ @hanax-ai/infrastructure-team @hanax-ai/devops-team
+Makefile @hanax-ai/infrastructure-team @hanax-ai/devops-team
+.pre-commit-config.yaml @hanax-ai/infrastructure-team @hanax-ai/devops-team
