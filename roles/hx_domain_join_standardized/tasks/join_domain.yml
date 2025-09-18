@@ -1,0 +1,142 @@
+
+---
+# Domain Join Tasks for HX Domain Join
+
+- name: Discover the Active Directory domain
+  command: "{{ hx_realm_discover_cmd }}"
+  register: hx_realm_discover_result
+  changed_when: false
+  failed_when: hx_realm_discover_result.rc != 0
+  timeout: "{{ hx_domain_discovery_timeout }}"
+  retries: "{{ hx_domain_validation_retries }}"
+  delay: "{{ hx_domain_validation_delay }}"
+  until: hx_realm_discover_result.rc == 0
+  tags: [join_domain]
+
+- name: Parse domain discovery information
+  set_fact:
+    hx_discovered_domain_info: "{{ hx_realm_discover_result.stdout }}"
+  tags: [join_domain]
+
+- name: Display discovered domain information
+  debug:
+    msg:
+      - "Domain discovery completed successfully"
+      - "Domain: {{ hx_ad_domain }}"
+      - "Discovery output: {{ hx_discovered_domain_info | default('No additional info') }}"
+  tags: [join_domain]
+
+- name: Check current domain membership status
+  command: "{{ hx_realm_list_cmd }}"
+  register: hx_current_domain_status
+  changed_when: false
+  failed_when: false
+  tags: [join_domain]
+
+- name: Determine if domain join is needed
+  set_fact:
+    hx_domain_join_needed: "{{ hx_ad_domain not in (hx_current_domain_status.stdout | default('')) }}"
+  tags: [join_domain]
+
+- name: Display domain join status
+  debug:
+    msg:
+      - "Domain join status check completed"
+      - "Target domain: {{ hx_ad_domain }}"
+      - "Currently joined: {{ not hx_domain_join_needed }}"
+      - "Join needed: {{ hx_domain_join_needed }}"
+  tags: [join_domain]
+
+- name: Join the server to the Active Directory domain
+  shell: |
+    set -euo pipefail
+    echo "{{ hx_ad_admin_password }}" | {{ hx_realm_join_cmd }} \
+      {% if hx_ad_ou_path %}--computer-ou="{{ hx_ad_ou_path }}" \{% endif %}
+      {% if hx_ad_computer_name != ansible_hostname | upper %}--computer-name="{{ hx_ad_computer_name }}" \{% endif %}
+      --stdin
+  args:
+    executable: /bin/bash
+  register: hx_domain_join_result
+  when: hx_domain_join_needed | bool
+  timeout: "{{ hx_domain_join_timeout }}"
+  no_log: true
+  notify:
+    - restart sssd
+    - restart realmd
+  tags: [join_domain]
+
+- name: Wait for domain join to complete
+  pause:
+    seconds: 10
+  when: hx_domain_join_needed | bool and hx_domain_join_result is succeeded
+  tags: [join_domain]
+
+- name: Verify domain join was successful
+  command: "{{ hx_realm_list_cmd }}"
+  register: hx_domain_join_verification
+  changed_when: false
+  failed_when: hx_ad_domain not in hx_domain_join_verification.stdout
+  when: hx_domain_join_needed | bool
+  tags: [join_domain]
+
+- name: Update SSSD configuration post-join
+  template:
+    src: sssd.conf.j2
+    dest: "{{ hx_sssd_conf_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+    backup: yes
+  when:
+    - hx_sssd_enabled | bool
+    - hx_domain_join_needed | bool
+  notify: restart sssd
+  tags: [join_domain]
+
+- name: Ensure SSSD service is started and enabled
+  systemd:
+    name: "{{ hx_sssd_service }}"
+    state: started
+    enabled: true
+  when: hx_sssd_enabled | bool
+  tags: [join_domain]
+
+- name: Test Kerberos authentication
+  shell: |
+    set -euo pipefail
+    echo "{{ hx_ad_admin_password }}" | kinit {{ hx_ad_admin_user }}@{{ hx_ad_realm_upper }}
+    klist
+    kdestroy
+  args:
+    executable: /bin/bash
+  register: hx_kerberos_test
+  when:
+    - hx_krb5_enabled | bool
+    - hx_domain_join_needed | bool
+  changed_when: false
+  no_log: true
+  tags: [join_domain]
+
+- name: Log domain join completion
+  lineinfile:
+    path: "{{ hx_domain_log_dir }}/domain_join.log"
+    line: "{{ ansible_date_time.iso8601 }} - Successfully joined domain {{ hx_ad_domain }} as {{ hx_ad_computer_name }}"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when:
+    - hx_domain_audit_logging_enabled | bool
+    - hx_domain_join_needed | bool
+  tags: [join_domain]
+
+- name: Display domain join summary
+  debug:
+    msg:
+      - "Domain join process completed"
+      - "Domain: {{ hx_ad_domain }}"
+      - "Computer Name: {{ hx_ad_computer_name }}"
+      - "Join Status: {{ hx_domain_join_needed | ternary('Newly Joined', 'Already Joined') }}"
+      - "SSSD Status: {{ hx_sssd_enabled | ternary('Running', 'Disabled') }}"
+      - "Kerberos Test: {{ (hx_kerberos_test is defined and hx_kerberos_test.rc == 0) | ternary('Passed', 'Skipped/Failed') }}"
+  tags: [join_domain]

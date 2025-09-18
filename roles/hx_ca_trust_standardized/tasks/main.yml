@@ -1,29 +1,37 @@
 
 ---
-# Main tasks for hx_ca_trust_standardized role
-# Implements SOLID principles with comprehensive certificate authority management
+# HX CA Trust Main Tasks
+# Orchestrates all certificate authority trust operations
 
-- name: Include validation tasks
-  ansible.builtin.include_tasks: validate.yml
-  tags: [validation, always]
-
-- name: Include preparation tasks
-  ansible.builtin.include_tasks: prepare.yml
-  tags: [preparation, setup]
+- name: Include variable validation
+  include_tasks: validate.yml
+  tags: [validation, hx_ca_trust]
 
 - name: Include installation tasks
-  ansible.builtin.include_tasks: install.yml
-  tags: [installation, certificates]
+  include_tasks: install.yml
+  when: hx_ca_trust_enabled | bool
+  tags: [install, hx_ca_trust]
 
 - name: Include configuration tasks
-  ansible.builtin.include_tasks: configure.yml
-  tags: [configuration, setup]
+  include_tasks: configure.yml
+  when: hx_ca_trust_enabled | bool
+  tags: [configure, hx_ca_trust]
 
 - name: Include security tasks
-  ansible.builtin.include_tasks: security.yml
-  tags: [security, hardening]
+  include_tasks: security.yml
+  when: hx_ca_security_enabled | bool
+  tags: [security, hx_ca_trust]
 
-- name: Include verification tasks
-  ansible.builtin.include_tasks: verify.yml
-  tags: [verification, testing]
-  when: hx_ca_trust_run_tests | default(true)
+- name: Include health check tasks
+  include_tasks: health_checks.yml
+  when: hx_ca_health_checks_enabled | bool
+  tags: [health_checks, hx_ca_trust]
+
+- name: Display deployment summary
+  debug:
+    msg:
+      - "HX CA Trust deployment completed successfully"
+      - "Certificate: {{ hx_ca_trust_enabled | ternary('Deployed to ' + hx_ca_cert_full_path, 'Disabled') }}"
+      - "Security: {{ hx_ca_security_enabled | ternary('Enabled', 'Disabled') }}"
+      - "Validation: {{ hx_ca_validation_enabled | ternary('Enabled', 'Disabled') }}"
+  tags: [hx_ca_trust]

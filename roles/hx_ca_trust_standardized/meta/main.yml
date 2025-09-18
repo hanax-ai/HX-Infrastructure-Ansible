@@ -1,48 +1,32 @@
 
 ---
-# Role Metadata for hx_ca_trust_standardized
 galaxy_info:
   role_name: hx_ca_trust_standardized
   author: HX Infrastructure Team
-  description: Standardized role for Certificate Authority trust management with SOLID principles
+  description: Professional-grade Certificate Authority trust management for HX Infrastructure
   company: Hanax AI
   license: MIT
-  min_ansible_version: "2.15"
-  
+  min_ansible_version: 2.9
   platforms:
     - name: Ubuntu
       versions:
-        - "20.04"
-        - "22.04"
-        - "24.04"
-    - name: CentOS
-      versions:
-        - "8"
-        - "9"
-    - name: RedHat
-      versions:
-        - "8"
-        - "9"
+        - focal
+        - jammy
     - name: Debian
       versions:
-        - "11"
-        - "12"
-
+        - bullseye
+        - bookworm
   galaxy_tags:
+    - infrastructure
     - security
     - certificates
     - ca
     - trust
     - ssl
     - tls
-    - infrastructure
-    - hx
 
-dependencies:
-  - role: common
-    when: hx_ca_trust_use_common | default(true)
+dependencies: []
 
 collections:
-  - ansible.posix
   - community.general
-  - community.crypto
+  - ansible.posix

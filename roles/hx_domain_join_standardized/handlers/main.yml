@@ -1,102 +1,67 @@
 
 ---
-# Handlers for hx_domain_join_standardized role
-# Event-driven actions triggered by configuration changes
+# HX Domain Join Handlers
+# Service management and configuration reload handlers
 
 - name: restart sssd
-  ansible.builtin.systemd:
-    name: sssd
+  systemd:
+    name: "{{ hx_sssd_service }}"
     state: restarted
-    enabled: true
-    daemon_reload: true
-  become: true
+    daemon_reload: yes
   listen: "restart sssd"
 
-- name: restart sshd
-  ansible.builtin.systemd:
-    name: sshd
-    state: restarted
-  become: true
-  listen: "restart sshd"
-
-- name: restart chrony
-  ansible.builtin.systemd:
-    name: chrony
-    state: restarted
-    enabled: true
-  become: true
-  listen: "restart chrony"
-  when: ansible_os_family == "Debian"
-
-- name: restart chronyd
-  ansible.builtin.systemd:
-    name: chronyd
-    state: restarted
-    enabled: true
-  become: true
-  listen: "restart chronyd"
-  when: ansible_os_family == "RedHat"
-
-- name: restart systemd-resolved
-  ansible.builtin.systemd:
-    name: systemd-resolved
-    state: restarted
-  become: true
-  listen: "restart systemd-resolved"
-
-- name: restart auditd
-  ansible.builtin.systemd:
-    name: auditd
-    state: restarted
-  become: true
-  listen: "restart auditd"
-
-- name: restart fail2ban
-  ansible.builtin.systemd:
-    name: fail2ban
-    state: restarted
-    enabled: true
-  become: true
-  listen: "restart fail2ban"
-
-- name: reload firewall
-  ansible.builtin.systemd:
-    name: "{{ 'ufw' if ansible_os_family == 'Debian' else 'firewalld' }}"
+- name: reload sssd
+  systemd:
+    name: "{{ hx_sssd_service }}"
     state: reloaded
-  become: true
-  listen: "reload firewall"
+  listen: "reload sssd"
 
-- name: update nsswitch
-  ansible.builtin.command:
-    cmd: nscd -i passwd
-  become: true
-  listen: "update nsswitch"
-  failed_when: false
+- name: restart realmd
+  systemd:
+    name: "{{ hx_realmd_service }}"
+    state: restarted
+  listen: "restart realmd"
 
 - name: clear sssd cache
-  ansible.builtin.command:
-    cmd: sss_cache -E
-  become: true
+  shell: |
+    set -euo pipefail
+    systemctl stop {{ hx_sssd_service }}
+    rm -rf /var/lib/sss/db/*
+    rm -rf /var/lib/sss/mc/*
+    systemctl start {{ hx_sssd_service }}
+  args:
+    executable: /bin/bash
   listen: "clear sssd cache"
-  failed_when: false
 
-- name: send domain notification
-  ansible.builtin.command:
-    cmd: /usr/local/bin/hx-domain-notify "{{ notification_message | default('Domain configuration updated') }}"
-  become: true
-  listen: "send domain notification"
-  when: hx_domain_join_notifications_enabled | default(false)
-
-- name: update domain health check
-  ansible.builtin.command:
-    cmd: /usr/local/bin/hx-domain-health-check --update
-  become: true
-  listen: "update domain health check"
-  when: hx_domain_join_health_checks | default(false)
+- name: update nsswitch
+  command: systemctl restart systemd-logind
+  listen: "update nsswitch"
 
 - name: backup domain config
-  ansible.builtin.command:
-    cmd: /usr/local/bin/hx-domain-backup
-  become: true
+  shell: |
+    set -euo pipefail
+    backup_dir="{{ hx_domain_backup_dir }}/handler-backup-{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+    mkdir -p "$backup_dir"
+
+    for config_file in {{ hx_sssd_conf_path }} {{ hx_krb5_conf_path }} {{ hx_realmd_conf_path }}; do
+      if [ -f "$config_file" ]; then
+        cp "$config_file" "$backup_dir/$(basename $config_file).bak"
+      fi
+    done
+
+    echo "Configuration backed up to: $backup_dir"
+  args:
+    executable: /bin/bash
+  when: hx_domain_backup_enabled | bool
   listen: "backup domain config"
-  when: hx_domain_join_backup_enabled | default(false)
+
+- name: log domain changes
+  lineinfile:
+    path: "{{ hx_domain_log_dir }}/changes.log"
+    line: "{{ ansible_date_time.iso8601 }} - Domain configuration changed, services restarted"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_domain_audit_logging_enabled | bool
+  listen: "log domain changes"

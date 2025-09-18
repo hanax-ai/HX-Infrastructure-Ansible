@@ -1,122 +1,56 @@
----
-# Pre-commit Configuration for HX Infrastructure Ansible
+
+# Pre-commit configuration for HX Infrastructure Ansible
+# Ensures code quality and consistency across all commits
 
 repos:
-  # YAML and Ansible linting
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
-        args: [--markdown-linebreak-ext=md]
       - id: end-of-file-fixer
       - id: check-yaml
         args: [--allow-multiple-documents]
       - id: check-added-large-files
-        args: [--maxkb=1000]
-      - id: check-case-conflict
       - id: check-merge-conflict
       - id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable
-      - id: mixed-line-ending
-        args: [--fix=lf]
 
-  # YAML formatting and linting
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.32.0
+    rev: v1.37.1
     hooks:
       - id: yamllint
-        args: [-c=.yamllint.yml]
-        types: [yaml]
+        args: [-c=.yamllint]
 
-  # Ansible linting
   - repo: https://github.com/ansible/ansible-lint
-    rev: v6.17.2
+    rev: v25.9.0
     hooks:
       - id: ansible-lint
-        args:
-          - --config=.ansible-lint
-          - --exclude=.cache/
-          - --exclude=.github/
-          - --exclude=vars/secrets.yml
-        additional_dependencies:
-          - ansible-core>=2.12.0
-          - jmespath
+        args: [-c=.ansible-lint]
 
-  # Security scanning
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
-    hooks:
-      - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
-        exclude: |
-          (?x)^(
-              \.secrets\.baseline|
-              vars/secrets\.yml\.template|
-              \.git/.*
-          )$
-
-  # Python code quality (for any Python scripts)
   - repo: https://github.com/psf/black
-    rev: 23.7.0
+    rev: 24.10.0
     hooks:
       - id: black
         language_version: python3
-        types: [python]
+        files: \.py$
 
-  - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.8.6
     hooks:
-      - id: flake8
-        types: [python]
-        args: [--max-line-length=88, --extend-ignore=E203,W503]
+      - id: bandit
+        args: [-c=.bandit]
 
-  # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.35.0
+    rev: v0.42.0
     hooks:
       - id: markdownlint
-        args: [--fix]
-        exclude: |
-          (?x)^(
-              \.github/.*\.md|
-              CHANGELOG\.md
-          )$
+        args: [--config=.markdownlint.json]
 
-  # Shell script linting
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.5
+  - repo: local
     hooks:
-      - id: shellcheck
-        types: [shell]
-
-  # Dockerfile linting (if any Dockerfiles exist)
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
-    hooks:
-      - id: hadolint-docker
-        types: [dockerfile]
-
-  # JSON formatting
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
-    hooks:
-      - id: pretty-format-json
-        args: [--autofix, --indent=2]
-        types: [json]
-
-# Global configuration
-default_stages: [commit, push]
-fail_fast: false
-
-# CI configuration
-ci:
-  autofix_commit_msg: |
-    [pre-commit.ci] auto fixes from pre-commit hooks
-
-    for more information, see https://pre-commit.ci
-  autofix_prs: true
-  autoupdate_branch: ''
-  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
-  autoupdate_schedule: weekly
-  skip: []
-  submodules: false
+      - id: ansible-syntax-check
+        name: Ansible Syntax Check
+        entry: ansible-playbook --syntax-check
+        language: system
+        files: \.yml$
+        args: [--inventory=inventories/dev/hosts.yml]

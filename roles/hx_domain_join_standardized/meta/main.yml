@@ -1,49 +1,44 @@
 
 ---
-# Role Metadata for hx_domain_join_standardized
 galaxy_info:
   role_name: hx_domain_join_standardized
   author: HX Infrastructure Team
-  description: Standardized role for Active Directory domain join with SOLID principles and enterprise security
+  description: Professional-grade Active Directory domain integration for HX Infrastructure
   company: Hanax AI
   license: MIT
-  min_ansible_version: "2.15"
-  
+  min_ansible_version: 2.9
   platforms:
     - name: Ubuntu
       versions:
-        - "20.04"
-        - "22.04"
-        - "24.04"
-    - name: CentOS
-      versions:
-        - "8"
-        - "9"
-    - name: RedHat
-      versions:
-        - "8"
-        - "9"
+        - focal
+        - jammy
     - name: Debian
       versions:
-        - "11"
-        - "12"
-
+        - bullseye
+        - bookworm
+    - name: CentOS
+      versions:
+        - 7
+        - 8
+    - name: RedHat
+      versions:
+        - 7
+        - 8
+        - 9
   galaxy_tags:
+    - infrastructure
     - security
-    - active_directory
+    - active-directory
     - domain
     - authentication
-    - ldap
-    - kerberos
     - sssd
-    - infrastructure
-    - hx
+    - kerberos
+    - ldap
 
 dependencies:
-  - role: common
-    when: hx_domain_join_use_common | default(true)
+  - role: hx_ca_trust_standardized
+    when: hx_domain_verify_certificates | bool
 
 collections:
-  - ansible.posix
   - community.general
-  - community.crypto
+  - ansible.posix

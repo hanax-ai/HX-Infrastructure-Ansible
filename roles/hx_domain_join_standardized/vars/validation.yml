@@ -1,0 +1,82 @@
+
+---
+# Variable Validation Rules for HX Domain Join Role
+
+validation_rules:
+  hx_domain_join_enabled:
+    type: boolean
+    required: true
+    description: "Enable or disable domain join functionality"
+
+  hx_ad_domain:
+    type: string
+    required: true
+    pattern: '^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    description: "Active Directory domain name (FQDN)"
+
+  hx_ad_admin_user:
+    type: string
+    required: true
+    pattern: '^[a-zA-Z0-9._-]+$'
+    description: "Domain administrator username"
+
+  hx_ad_admin_password:
+    type: string
+    required: true
+    min_length: 8
+    description: "Domain administrator password"
+
+  hx_ad_realm:
+    type: string
+    required: true
+    pattern: '^[A-Z0-9.-]+$'
+    description: "Kerberos realm (uppercase domain)"
+
+  hx_ad_computer_name:
+    type: string
+    required: true
+    pattern: '^[A-Z0-9-]{1,15}$'
+    description: "Computer name for domain join (max 15 chars, uppercase)"
+
+# Required directories
+required_directories:
+  - "{{ hx_domain_backup_dir }}"
+  - "{{ hx_domain_log_dir }}"
+  - "/etc/sssd"
+  - "/var/lib/sss"
+
+# Required packages
+required_packages:
+  - realmd
+  - sssd
+  - sssd-tools
+  - adcli
+  - krb5-user
+  - packagekit
+
+# Service validation
+required_services:
+  - name: "{{ hx_sssd_service }}"
+    state: "started"
+    enabled: true
+
+# Network validation
+network_requirements:
+  dns_resolution:
+    - "{{ hx_ad_domain }}"
+  port_connectivity:
+    - port: 53
+      protocol: "udp"
+      description: "DNS"
+    - port: 88
+      protocol: "tcp"
+      description: "Kerberos"
+    - port: 389
+      protocol: "tcp"
+      description: "LDAP"
+    - port: 636
+      protocol: "tcp"
+      description: "LDAPS"
+    - port: 3268
+      protocol: "tcp"
+      description: "Global Catalog"

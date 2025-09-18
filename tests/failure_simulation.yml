@@ -1,0 +1,31 @@
+---
+- name: Failure Simulation Test
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars:
+    service_monitoring:
+      enabled: true
+      check_interval: 10
+      timeout: 5
+    health_checks:
+      enabled: true
+      services:
+        - name: "test-service"
+          type: "systemd"
+          port: 9999
+          process: "test-process"
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 2
+      recovery_timeout: 30
+  tasks:
+    - name: Test health checker functionality
+      script: /opt/reliability_monitor/health_checker.py --type resources --output /tmp/test_health_results.json
+      register: health_test
+      failed_when: false
+      changed_when: false
+
+    - name: Display health check results
+      debug:
+        msg: "Health check completed with return code: {{ health_test.rc }}"

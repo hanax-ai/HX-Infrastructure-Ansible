@@ -1,0 +1,70 @@
+
+---
+# Common Templates Role - Default Variables
+# Provides base template inheritance and standardization
+
+# Template versioning
+template_version: "1.0.0"
+template_last_updated: "{{ ansible_date_time.iso8601 }}"
+
+# Base template configuration
+base_template_path: "common_templates"
+template_encoding: "utf-8"
+
+# Standard template variables
+organization_name: "{{ organization_name | default('HX Infrastructure') }}"
+environment: "{{ ansible_environment | default('production') }}"
+managed_by: "Ansible HX Infrastructure Framework"
+
+# Template inheritance settings
+enable_template_inheritance: true
+template_validation_enabled: true
+template_security_scanning: true
+
+# Common template blocks
+common_blocks:
+  - header
+  - configuration
+  - security
+  - monitoring
+  - footer
+
+# Template performance settings
+template_cache_enabled: true
+template_optimization_level: "standard"  # minimal, standard, aggressive
+
+# Security settings for templates
+template_security:
+  escape_variables: true
+  validate_input: true
+  sanitize_output: true
+  audit_logging: true
+
+# Template documentation
+template_documentation:
+  auto_generate: true
+  include_examples: true
+  include_variables: true
+  include_blocks: true
+
+# Template quality metrics
+quality_thresholds:
+  security_score_min: 80
+  performance_score_min: 75
+  complexity_max: 15
+  max_template_lines: 200
+
+# Template standardization
+standardization:
+  enforce_naming_convention: true
+  require_documentation: true
+  enforce_indentation: true
+  indentation_type: "spaces"  # spaces or tabs
+  indentation_size: 2
+
+# Template monitoring
+monitoring:
+  track_usage: true
+  performance_monitoring: true
+  error_tracking: true
+  audit_trail: true

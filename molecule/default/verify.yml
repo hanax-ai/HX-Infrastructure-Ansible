@@ -1,0 +1,144 @@
+
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if template validator is executable
+      stat:
+        path: /home/ubuntu/hx-infrastructure-ansible/scripts/template_validator.py
+      register: template_validator
+      delegate_to: localhost
+      run_once: true
+
+    - name: Assert template validator exists
+      assert:
+        that:
+          - template_validator.stat.exists
+          - template_validator.stat.executable
+        fail_msg: "Template validator not found or not executable"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Check if template documentation generator exists
+      stat:
+        path: /home/ubuntu/hx-infrastructure-ansible/scripts/template_docgen.py
+      register: template_docgen
+      delegate_to: localhost
+      run_once: true
+
+    - name: Assert template docgen exists
+      assert:
+        that:
+          - template_docgen.stat.exists
+          - template_docgen.stat.executable
+        fail_msg: "Template documentation generator not found or not executable"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Verify common templates role structure
+      stat:
+        path: "{{ item }}"
+      register: template_files
+      loop:
+        - /etc/ansible/templates/metadata.json
+        - /etc/ansible/templates
+        - /var/cache/ansible/templates
+        - /usr/share/doc/ansible/templates
+
+    - name: Assert template directories exist
+      assert:
+        that:
+          - item.stat.exists
+        fail_msg: "Template directory/file {{ item.item }} not found"
+      loop: "{{ template_files.results }}"
+
+    - name: Verify reliability monitor installation
+      stat:
+        path: "{{ item }}"
+      register: reliability_files
+      loop:
+        - /opt/reliability_monitor/health_checker.py
+        - /etc/reliability_monitor/config.yml
+        - /etc/systemd/system/reliability-monitor.service
+        - /var/log/ansible
+
+    - name: Assert reliability monitor files exist
+      assert:
+        that:
+          - item.stat.exists
+        fail_msg: "Reliability monitor file {{ item.item }} not found"
+      loop: "{{ reliability_files.results }}"
+
+    - name: Test health checker execution
+      command: /opt/reliability_monitor/health_checker.py --type resources --output /tmp/health_check_results.json
+      register: health_check_test
+      failed_when: false  # Don't fail on health check issues during testing
+      changed_when: false
+
+    - name: Verify health check results file
+      stat:
+        path: /tmp/health_check_results.json
+      register: health_results_file
+
+    - name: Assert health check results exist
+      assert:
+        that:
+          - health_results_file.stat.exists
+        fail_msg: "Health check results file not created"
+
+    - name: Read health check results
+      slurp:
+        src: /tmp/health_check_results.json
+      register: health_results_content
+
+    - name: Parse health check results
+      set_fact:
+        health_results: "{{ health_results_content.content | b64decode | from_json }}"
+
+    - name: Verify health check structure
+      assert:
+        that:
+          - health_results.check_type is defined
+          - health_results.timestamp is defined
+          - health_results.results is defined
+          - health_results.summary is defined
+          - health_results.summary.total_checks is defined
+        fail_msg: "Health check results structure is invalid"
+
+    - name: Test systemd service status (if enabled)
+      systemd:
+        name: reliability-monitor
+        state: started
+      register: service_status
+      failed_when: false
+      when: ansible_service_mgr == "systemd"
+
+    - name: Verify template metadata content
+      slurp:
+        src: /etc/ansible/templates/metadata.json
+      register: metadata_content
+
+    - name: Parse template metadata
+      set_fact:
+        template_metadata: "{{ metadata_content.content | b64decode | from_json }}"
+
+    - name: Verify template metadata structure
+      assert:
+        that:
+          - template_metadata.template_framework is defined
+          - template_metadata.template_framework.version is defined
+          - template_metadata.configuration is defined
+          - template_metadata.quality_thresholds is defined
+        fail_msg: "Template metadata structure is invalid"
+
+    - name: Display verification summary
+      debug:
+        msg:
+          - "=== PHASE 3 DAY 2 VERIFICATION SUMMARY ==="
+          - "Template Quality Framework: INSTALLED"
+          - "Reliability Monitor: INSTALLED"
+          - "Health Checker: FUNCTIONAL"
+          - "Template Metadata: VALID"
+          - "Service Status: {{ 'RUNNING' if service_status.status is defined and service_status.status.ActiveState == 'active' else 'CONFIGURED' }}"
+          - "Verification: PASSED"

@@ -1,101 +1,42 @@
 
 ---
-# Handlers for hx_ca_trust_standardized role
-# Event-driven actions triggered by configuration changes
+# HX CA Trust Handlers
+# Service management and system update handlers
 
-- name: update ca certificates
-  ansible.builtin.command:
-    cmd: update-ca-certificates
-  become: true
-  listen: "update ca certificates"
+- name: update ca trust store
+  command: update-ca-certificates
+  register: ca_update_result
+  changed_when: "'added' in ca_update_result.stdout or 'updated' in ca_update_result.stdout"
+  failed_when: ca_update_result.rc != 0
+  listen: "update ca trust store"
 
-- name: update ca trust
-  ansible.builtin.command:
-    cmd: update-ca-trust
-  become: true
-  listen: "update ca trust"
+- name: reload ca certificates
+  command: update-ca-certificates --fresh
+  register: ca_reload_result
+  changed_when: true
+  failed_when: ca_reload_result.rc != 0
+  listen: "reload ca certificates"
 
-- name: restart nginx
-  ansible.builtin.systemd:
-    name: nginx
-    state: restarted
-    enabled: true
-  become: true
-  listen: "restart nginx"
+- name: backup ca certificates
+  shell: |
+    set -euo pipefail
+    backup_file="{{ hx_ca_backup_dir }}/ca-certificates-{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}.tar.gz"
+    tar -czf "$backup_file" -C /usr/local/share/ca-certificates .
+    echo "Backup created: $backup_file"
+  args:
+    executable: /bin/bash
+  register: ca_backup_result
+  changed_when: true
+  when: hx_ca_backup_enabled | bool
+  listen: "backup ca certificates"
 
-- name: restart apache2
-  ansible.builtin.systemd:
-    name: apache2
-    state: restarted
-    enabled: true
-  become: true
-  listen: "restart apache2"
-
-- name: restart postgresql
-  ansible.builtin.systemd:
-    name: postgresql
-    state: restarted
-    enabled: true
-  become: true
-  listen: "restart postgresql"
-
-- name: reload systemd
-  ansible.builtin.systemd:
-    daemon_reload: true
-  become: true
-  listen: "reload systemd"
-
-- name: start ocsp responder
-  ansible.builtin.systemd:
-    name: hx-ocsp-responder
-    state: started
-    enabled: true
-  become: true
-  listen: "start ocsp responder"
-
-- name: restart auditd
-  ansible.builtin.systemd:
-    name: auditd
-    state: restarted
-  become: true
-  listen: "restart auditd"
-
-- name: reload firewall
-  ansible.builtin.systemd:
-    name: "{{ 'ufw' if ansible_os_family == 'Debian' else 'firewalld' }}"
-    state: reloaded
-  become: true
-  listen: "reload firewall"
-
-- name: update crl
-  ansible.builtin.command:
-    cmd: /usr/local/bin/hx-crl-update
-  become: true
-  listen: "update crl"
-
-- name: backup certificates
-  ansible.builtin.command:
-    cmd: /usr/local/bin/hx-cert-backup
-  become: true
-  listen: "backup certificates"
-
-- name: send notification
-  ansible.builtin.command:
-    cmd: /usr/local/bin/hx-cert-notify "{{ notification_message | default('CA Trust configuration updated') }}"
-  become: true
-  listen: "send notification"
-  when: hx_ca_trust_notifications_enabled | default(false)
-
-- name: validate certificates
-  ansible.builtin.command:
-    cmd: /usr/local/bin/hx-cert-validate
-  become: true
-  listen: "validate certificates"
-  when: hx_ca_trust_certificate_pinning | default(false)
-
-- name: update monitoring
-  ansible.builtin.command:
-    cmd: /usr/local/bin/hx-cert-monitor --update
-  become: true
-  listen: "update monitoring"
-  when: hx_ca_trust_check_expiration | default(false)
+- name: log ca trust update
+  lineinfile:
+    path: "{{ hx_ca_log_dir }}/updates.log"
+    line: "{{ ansible_date_time.iso8601 }} - CA trust store updated: {{ ca_update_result.stdout | default('No output') }}"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_ca_audit_logging_enabled | bool
+  listen: "log ca trust update"

@@ -1,0 +1,40 @@
+
+---
+# Application backup tasks
+# Handles application-specific backup procedures
+
+- name: Stop application services before backup
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+  loop: "{{ backup_stop_services | default([]) }}"
+  when: backup_stop_services is defined and backup_stop_services | length > 0
+  tags: [backup, application, services]
+
+- name: Create application data backup
+  archive:
+    path: "{{ item.path }}"
+    dest: "{{ backup_base_dir | default('/opt/backups') }}/daily/{{ item.name }}-{{ ansible_date_time.date }}.tar.gz"
+    format: gz
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+    mode: '0640'
+  loop: "{{ backup_application_paths | default([]) }}"
+  when: backup_application_paths is defined
+  tags: [backup, application, data]
+
+- name: Create database backups
+  shell: |
+    {{ item.dump_command }} > {{ backup_base_dir | default('/opt/backups') }}/daily/{{ item.name }}-{{ ansible_date_time.date }}.sql
+  loop: "{{ backup_databases | default([]) }}"
+  when: backup_databases is defined
+  become_user: "{{ backup_user | default('backup') }}"
+  tags: [backup, application, database]
+
+- name: Start application services after backup
+  systemd:
+    name: "{{ item }}"
+    state: started
+  loop: "{{ backup_stop_services | default([]) }}"
+  when: backup_stop_services is defined and backup_stop_services | length > 0
+  tags: [backup, application, services]

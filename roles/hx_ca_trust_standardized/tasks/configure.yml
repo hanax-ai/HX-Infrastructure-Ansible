@@ -1,239 +1,88 @@
 
 ---
-# Configuration tasks for hx_ca_trust_standardized role
-# Post-installation configuration and system integration
+# Configuration Tasks for HX CA Trust
 
-- name: Configure certificate distribution
-  block:
-    - name: Create certificate distribution directory
-      ansible.builtin.file:
-        path: "{{ hx_ca_trust_client_cert_path }}"
-        state: directory
-        owner: "{{ hx_ca_trust_file_owner }}"
-        group: "{{ hx_ca_trust_file_group }}"
-        mode: '0755'
-      become: true
+- name: Ensure CA trust store is updated
+  command: "{{ hx_ca_update_command }}"
+  register: hx_ca_update_result
+  changed_when: "'added' in hx_ca_update_result.stdout or 'updated' in hx_ca_update_result.stdout"
+  failed_when: hx_ca_update_result.rc != 0
+  timeout: "{{ hx_ca_update_timeout }}"
+  tags: [configure]
 
-    - name: Copy CA certificate for distribution
-      ansible.builtin.copy:
-        src: "{{ hx_ca_trust_ca_cert_path }}"
-        dest: "{{ hx_ca_trust_client_cert_path }}/{{ hx_ca_trust_ca_name }}.crt"
-        owner: "{{ hx_ca_trust_file_owner }}"
-        group: "{{ hx_ca_trust_file_group }}"
-        mode: "{{ hx_ca_trust_cert_mode }}"
-        remote_src: true
-      become: true
-  when: hx_ca_trust_distribute_to_clients | default(false)
+- name: Verify certificate is in system trust store
+  shell: |
+    set -euo pipefail
+    if [ -f "{{ hx_ca_cert_full_path }}" ]; then
+      openssl x509 -in "{{ hx_ca_cert_full_path }}" -subject -issuer -noout
+    else
+      echo "Certificate file not found"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_ca_cert_info
+  changed_when: false
+  tags: [configure]
 
-- name: Configure certificate monitoring
-  block:
-    - name: Create certificate monitoring script
-      ansible.builtin.template:
-        src: cert_monitor.sh.j2
-        dest: /usr/local/bin/hx-cert-monitor
-        owner: root
-        group: root
-        mode: '0755'
-      become: true
+- name: Extract certificate fingerprint
+  shell: |
+    set -euo pipefail
+    openssl x509 -in "{{ hx_ca_cert_full_path }}" -fingerprint -sha256 -noout | cut -d= -f2
+  args:
+    executable: /bin/bash
+  register: hx_ca_actual_fingerprint
+  changed_when: false
+  tags: [configure]
 
-    - name: Create certificate monitoring cron job
-      ansible.builtin.cron:
-        name: "HX Certificate Monitoring"
-        job: "/usr/local/bin/hx-cert-monitor"
-        minute: "0"
-        hour: "2"
-        user: root
-      become: true
-  when: hx_ca_trust_check_expiration | default(false)
+- name: Validate certificate fingerprint (if expected fingerprint provided)
+  assert:
+    that:
+      - hx_ca_expected_sha256.replace('SHA256:', '') == hx_ca_actual_fingerprint.stdout
+    fail_msg: "Certificate fingerprint mismatch. Expected: {{ hx_ca_expected_sha256 }}, Actual: {{ hx_ca_actual_fingerprint.stdout }}"
+    success_msg: "Certificate fingerprint validation passed"
+  when:
+    - hx_ca_expected_sha256 | length > 0
+    - hx_ca_security_enabled | bool
+  tags: [configure]
 
-- name: Configure certificate backup
-  block:
-    - name: Create certificate backup script
-      ansible.builtin.template:
-        src: cert_backup.sh.j2
-        dest: /usr/local/bin/hx-cert-backup
-        owner: root
-        group: root
-        mode: '0755'
-      become: true
+- name: Configure certificate monitoring (if monitoring enabled)
+  template:
+    src: ca_monitor.sh.j2
+    dest: /usr/local/bin/hx-ca-monitor
+    owner: root
+    group: root
+    mode: '0755'
+  when: hx_ca_monitoring_enabled | bool
+  tags: [configure]
 
-    - name: Create certificate backup cron job
-      ansible.builtin.cron:
-        name: "HX Certificate Backup"
-        job: "/usr/local/bin/hx-cert-backup"
-        special_time: "{{ hx_ca_trust_backup_schedule }}"
-        user: root
-      become: true
-  when: hx_ca_trust_backup_enabled | default(false)
-
-- name: Configure CRL distribution point
-  block:
-    - name: Create CRL distribution directory
-      ansible.builtin.file:
-        path: /var/www/html/crl
-        state: directory
-        owner: www-data
-        group: www-data
-        mode: '0755'
-      become: true
-
-    - name: Copy CRL to web directory
-      ansible.builtin.copy:
-        src: "{{ hx_ca_trust_crl_path }}"
-        dest: /var/www/html/crl/{{ hx_ca_trust_ca_name }}.crl
-        owner: www-data
-        group: www-data
-        mode: '0644'
-        remote_src: true
-      become: true
-
-    - name: Create CRL update script
-      ansible.builtin.template:
-        src: crl_update.sh.j2
-        dest: /usr/local/bin/hx-crl-update
-        owner: root
-        group: root
-        mode: '0755'
-      become: true
-
-    - name: Create CRL update cron job
-      ansible.builtin.cron:
-        name: "HX CRL Update"
-        job: "/usr/local/bin/hx-crl-update"
-        special_time: "{{ hx_ca_trust_crl_update_interval }}"
-        user: root
-      become: true
-  when: hx_ca_trust_crl_enabled | default(false)
-
-- name: Configure service integrations
-  block:
-    - name: Configure Nginx SSL
-      ansible.builtin.template:
-        src: nginx_ssl.conf.j2
-        dest: /etc/nginx/conf.d/ssl-ca.conf
-        owner: root
-        group: root
-        mode: '0644'
-      become: true
-      notify: restart nginx
-      when: "'nginx' in hx_ca_trust_integrate_with_services"
-
-    - name: Configure Apache SSL
-      ansible.builtin.template:
-        src: apache_ssl.conf.j2
-        dest: /etc/apache2/conf-available/ssl-ca.conf
-        owner: root
-        group: root
-        mode: '0644'
-      become: true
-      notify: restart apache2
-      when: "'apache' in hx_ca_trust_integrate_with_services"
-
-    - name: Configure PostgreSQL SSL
-      ansible.builtin.template:
-        src: postgresql_ssl.conf.j2
-        dest: /etc/postgresql/ssl-ca.conf
-        owner: postgres
-        group: postgres
-        mode: '0644'
-      become: true
-      notify: restart postgresql
-      when: "'postgresql' in hx_ca_trust_integrate_with_services"
-  when: hx_ca_trust_integrate_with_services | length > 0
-
-- name: Configure certificate templates
-  ansible.builtin.template:
-    src: cert_template.conf.j2
-    dest: "{{ hx_ca_trust_work_dir }}/{{ item.key }}_template.conf"
-    owner: "{{ hx_ca_trust_file_owner }}"
-    group: "{{ hx_ca_trust_file_group }}"
-    mode: '0644'
-  become: true
-  loop: "{{ hx_ca_trust_certificate_templates | dict2items }}"
-  when: hx_ca_trust_certificate_templates | length > 0
-
-- name: Configure OCSP responder
-  block:
-    - name: Create OCSP responder configuration
-      ansible.builtin.template:
-        src: ocsp_responder.conf.j2
-        dest: /etc/ssl/ocsp_responder.conf
-        owner: "{{ hx_ca_trust_file_owner }}"
-        group: "{{ hx_ca_trust_file_group }}"
-        mode: '0644'
-      become: true
-
-    - name: Create OCSP responder service
-      ansible.builtin.template:
-        src: ocsp_responder.service.j2
-        dest: /etc/systemd/system/hx-ocsp-responder.service
-        owner: root
-        group: root
-        mode: '0644'
-      become: true
-      notify: 
-        - reload systemd
-        - start ocsp responder
-  when: hx_ca_trust_ocsp_enabled | default(false)
-
-- name: Configure notification system
-  block:
-    - name: Create notification script
-      ansible.builtin.template:
-        src: cert_notify.sh.j2
-        dest: /usr/local/bin/hx-cert-notify
-        owner: root
-        group: root
-        mode: '0755'
-      become: true
-
-    - name: Test notification system
-      ansible.builtin.command:
-        cmd: /usr/local/bin/hx-cert-notify test
-      become: true
-      changed_when: false
-      failed_when: false
-  when: hx_ca_trust_notifications_enabled | default(false)
-
-- name: Configure compliance settings
-  block:
-    - name: Apply FIPS mode settings
-      ansible.builtin.lineinfile:
-        path: /etc/ssl/openssl.cnf
-        regexp: '^# fips = yes'
-        line: 'fips = yes'
-        backup: true
-      become: true
-      when: hx_ca_trust_fips_mode | default(false)
-
-    - name: Configure strict compliance mode
-      ansible.builtin.template:
-        src: compliance.conf.j2
-        dest: /etc/ssl/compliance.conf
-        owner: root
-        group: root
-        mode: '0644'
-      become: true
-      when: hx_ca_trust_compliance_mode == "strict"
-  when: hx_ca_trust_compliance_mode != "standard"
+- name: Create certificate monitoring cron job (if monitoring enabled)
+  cron:
+    name: "HX CA Certificate Monitoring"
+    minute: "0"
+    hour: "*/6"
+    job: "/usr/local/bin/hx-ca-monitor >> {{ hx_ca_log_dir }}/monitor.log 2>&1"
+    user: root
+  when: hx_ca_monitoring_enabled | bool
+  tags: [configure]
 
 - name: Log configuration completion
-  ansible.builtin.lineinfile:
-    path: "{{ hx_ca_trust_audit_log_path }}"
-    line: "{{ ansible_date_time.iso8601 }} - CA Trust configuration completed on {{ inventory_hostname }}"
-    create: true
-  become: true
-  when: hx_ca_trust_audit_enabled | default(false)
+  lineinfile:
+    path: "{{ hx_ca_log_dir }}/deployment.log"
+    line: "{{ ansible_date_time.iso8601 }} - Certificate configuration completed. Fingerprint: {{ hx_ca_actual_fingerprint.stdout }}"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_ca_audit_logging_enabled | bool
+  tags: [configure]
 
 - name: Display configuration summary
-  ansible.builtin.debug:
+  debug:
     msg:
-      - "CA Trust configuration completed successfully"
-      - "Certificate distribution: {{ hx_ca_trust_distribute_to_clients }}"
-      - "Monitoring enabled: {{ hx_ca_trust_check_expiration }}"
-      - "Backup enabled: {{ hx_ca_trust_backup_enabled }}"
-      - "CRL enabled: {{ hx_ca_trust_crl_enabled }}"
-      - "OCSP enabled: {{ hx_ca_trust_ocsp_enabled }}"
-      - "Service integrations: {{ hx_ca_trust_integrate_with_services | length }}"
-      - "Compliance mode: {{ hx_ca_trust_compliance_mode }}"
-  when: hx_ca_trust_enable_logging | default(true)
+      - "Certificate configuration completed"
+      - "Subject: {{ hx_ca_cert_info.stdout_lines[0] | default('Unknown') }}"
+      - "Issuer: {{ hx_ca_cert_info.stdout_lines[1] | default('Unknown') }}"
+      - "SHA256 Fingerprint: {{ hx_ca_actual_fingerprint.stdout }}"
+      - "Trust Store: Updated"
+  tags: [configure]

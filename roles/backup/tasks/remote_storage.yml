@@ -1,0 +1,55 @@
+
+---
+# Remote storage tasks for backup automation
+# Handles backup synchronization to remote locations
+
+- name: Install remote storage utilities
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - rsync
+    - openssh-client
+  when: backup_remote_enabled | default(false)
+  tags: [backup, remote_storage, install]
+
+- name: Configure SSH key for remote backup access
+  copy:
+    src: "{{ backup_ssh_key_path | default('files/backup_rsa') }}"
+    dest: "{{ backup_home_dir | default('/home/backup') }}/.ssh/id_rsa"
+    mode: '0600'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  when: backup_remote_enabled | default(false) and backup_ssh_key_path is defined
+  tags: [backup, remote_storage, ssh]
+
+- name: Create SSH config for backup user
+  template:
+    src: ssh_config.j2
+    dest: "{{ backup_home_dir | default('/home/backup') }}/.ssh/config"
+    mode: '0600'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  when: backup_remote_enabled | default(false)
+  tags: [backup, remote_storage, ssh]
+
+- name: Sync backups to remote storage
+  synchronize:
+    src: "{{ backup_base_dir | default('/opt/backups') }}/"
+    dest: "{{ backup_remote_path | default('backups/') }}"
+    delete: no
+    rsync_opts:
+      - "--archive"
+      - "--compress"
+      - "--verbose"
+  delegate_to: "{{ backup_remote_host | default('backup-server') }}"
+  when: backup_remote_enabled | default(false) and backup_remote_host is defined
+  tags: [backup, remote_storage, sync]
+
+- name: Verify remote backup integrity
+  shell: |
+    ssh {{ backup_remote_host | default('backup-server') }} \
+    "find {{ backup_remote_path | default('backups/') }} -name '*.tar.gz' -exec sha256sum {} \;" > \
+    {{ backup_base_dir | default('/opt/backups') }}/remote-checksums-{{ ansible_date_time.date }}.txt
+  when: backup_remote_enabled | default(false) and backup_remote_host is defined
+  tags: [backup, remote_storage, verification]

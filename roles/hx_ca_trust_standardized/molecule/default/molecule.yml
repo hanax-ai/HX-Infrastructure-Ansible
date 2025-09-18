@@ -1,0 +1,52 @@
+
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: ubuntu-focal
+    image: ubuntu:20.04
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: "/lib/systemd/systemd"
+    tmpfs:
+      - /run
+      - /tmp
+    environment:
+      container: docker
+  - name: ubuntu-jammy
+    image: ubuntu:22.04
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: "/lib/systemd/systemd"
+    tmpfs:
+      - /run
+      - /tmp
+    environment:
+      container: docker
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+      callback_whitelist: profile_tasks, timer, yaml
+      # host_key_checking: false  # REMOVED: Security risk for testing
+    ssh_connection:
+      pipelining: true
+  inventory:
+    host_vars:
+      ubuntu-focal:
+        hx_ca_host: "localhost"
+        hx_ca_root_ca_path_on_ca: "/tmp/test-ca.crt"
+        hx_ca_expected_sha256: ""
+      ubuntu-jammy:
+        hx_ca_host: "localhost"
+        hx_ca_root_ca_path_on_ca: "/tmp/test-ca.crt"
+        hx_ca_security_enabled: true
+verifier:
+  name: ansible

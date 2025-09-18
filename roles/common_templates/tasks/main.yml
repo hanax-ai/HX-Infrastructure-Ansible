@@ -1,0 +1,48 @@
+
+---
+- name: Ensure template directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ template_base_dir | default('/etc/ansible/templates') }}"
+    - "{{ template_cache_dir | default('/var/cache/ansible/templates') }}"
+    - "{{ template_docs_dir | default('/usr/share/doc/ansible/templates') }}"
+  tags:
+    - templates
+    - setup
+
+- name: Validate template configuration
+  assert:
+    that:
+      - template_version is defined
+      - template_version is version('1.0.0', '>=')
+      - organization_name is defined
+      - environment in ['development', 'testing', 'staging', 'production']
+    fail_msg: "Template configuration validation failed"
+    success_msg: "Template configuration is valid"
+  tags:
+    - templates
+    - validation
+
+- name: Create template metadata file
+  template:
+    src: template_metadata.json.j2
+    dest: "{{ template_base_dir | default('/etc/ansible/templates') }}/metadata.json"
+    mode: '0644'
+  tags:
+    - templates
+    - metadata
+
+- name: Set template facts
+  set_fact:
+    template_facts:
+      version: "{{ template_version }}"
+      base_path: "{{ template_base_dir | default('/etc/ansible/templates') }}"
+      inheritance_enabled: "{{ enable_template_inheritance }}"
+      security_enabled: "{{ template_security_scanning }}"
+      validation_enabled: "{{ template_validation_enabled }}"
+  tags:
+    - templates
+    - facts

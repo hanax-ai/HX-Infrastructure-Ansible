@@ -1,0 +1,11 @@
+
+# Architecture Documentation
+
+This directory will contain comprehensive architecture documentation for the HX-Infrastructure Ansible project.
+
+Planned documentation:
+- System architecture diagrams
+- Component interaction flows
+- Infrastructure topology
+- Security architecture
+- Deployment architecture

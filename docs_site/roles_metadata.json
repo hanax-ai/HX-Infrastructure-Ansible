@@ -1,0 +1,1248 @@
+{
+  "hx_ca_trust_standardized": {
+    "name": "hx_ca_trust_standardized",
+    "description": "Professional-grade Certificate Authority trust management for HX Infrastructure",
+    "author": "HX Infrastructure Team",
+    "version": "",
+    "dependencies": [],
+    "variables": {
+      "hx_ca_trust_enabled": true,
+      "hx_ca_trust_version": "1.0.0",
+      "hx_ca_host": "hx-ca-server.dev-test.hana-x.ai",
+      "hx_ca_root_ca_path_on_ca": "/home/agent0/easy-rsa/pki/ca.crt",
+      "hx_ca_root_ca_filename": "hx-rootCA.crt",
+      "hx_ca_local_cert_path": "/usr/local/share/ca-certificates/hx-root-ca.crt",
+      "hx_ca_dc_host": "hx-dc-server.dev-test.hana-x.ai",
+      "hx_ca_dc_report_dir": "/var/log/hx",
+      "hx_ca_security_enabled": true,
+      "hx_ca_expected_sha256": "",
+      "hx_ca_verify_chain": true,
+      "hx_ca_strict_permissions": true,
+      "hx_ca_validation_enabled": true,
+      "hx_ca_san_check_targets": [],
+      "hx_ca_health_checks_enabled": true,
+      "hx_ca_cert_owner": "root",
+      "hx_ca_cert_group": "root",
+      "hx_ca_cert_mode": "0644",
+      "hx_ca_packages": [
+        "ca-certificates",
+        "openssl"
+      ],
+      "hx_ca_backup_enabled": true,
+      "hx_ca_monitoring_enabled": false,
+      "hx_ca_audit_logging_enabled": true,
+      "hx_ca_update_timeout": 30,
+      "hx_ca_validation_retries": 3,
+      "hx_ca_validation_delay": 5
+    },
+    "tasks": [
+      "security.yml",
+      "configure.yml",
+      "validate.yml",
+      "health_checks.yml",
+      "main.yml",
+      "install.yml"
+    ],
+    "handlers": [
+      "main.yml"
+    ],
+    "templates": [
+      "security_audit.j2",
+      "ca_monitor.sh.j2",
+      "health_report.j2"
+    ]
+  },
+  "networking": {
+    "name": "networking",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {},
+    "tasks": [],
+    "handlers": [],
+    "templates": []
+  },
+  "security": {
+    "name": "security",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {},
+    "tasks": [],
+    "handlers": [],
+    "templates": []
+  },
+  "web_server": {
+    "name": "web_server",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {},
+    "tasks": [],
+    "handlers": [],
+    "templates": []
+  },
+  "dependency_validator": {
+    "name": "dependency_validator",
+    "description": "Comprehensive dependency validation framework for HX Infrastructure",
+    "author": "HX Infrastructure Team",
+    "version": "",
+    "dependencies": [],
+    "variables": {
+      "dependency_validation_enabled": true,
+      "dependency_validation_version": "3.0.0",
+      "dependency_validation_strict_mode": true,
+      "dependency_validation_fail_fast": false,
+      "system_requirements": {
+        "min_memory_gb": 2,
+        "min_disk_gb": 10,
+        "min_cpu_cores": 1,
+        "supported_architectures": [
+          "x86_64",
+          "aarch64"
+        ],
+        "supported_os_families": [
+          "RedHat",
+          "Debian",
+          "Ubuntu"
+        ],
+        "supported_os_versions": {
+          "RedHat": [
+            "8",
+            "9"
+          ],
+          "Debian": [
+            "10",
+            "11",
+            "12"
+          ],
+          "Ubuntu": [
+            "20.04",
+            "22.04",
+            "24.04"
+          ]
+        }
+      },
+      "package_dependencies": {
+        "essential_packages": [
+          "python3",
+          "curl",
+          "wget",
+          "openssl",
+          "ca-certificates"
+        ],
+        "role_specific_packages": {},
+        "version_constraints": {}
+      },
+      "service_dependencies": {
+        "required_services": [],
+        "forbidden_services": [],
+        "service_states": {
+          "required_running": [],
+          "required_stopped": []
+        }
+      },
+      "network_dependencies": {
+        "connectivity_checks": [
+          {
+            "host": "8.8.8.8",
+            "port": 53,
+            "protocol": "udp",
+            "timeout": 5
+          },
+          {
+            "host": "1.1.1.1",
+            "port": 53,
+            "protocol": "udp",
+            "timeout": 5
+          }
+        ],
+        "dns_resolution_checks": [
+          "google.com",
+          "github.com"
+        ],
+        "required_ports_open": [],
+        "required_ports_closed": []
+      },
+      "certificate_dependencies": {
+        "validate_ca_bundle": true,
+        "required_ca_certificates": [],
+        "ssl_endpoints_check": [],
+        "certificate_expiry_days": 30
+      },
+      "external_dependencies": {
+        "api_endpoints": [],
+        "database_connections": [],
+        "message_queues": [],
+        "storage_backends": []
+      },
+      "dependency_cache": {
+        "enabled": true,
+        "cache_dir": "/tmp/ansible-dependency-cache",
+        "cache_ttl_seconds": 3600,
+        "offline_mode": false
+      },
+      "validation_timeouts": {
+        "network_timeout": 10,
+        "service_timeout": 30,
+        "package_timeout": 300,
+        "overall_timeout": 600
+      },
+      "validation_retries": {
+        "network_retries": 3,
+        "service_retries": 2,
+        "package_retries": 1,
+        "retry_delay": 5
+      },
+      "dependency_reporting": {
+        "generate_report": true,
+        "report_format": "json",
+        "report_path": "/tmp/dependency-validation-report.json",
+        "detailed_logging": true,
+        "log_level": "INFO"
+      },
+      "environment_overrides": {
+        "development": {
+          "dependency_validation_strict_mode": false,
+          "validation_timeouts": {
+            "overall_timeout": 300
+          }
+        },
+        "testing": {
+          "dependency_validation_strict_mode": true,
+          "dependency_cache": {
+            "cache_ttl_seconds": 1800
+          }
+        },
+        "production": {
+          "dependency_validation_strict_mode": true,
+          "dependency_validation_fail_fast": true,
+          "validation_retries": {
+            "network_retries": 5,
+            "service_retries": 3
+          }
+        }
+      },
+      "features": {
+        "validate_system_requirements": true,
+        "validate_packages": true,
+        "validate_services": true,
+        "validate_network": true,
+        "validate_certificates": true,
+        "validate_external_deps": true,
+        "generate_dependency_matrix": true,
+        "offline_validation": false
+      }
+    },
+    "tasks": [
+      "system_requirements.yml",
+      "network_validation.yml",
+      "package_validation.yml",
+      "main.yml"
+    ],
+    "handlers": [],
+    "templates": []
+  },
+  "hx_domain_join_standardized": {
+    "name": "hx_domain_join_standardized",
+    "description": "Professional-grade Active Directory domain integration for HX Infrastructure",
+    "author": "HX Infrastructure Team",
+    "version": "",
+    "dependencies": [
+      {
+        "role": "hx_ca_trust_standardized",
+        "when": "hx_domain_verify_certificates | bool"
+      }
+    ],
+    "variables": {
+      "hx_domain_join_enabled": true,
+      "hx_domain_join_version": "1.0.0",
+      "hx_ad_domain": "dev-test.hana-x.ai",
+      "hx_ad_admin_user": "agent0",
+      "hx_ad_admin_password": "",
+      "hx_ad_realm": "DEV-TEST.HANA-X.AI",
+      "hx_ad_domain_controller": "",
+      "hx_ad_ou_path": "",
+      "hx_ad_computer_name": "{{ ansible_hostname | upper }}",
+      "hx_ad_computer_description": "HX Infrastructure Server - {{ ansible_hostname }}",
+      "hx_ad_computer_location": "HX Infrastructure",
+      "hx_domain_security_enabled": true,
+      "hx_domain_strict_validation": true,
+      "hx_domain_require_encryption": true,
+      "hx_domain_verify_certificates": true,
+      "hx_sssd_enabled": true,
+      "hx_sssd_cache_credentials": true,
+      "hx_sssd_enumerate_users": false,
+      "hx_sssd_enumerate_groups": false,
+      "hx_sssd_case_sensitive": false,
+      "hx_sssd_use_fully_qualified_names": false,
+      "hx_krb5_enabled": true,
+      "hx_krb5_default_realm": "{{ hx_ad_realm }}",
+      "hx_krb5_ticket_lifetime": "24h",
+      "hx_krb5_renew_lifetime": "7d",
+      "hx_krb5_forwardable": true,
+      "hx_dns_update_enabled": true,
+      "hx_dns_search_domains": [
+        "{{ hx_ad_domain }}"
+      ],
+      "hx_dns_nameservers": [],
+      "hx_domain_packages": [
+        "realmd",
+        "sssd",
+        "sssd-tools",
+        "adcli",
+        "krb5-user",
+        "krb5-workstation",
+        "packagekit",
+        "samba-common-tools"
+      ],
+      "hx_domain_backup_enabled": true,
+      "hx_domain_monitoring_enabled": false,
+      "hx_domain_audit_logging_enabled": true,
+      "hx_domain_health_checks_enabled": true,
+      "hx_domain_join_timeout": 300,
+      "hx_domain_validation_retries": 3,
+      "hx_domain_validation_delay": 10,
+      "hx_domain_discovery_timeout": 60,
+      "hx_home_dir_enabled": false,
+      "hx_home_dir_base": "/home",
+      "hx_home_dir_create": true,
+      "hx_home_dir_umask": "0077",
+      "hx_sudo_enabled": false,
+      "hx_sudo_groups": [],
+      "hx_sudo_users": [],
+      "hx_login_shell": "/bin/bash",
+      "hx_login_create_homedir": true,
+      "hx_login_fallback_homedir": "/tmp"
+    },
+    "tasks": [
+      "security.yml",
+      "configure.yml",
+      "validate.yml",
+      "health_checks.yml",
+      "main.yml",
+      "join_domain.yml",
+      "install.yml"
+    ],
+    "handlers": [
+      "main.yml"
+    ],
+    "templates": [
+      "security_audit.j2",
+      "krb5.conf.j2",
+      "sudoers_domain.j2",
+      "resolv.conf.j2",
+      "realmd.conf.j2",
+      "sssd.conf.j2",
+      "health_report.j2"
+    ]
+  },
+  "ssh_key_management": {
+    "name": "ssh_key_management",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {
+      "ssh_key_type": "ed25519",
+      "ssh_key_size": 256,
+      "ssh_key_comment": "Ansible managed key - {{ inventory_hostname }} - {{ ansible_date_time.date }}",
+      "ssh_key_private_path": "{{ ansible_user_dir }}/.ssh/id_{{ ssh_key_type }}",
+      "ssh_key_force_regenerate": false,
+      "ssh_key_exclusive": false,
+      "ssh_key_backup_enabled": true,
+      "ssh_key_test_connectivity": true,
+      "ssh_client_config_enabled": true,
+      "ssh_security_hardening": true,
+      "ssh_key_rotation_enabled": false,
+      "ssh_key_backup_dir": "/opt/ssh_key_backups",
+      "ssh_key_log_dir": "/var/log/ssh_key_management",
+      "ansible_user_dir": "/home/{{ ansible_user }}",
+      "ssh_key_patterns": [
+        "id_*",
+        "*.pub",
+        "authorized_keys",
+        "known_hosts"
+      ],
+      "ssh_connection_timeout": 30,
+      "ssh_client_config": {
+        "StrictHostKeyChecking": "yes",
+        "UserKnownHostsFile": "~/.ssh/known_hosts_{{ environment_type | default('dev') }}",
+        "ControlMaster": "auto",
+        "ControlPath": "~/.ssh/control-%h-%p-%r",
+        "ControlPersist": "300s",
+        "ServerAliveInterval": "60",
+        "ServerAliveCountMax": "3",
+        "ConnectTimeout": "10",
+        "BatchMode": "yes",
+        "LogLevel": "ERROR"
+      },
+      "ssh_security_settings": {
+        "Protocol": "2",
+        "PermitRootLogin": "no",
+        "PasswordAuthentication": "no",
+        "PubkeyAuthentication": "yes",
+        "PermitEmptyPasswords": "no",
+        "ChallengeResponseAuthentication": "no",
+        "X11Forwarding": "no",
+        "ClientAliveInterval": "300",
+        "ClientAliveCountMax": "2",
+        "MaxAuthTries": "3",
+        "MaxSessions": "10",
+        "LoginGraceTime": "60"
+      },
+      "ssh_key_rotation_days": 90,
+      "ssh_key_rotation_warning_days": 7
+    },
+    "tasks": [
+      "main.yml"
+    ],
+    "handlers": [
+      "main.yml"
+    ],
+    "templates": [
+      "rotate_ssh_keys.sh.j2",
+      "ssh_config.j2",
+      "ssh_key_inventory.yml.j2"
+    ]
+  },
+  "backup": {
+    "name": "backup",
+    "description": "Comprehensive backup automation role for HX Infrastructure",
+    "author": "HX Infrastructure Team",
+    "version": "",
+    "dependencies": [],
+    "variables": {
+      "backup_base_dir": "/opt/backups",
+      "backup_log_dir": "/var/log/backup",
+      "backup_config_dir": "/etc/backup",
+      "backup_user": "backup",
+      "backup_group": "backup",
+      "backup_home_dir": "/home/backup",
+      "backup_daily_hour": 2,
+      "backup_daily_minute": 0,
+      "backup_weekly_hour": 3,
+      "backup_weekly_minute": 0,
+      "backup_weekly_day": 0,
+      "backup_monthly_hour": 4,
+      "backup_monthly_minute": 0,
+      "backup_monthly_day": 1,
+      "backup_cleanup_hour": 5,
+      "backup_cleanup_minute": 30,
+      "backup_retention_daily": 7,
+      "backup_retention_weekly": 4,
+      "backup_retention_monthly": 12,
+      "backup_encryption_enabled": true,
+      "backup_key_file": "/etc/backup/encryption.key",
+      "backup_remote_enabled": false,
+      "backup_remote_host": "",
+      "backup_remote_path": "backups/",
+      "backup_ssh_key_path": "",
+      "backup_systemd_timer_enabled": false,
+      "backup_monitoring_enabled": false,
+      "backup_notifications_enabled": false,
+      "backup_notification_email": "",
+      "backup_min_space_kb": 1048576,
+      "backup_stop_services": [],
+      "backup_application_paths": [],
+      "backup_databases": []
+    },
+    "tasks": [
+      "remote_storage.yml",
+      "configuration.yml",
+      "initial_validation.yml",
+      "application.yml",
+      "scheduling.yml",
+      "service.yml",
+      "system.yml",
+      "main.yml",
+      "directories.yml",
+      "verification.yml",
+      "encryption.yml",
+      "install.yml"
+    ],
+    "handlers": [
+      "main.yml"
+    ],
+    "templates": []
+  },
+  "monitoring": {
+    "name": "monitoring",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {},
+    "tasks": [],
+    "handlers": [],
+    "templates": []
+  },
+  "reliability_monitor": {
+    "name": "reliability_monitor",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {
+      "service_monitoring": {
+        "enabled": true,
+        "check_interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "escalation_threshold": 5
+      },
+      "health_checks": {
+        "enabled": true,
+        "types": [
+          "service_status",
+          "port_connectivity",
+          "process_monitoring",
+          "resource_utilization",
+          "log_analysis"
+        ],
+        "services": []
+      },
+      "circuit_breaker": {
+        "enabled": true,
+        "failure_threshold": 5,
+        "recovery_timeout": 60,
+        "half_open_max_calls": 3,
+        "success_threshold": 2
+      },
+      "service_recovery": {
+        "enabled": true,
+        "strategies": [
+          "restart_service",
+          "reload_configuration",
+          "failover_to_backup",
+          "scale_resources"
+        ],
+        "escalation": {
+          "level_1": "restart_service",
+          "level_2": "reload_configuration",
+          "level_3": "failover_to_backup",
+          "level_4": "manual_intervention"
+        }
+      },
+      "performance_monitoring": {
+        "enabled": true,
+        "metrics": [
+          "cpu_usage",
+          "memory_usage",
+          "disk_usage",
+          "network_io",
+          "response_time"
+        ],
+        "thresholds": {
+          "cpu_warning": 70,
+          "cpu_critical": 90,
+          "memory_warning": 80,
+          "memory_critical": 95,
+          "disk_warning": 85,
+          "disk_critical": 95
+        }
+      },
+      "error_handling": {
+        "enabled": true,
+        "log_level": "INFO",
+        "log_file": "/var/log/ansible/reliability_monitor.log",
+        "max_log_size": "100MB",
+        "log_retention_days": 30,
+        "alerting": {
+          "enabled": true,
+          "channels": [
+            "email",
+            "slack",
+            "webhook"
+          ],
+          "thresholds": {
+            "service_down": "CRITICAL",
+            "performance_degraded": "WARNING",
+            "recovery_failed": "CRITICAL"
+          }
+        }
+      },
+      "backup_verification": {
+        "enabled": true,
+        "check_interval": 3600,
+        "verification_types": [
+          "file_integrity",
+          "backup_completeness",
+          "restore_test"
+        ],
+        "backup_locations": []
+      },
+      "container_support": {
+        "enabled": false,
+        "orchestrator": "docker",
+        "health_check_endpoint": "/health",
+        "readiness_probe_endpoint": "/ready",
+        "liveness_probe_endpoint": "/alive"
+      },
+      "service_mesh": {
+        "enabled": false,
+        "type": "istio",
+        "metrics_endpoint": "/metrics",
+        "tracing_enabled": true
+      },
+      "monitoring_integration": {
+        "prometheus": {
+          "enabled": false,
+          "endpoint": "http://localhost:9090",
+          "push_gateway": "http://localhost:9091"
+        },
+        "grafana": {
+          "enabled": false,
+          "endpoint": "http://localhost:3000",
+          "dashboard_id": "reliability-monitor"
+        },
+        "elasticsearch": {
+          "enabled": false,
+          "endpoint": "http://localhost:9200",
+          "index_pattern": "reliability-logs-*"
+        }
+      },
+      "notifications": {
+        "enabled": true,
+        "email": {
+          "smtp_server": "localhost",
+          "smtp_port": 587,
+          "from_address": "ansible@{{ ansible_fqdn }}",
+          "to_addresses": []
+        },
+        "slack": {
+          "webhook_url": "",
+          "channel": "#alerts",
+          "username": "Ansible Reliability Monitor"
+        },
+        "webhook": {
+          "url": "",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        }
+      },
+      "security": {
+        "encrypt_logs": false,
+        "secure_communications": true,
+        "audit_trail": true,
+        "access_control": true
+      },
+      "reliability_metrics": {
+        "track_uptime": true,
+        "track_mttr": true,
+        "track_mtbf": true,
+        "track_availability": true,
+        "sla_target": 99.9
+      },
+      "maintenance_windows": {
+        "enabled": true,
+        "default_window": {
+          "start_time": "02:00",
+          "end_time": "04:00",
+          "timezone": "UTC",
+          "days": [
+            "Sunday"
+          ]
+        },
+        "suppress_alerts_during_maintenance": true
+      }
+    },
+    "tasks": [
+      "main.yml"
+    ],
+    "handlers": [
+      "main.yml"
+    ],
+    "templates": [
+      "reliability-monitor.service.j2",
+      "reliability_config.yml.j2",
+      "health_checker.py.j2"
+    ]
+  },
+  "common": {
+    "name": "common",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {},
+    "tasks": [
+      "operational_safety.yml"
+    ],
+    "handlers": [],
+    "templates": []
+  },
+  "operational_safety": {
+    "name": "operational_safety",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {
+      "safety_confirmation_required": true,
+      "safety_require_backup": true,
+      "safety_require_maintenance_window": false,
+      "safety_dangerous_command_protection": true,
+      "safety_create_rollback_script": true,
+      "safety_check_monitoring": false,
+      "safety_check_cluster_health": false,
+      "safety_backup_base_dir": "/opt/ansible-backups",
+      "safety_backup_database": false,
+      "safety_backup_paths": [
+        "/etc",
+        "/opt/config",
+        "/var/lib/important"
+      ],
+      "operational_safety_log_dir": "/var/log/ansible-safety",
+      "safety_dangerous_commands": [
+        "rm -rf",
+        "dd if=",
+        "mkfs",
+        "fdisk",
+        "parted",
+        "wipefs",
+        "shred",
+        "format",
+        "del /s",
+        "rmdir /s",
+        "truncate -s 0",
+        ">"
+      ],
+      "safety_maintenance_start": "02:00",
+      "safety_maintenance_end": "06:00",
+      "safety_forbidden_environments": [],
+      "safety_risks": [
+        "System downtime",
+        "Data loss",
+        "Service interruption",
+        "Configuration corruption",
+        "Security policy changes"
+      ],
+      "monitoring_api_url": "http://localhost:9090/api/v1/alerts",
+      "db_host": "localhost",
+      "db_user": "postgres",
+      "db_name": "hx_db"
+    },
+    "tasks": [
+      "main.yml"
+    ],
+    "handlers": [],
+    "templates": [
+      "rollback_script.sh.j2"
+    ]
+  },
+  "storage": {
+    "name": "storage",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {},
+    "tasks": [],
+    "handlers": [],
+    "templates": []
+  },
+  "database": {
+    "name": "database",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {},
+    "tasks": [],
+    "handlers": [],
+    "templates": []
+  },
+  "hx_pg_auth_standardized": {
+    "name": "hx_pg_auth_standardized",
+    "description": "Professional-grade PostgreSQL authentication and security management for HX Infrastructure",
+    "author": "HX Infrastructure Team",
+    "version": "",
+    "dependencies": [
+      {
+        "role": "hx_domain_join_standardized",
+        "when": "hx_pg_gss_user | length > 0"
+      }
+    ],
+    "variables": {
+      "hx_pg_auth_enabled": true,
+      "hx_pg_auth_version": "1.0.0",
+      "hx_pg_cluster_version": 17,
+      "hx_pg_cluster_name": "main",
+      "hx_pg_service_name": "postgresql",
+      "hx_pg_db": "hx_app_db",
+      "hx_pg_app_user": "hx_app",
+      "hx_pg_gss_user": "agent0",
+      "hx_pg_realm": "DEV-TEST.HANA-X.AI",
+      "hx_pg_subnet": "192.168.10.0/24",
+      "hx_pg_listen_addresses": "localhost,{{ ansible_default_ipv4.address }}",
+      "hx_pg_port": 5432,
+      "hx_pg_ssl_enabled": true,
+      "hx_pg_ssl_cert_file": "server.crt",
+      "hx_pg_ssl_key_file": "server.key",
+      "hx_pg_ssl_ca_file": "ca.crt",
+      "hx_pg_ssl_crl_file": "",
+      "hx_pg_ssl_min_protocol_version": "TLSv1.2",
+      "hx_pg_ssl_max_protocol_version": "",
+      "hx_pg_ssl_ciphers": "HIGH:MEDIUM:+3DES:!aNULL",
+      "hx_pg_ssl_prefer_server_ciphers": true,
+      "hx_pg_password_encryption": "scram-sha-256",
+      "hx_pg_auth_methods": {
+        "local_connections": "peer",
+        "host_connections": "scram-sha-256",
+        "gss_connections": "gss",
+        "ssl_connections": "cert"
+      },
+      "hx_pg_security_enabled": true,
+      "hx_pg_hardening_enabled": true,
+      "hx_pg_reject_nossl": true,
+      "hx_pg_enforce_tls_floor": true,
+      "hx_pg_require_ssl": true,
+      "hx_pg_log_connections": true,
+      "hx_pg_log_disconnections": true,
+      "hx_pg_log_failed_connections": true,
+      "hx_pg_hba_entries": [
+        {
+          "type": "local",
+          "database": "all",
+          "user": "postgres",
+          "method": "peer",
+          "comment": "Local postgres superuser access"
+        },
+        {
+          "type": "local",
+          "database": "all",
+          "user": "all",
+          "method": "peer",
+          "comment": "Local user access"
+        },
+        {
+          "type": "hostssl",
+          "database": "{{ hx_pg_db }}",
+          "user": "{{ hx_pg_app_user }}",
+          "address": "{{ hx_pg_subnet }}",
+          "method": "scram-sha-256",
+          "comment": "Application database access"
+        },
+        {
+          "type": "hostgssenc",
+          "database": "{{ hx_pg_db }}",
+          "user": "{{ hx_pg_gss_user }}",
+          "address": "{{ hx_pg_subnet }}",
+          "method": "gss",
+          "options": "include_realm=1 krb_realm={{ hx_pg_realm }}",
+          "comment": "Kerberos authentication"
+        }
+      ],
+      "hx_pg_ca_enabled": true,
+      "hx_pg_ca_path": "/usr/local/share/ca-certificates/hx-root-ca.crt",
+      "hx_pg_keytab_path": "",
+      "hx_pg_app_password": "",
+      "hx_pg_create_app_user": true,
+      "hx_pg_create_app_database": true,
+      "hx_pg_app_user_privileges": [
+        "CONNECT",
+        "CREATE"
+      ],
+      "hx_pg_app_database_owner": "{{ hx_pg_app_user }}",
+      "hx_pg_backup_enabled": true,
+      "hx_pg_backup_dir": "/var/backups/hx/pg",
+      "hx_pg_backup_retention_days": 7,
+      "hx_pg_log_enabled": true,
+      "hx_pg_log_dir": "/var/log/hx/postgresql",
+      "hx_pg_log_level": "info",
+      "hx_pg_log_statement": "mod",
+      "hx_pg_log_duration": true,
+      "hx_pg_log_line_prefix": "%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h ",
+      "hx_pg_max_connections": 100,
+      "hx_pg_shared_buffers": "128MB",
+      "hx_pg_effective_cache_size": "4GB",
+      "hx_pg_maintenance_work_mem": "64MB",
+      "hx_pg_checkpoint_completion_target": 0.9,
+      "hx_pg_wal_buffers": "16MB",
+      "hx_pg_default_statistics_target": 100,
+      "hx_pg_monitoring_enabled": false,
+      "hx_pg_audit_logging_enabled": true,
+      "hx_pg_health_checks_enabled": true,
+      "hx_pg_performance_tuning_enabled": false,
+      "hx_pg_validation_enabled": true,
+      "hx_pg_connection_test_enabled": true,
+      "hx_pg_auth_test_enabled": true,
+      "hx_pg_ssl_test_enabled": true,
+      "hx_pg_connection_timeout": 30,
+      "hx_pg_auth_timeout": 10,
+      "hx_pg_backup_timeout": 300,
+      "hx_pg_validation_retries": 3,
+      "hx_pg_validation_delay": 5
+    },
+    "tasks": [
+      "security.yml",
+      "users.yml",
+      "configure.yml",
+      "validate.yml",
+      "backup.yml",
+      "health_checks.yml",
+      "main.yml",
+      "install.yml"
+    ],
+    "handlers": [
+      "main.yml"
+    ],
+    "templates": [
+      "security_audit.j2",
+      "pg_ident.conf.j2",
+      "postgresql.conf.j2",
+      "backup_manifest.j2",
+      "health_report.j2",
+      "pg_hba.conf.j2"
+    ]
+  },
+  "config_validator": {
+    "name": "config_validator",
+    "description": "Comprehensive configuration validation and standardization framework",
+    "author": "HX Infrastructure Team",
+    "version": "",
+    "dependencies": [],
+    "variables": {
+      "config_validation_enabled": true,
+      "config_validation_version": "3.0.0",
+      "config_validation_strict_mode": true,
+      "config_validation_schema_validation": true,
+      "variable_naming_conventions": {
+        "prefix_patterns": [
+          "hx_",
+          "ansible_",
+          "environment_",
+          "safety_",
+          "operational_",
+          "security_",
+          "monitoring_",
+          "backup_"
+        ],
+        "suffix_patterns": [
+          "_enabled",
+          "_config",
+          "_settings",
+          "_version",
+          "_timeout",
+          "_retries",
+          "_path",
+          "_dir",
+          "_file",
+          "_url",
+          "_port",
+          "_host"
+        ],
+        "forbidden_patterns": [
+          "temp_",
+          "tmp_",
+          "test_",
+          "debug_"
+        ],
+        "case_style": "snake_case",
+        "max_length": 50
+      },
+      "config_schemas": {
+        "environment_config": {
+          "required_fields": [
+            "environment_type",
+            "environment_tier",
+            "deployment_stage"
+          ],
+          "optional_fields": [
+            "environment_description",
+            "environment_owner"
+          ],
+          "field_types": {
+            "environment_type": "string",
+            "environment_tier": "string",
+            "deployment_stage": "string"
+          },
+          "allowed_values": {
+            "environment_type": [
+              "development",
+              "testing",
+              "staging",
+              "production"
+            ],
+            "environment_tier": [
+              "dev",
+              "test",
+              "stage",
+              "prod"
+            ],
+            "deployment_stage": [
+              "development",
+              "testing",
+              "staging",
+              "production"
+            ]
+          }
+        },
+        "security_config": {
+          "required_fields": [
+            "security_hardening",
+            "firewall_config",
+            "ssl_config"
+          ],
+          "field_types": {
+            "security_hardening": "dict",
+            "firewall_config": "dict",
+            "ssl_config": "dict"
+          }
+        },
+        "operational_config": {
+          "required_fields": [
+            "operational_safety",
+            "backup_configuration",
+            "monitoring_config"
+          ],
+          "field_types": {
+            "operational_safety": "dict",
+            "backup_configuration": "dict",
+            "monitoring_config": "dict"
+          }
+        }
+      },
+      "standardized_defaults": {
+        "timeouts": {
+          "connection_timeout": 30,
+          "command_timeout": 600,
+          "ssh_timeout": 30,
+          "network_timeout": 10,
+          "service_timeout": 30
+        },
+        "retries": {
+          "max_retries": 3,
+          "retry_delay": 5,
+          "network_retries": 3,
+          "service_retries": 2
+        },
+        "paths": {
+          "log_base_dir": "/var/log",
+          "config_base_dir": "/etc",
+          "backup_base_dir": "/opt/backups",
+          "cache_base_dir": "/tmp"
+        },
+        "permissions": {
+          "config_file_mode": "0644",
+          "secret_file_mode": "0600",
+          "directory_mode": "0755",
+          "executable_mode": "0755"
+        }
+      },
+      "inheritance_rules": {
+        "global_precedence": [
+          "group_vars/all.yml",
+          "group_vars/{{ environment_type }}.yml",
+          "host_vars/{{ inventory_hostname }}.yml",
+          "role defaults",
+          "role vars"
+        ],
+        "merge_strategies": {
+          "lists": "append",
+          "dictionaries": "merge",
+          "scalars": "override"
+        }
+      },
+      "drift_detection": {
+        "enabled": true,
+        "baseline_path": "/tmp/config_baseline.yml",
+        "drift_report_path": "/tmp/config_drift_report.json",
+        "ignore_patterns": [
+          "ansible_date_time",
+          "ansible_hostname",
+          "ansible_fqdn",
+          "*_timestamp",
+          "*_generated_*"
+        ]
+      },
+      "validation_rules": {
+        "required_variables": {
+          "all_hosts": [
+            "environment_type",
+            "ansible_user"
+          ],
+          "production": [
+            "operational_safety",
+            "backup_configuration",
+            "security_hardening",
+            "monitoring_config"
+          ],
+          "development": [
+            "environment_type"
+          ]
+        },
+        "forbidden_variables": {
+          "production": [
+            "debug_mode",
+            "test_mode",
+            "unsafe_*"
+          ]
+        },
+        "variable_constraints": {
+          "environment_type": {
+            "type": "string",
+            "allowed_values": [
+              "development",
+              "testing",
+              "staging",
+              "production"
+            ]
+          },
+          "ansible_user": {
+            "type": "string",
+            "min_length": 3,
+            "max_length": 32
+          }
+        }
+      },
+      "template_validation": {
+        "enabled": true,
+        "syntax_check": true,
+        "variable_check": true,
+        "undefined_variable_behavior": "strict",
+        "template_extensions": [
+          ".j2",
+          ".jinja2"
+        ]
+      },
+      "documentation_generation": {
+        "enabled": true,
+        "output_format": "markdown",
+        "output_path": "docs/configuration_reference.md",
+        "include_examples": true,
+        "include_schemas": true
+      },
+      "environment_overrides": {
+        "development": {
+          "config_validation_strict_mode": false,
+          "validation_rules": {
+            "required_variables": {
+              "all_hosts": [
+                "environment_type"
+              ]
+            }
+          }
+        },
+        "production": {
+          "config_validation_strict_mode": true,
+          "drift_detection": {
+            "enabled": true
+          },
+          "template_validation": {
+            "undefined_variable_behavior": "strict"
+          }
+        }
+      },
+      "reporting": {
+        "generate_report": true,
+        "report_format": "json",
+        "report_path": "/tmp/config_validation_report.json",
+        "include_recommendations": true,
+        "include_examples": true
+      }
+    },
+    "tasks": [
+      "main.yml",
+      "schema_validation.yml",
+      "variable_naming.yml"
+    ],
+    "handlers": [],
+    "templates": []
+  },
+  "common_templates": {
+    "name": "common_templates",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {
+      "template_version": "1.0.0",
+      "template_last_updated": "{{ ansible_date_time.iso8601 }}",
+      "base_template_path": "common_templates",
+      "template_encoding": "utf-8",
+      "organization_name": "{{ organization_name | default('HX Infrastructure') }}",
+      "environment": "{{ ansible_environment | default('production') }}",
+      "managed_by": "Ansible HX Infrastructure Framework",
+      "enable_template_inheritance": true,
+      "template_validation_enabled": true,
+      "template_security_scanning": true,
+      "common_blocks": [
+        "header",
+        "configuration",
+        "security",
+        "monitoring",
+        "footer"
+      ],
+      "template_cache_enabled": true,
+      "template_optimization_level": "standard",
+      "template_security": {
+        "escape_variables": true,
+        "validate_input": true,
+        "sanitize_output": true,
+        "audit_logging": true
+      },
+      "template_documentation": {
+        "auto_generate": true,
+        "include_examples": true,
+        "include_variables": true,
+        "include_blocks": true
+      },
+      "quality_thresholds": {
+        "security_score_min": 80,
+        "performance_score_min": 75,
+        "complexity_max": 15,
+        "max_template_lines": 200
+      },
+      "standardization": {
+        "enforce_naming_convention": true,
+        "require_documentation": true,
+        "enforce_indentation": true,
+        "indentation_type": "spaces",
+        "indentation_size": 2
+      },
+      "monitoring": {
+        "track_usage": true,
+        "performance_monitoring": true,
+        "error_tracking": true,
+        "audit_trail": true
+      }
+    },
+    "tasks": [
+      "main.yml"
+    ],
+    "handlers": [],
+    "templates": [
+      "template_metadata.json.j2",
+      "base.j2"
+    ]
+  },
+  "logging": {
+    "name": "logging",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {},
+    "tasks": [],
+    "handlers": [],
+    "templates": []
+  },
+  "load_balancer": {
+    "name": "load_balancer",
+    "description": "",
+    "author": "",
+    "version": "",
+    "dependencies": [],
+    "variables": {},
+    "tasks": [],
+    "handlers": [],
+    "templates": []
+  }
+}

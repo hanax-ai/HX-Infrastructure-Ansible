@@ -1,0 +1,20 @@
+
+{
+  "template_framework": {
+    "version": "{{ template_version }}",
+    "last_updated": "{{ template_last_updated }}",
+    "organization": "{{ organization_name }}",
+    "environment": "{{ environment }}",
+    "managed_by": "{{ managed_by }}"
+  },
+  "configuration": {
+    "inheritance_enabled": {{ enable_template_inheritance | to_json }},
+    "validation_enabled": {{ template_validation_enabled | to_json }},
+    "security_scanning": {{ template_security_scanning | to_json }},
+    "cache_enabled": {{ template_cache_enabled | to_json }}
+  },
+  "quality_thresholds": {{ quality_thresholds | to_json }},
+  "standardization": {{ standardization | to_json }},
+  "monitoring": {{ monitoring | to_json }},
+  "generated_at": "{{ ansible_date_time.iso8601 }}"
+}

@@ -1,0 +1,65 @@
+
+---
+# SSH Key Management Role Defaults - Phase 2 Day 2
+
+# SSH key configuration
+ssh_key_type: ed25519
+ssh_key_size: 256
+ssh_key_comment: "Ansible managed key - {{ inventory_hostname }} - {{ ansible_date_time.date }}"
+ssh_key_private_path: "{{ ansible_user_dir }}/.ssh/id_{{ ssh_key_type }}"
+ssh_key_force_regenerate: false
+ssh_key_exclusive: false
+
+# SSH key management settings
+ssh_key_backup_enabled: true
+ssh_key_test_connectivity: true
+ssh_client_config_enabled: true
+ssh_security_hardening: true
+ssh_key_rotation_enabled: false
+
+# Directory paths
+ssh_key_backup_dir: "/opt/ssh_key_backups"
+ssh_key_log_dir: "/var/log/ssh_key_management"
+ansible_user_dir: "/home/{{ ansible_user }}"
+
+# SSH key patterns for backup
+ssh_key_patterns:
+  - "id_*"
+  - "*.pub"
+  - "authorized_keys"
+  - "known_hosts"
+
+# Connection settings
+ssh_connection_timeout: 30
+
+# SSH client configuration
+ssh_client_config:
+  StrictHostKeyChecking: "yes"
+  UserKnownHostsFile: "~/.ssh/known_hosts_{{ environment_type | default('dev') }}"
+  ControlMaster: "auto"
+  ControlPath: "~/.ssh/control-%h-%p-%r"
+  ControlPersist: "300s"
+  ServerAliveInterval: "60"
+  ServerAliveCountMax: "3"
+  ConnectTimeout: "10"
+  BatchMode: "yes"
+  LogLevel: "ERROR"
+
+# SSH security settings
+ssh_security_settings:
+  Protocol: "2"
+  PermitRootLogin: "no"
+  PasswordAuthentication: "no"
+  PubkeyAuthentication: "yes"
+  PermitEmptyPasswords: "no"
+  ChallengeResponseAuthentication: "no"
+  X11Forwarding: "no"
+  ClientAliveInterval: "300"
+  ClientAliveCountMax: "2"
+  MaxAuthTries: "3"
+  MaxSessions: "10"
+  LoginGraceTime: "60"
+
+# Key rotation settings
+ssh_key_rotation_days: 90
+ssh_key_rotation_warning_days: 7

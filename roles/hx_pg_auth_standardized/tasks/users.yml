@@ -1,42 +1,203 @@
+
 ---
-# PostgreSQL User Management Tasks
-- name: "Hx | PostgreSQL Auth | Create application databases"
+# User Management Tasks for HX PostgreSQL Authentication
+
+- name: Create application database
   postgresql_db:
-    name: "{{ item.name }}"
-    owner: "{{ item.owner | default('postgres') }}"
-    encoding: "{{ item.encoding | default('UTF8') }}"
-    lc_collate: "{{ item.lc_collate | default('en_US.UTF-8') }}"
-    lc_ctype: "{{ item.lc_ctype | default('en_US.UTF-8') }}"
+    name: "{{ hx_pg_db }}"
+    owner: "{{ hx_pg_app_database_owner }}"
+    encoding: UTF8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8
+    template: template0
     state: present
   become: true
   become_user: postgres
-  loop: "{{ hx_pg_databases | default([]) }}"
-  tags: ['users', 'databases']
+  when: hx_pg_create_app_database | bool
+  register: hx_pg_database_creation
+  tags: [users]
 
-- name: "Hx | PostgreSQL Auth | Create application users"
+- name: Check if application user exists
+  shell: |
+    set -euo pipefail
+    sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='{{ hx_pg_app_user }}';"
+  args:
+    executable: /bin/bash
+  register: hx_pg_app_user_exists
+  changed_when: false
+  failed_when: false
+  tags: [users]
+
+- name: Create application user
   postgresql_user:
-    name: "{{ item.name }}"
-    password: "{{ item.password }}"
-    db: "{{ item.db | default(omit) }}"
-    priv: "{{ item.privileges | default(omit) }}"
-    role_attr_flags: "{{ item.role_flags | default('NOSUPERUSER,NOCREATEDB') }}"
+    name: "{{ hx_pg_app_user }}"
+    password: "{{ hx_pg_app_password }}"
+    encrypted: yes
     state: present
-    encrypted: true
+    role_attr_flags: LOGIN
   become: true
   become_user: postgres
-  loop: "{{ hx_pg_users | default([]) }}"
+  when:
+    - hx_pg_create_app_user | bool
+    - hx_pg_app_user_exists.stdout | trim != '1'
+  register: hx_pg_user_creation
   no_log: true
-  tags: ['users']
+  tags: [users]
 
-- name: "Hx | PostgreSQL Auth | Grant database privileges"
+- name: Grant database privileges to application user
   postgresql_privs:
-    database: "{{ item.database }}"
-    roles: "{{ item.role }}"
-    privs: "{{ item.privileges }}"
-    type: "{{ item.type | default('database') }}"
-    grant_option: "{{ item.grant_option | default(false) }}"
+    database: "{{ hx_pg_db }}"
+    roles: "{{ hx_pg_app_user }}"
+    privs: "{{ item }}"
+    type: database
     state: present
   become: true
   become_user: postgres
-  loop: "{{ hx_pg_privileges | default([]) }}"
-  tags: ['users', 'privileges']
+  loop: "{{ hx_pg_app_user_privileges }}"
+  when: hx_pg_create_app_user | bool
+  tags: [users]
+
+- name: Grant schema privileges to application user
+  postgresql_privs:
+    database: "{{ hx_pg_db }}"
+    roles: "{{ hx_pg_app_user }}"
+    objs: public
+    privs: CREATE,USAGE
+    type: schema
+    state: present
+  become: true
+  become_user: postgres
+  when: hx_pg_create_app_user | bool
+  tags: [users]
+
+- name: Test password authentication (if password provided)
+  shell: |
+    set -euo pipefail
+    export PGPASSWORD="{{ hx_pg_app_password }}"
+    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" \
+         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" \
+         -c '\conninfo' -c 'SELECT current_user, current_database();'
+  args:
+    executable: /bin/bash
+  register: hx_pg_password_test
+  when:
+    - hx_pg_auth_test_enabled | bool
+    - hx_pg_app_password | length > 0
+  changed_when: false
+  failed_when: hx_pg_password_test.rc != 0
+  no_log: true
+  tags: [users]
+
+- name: Update user password (if login test failed and user exists)
+  postgresql_user:
+    name: "{{ hx_pg_app_user }}"
+    password: "{{ hx_pg_app_password }}"
+    encrypted: yes
+    state: present
+  become: true
+  become_user: postgres
+  when:
+    - hx_pg_app_password | length > 0
+    - hx_pg_password_test is defined
+    - hx_pg_password_test.rc != 0
+    - hx_pg_app_user_exists.stdout | trim == '1'
+  register: hx_pg_password_update
+  no_log: true
+  tags: [users]
+
+- name: Re-test password authentication after update
+  shell: |
+    set -euo pipefail
+    export PGPASSWORD="{{ hx_pg_app_password }}"
+    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" \
+         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" \
+         -c '\conninfo' -c 'SELECT current_user, current_database();'
+  args:
+    executable: /bin/bash
+  register: hx_pg_password_retest
+  when:
+    - hx_pg_password_update is defined
+    - hx_pg_password_update is changed
+  changed_when: false
+  failed_when: hx_pg_password_retest.rc != 0
+  no_log: false
+  tags: [users]
+
+- name: Create GSS/Kerberos user mapping (if GSS enabled)
+  postgresql_user:
+    name: "{{ hx_pg_gss_user }}"
+    state: present
+    role_attr_flags: LOGIN
+  become: true
+  become_user: postgres
+  when: hx_pg_gss_user | length > 0
+  register: hx_pg_gss_user_creation
+  tags: [users]
+
+- name: Grant privileges to GSS user
+  postgresql_privs:
+    database: "{{ hx_pg_db }}"
+    roles: "{{ hx_pg_gss_user }}"
+    privs: CONNECT
+    type: database
+    state: present
+  become: true
+  become_user: postgres
+  when: hx_pg_gss_user | length > 0
+  tags: [users]
+
+- name: Create monitoring user (if monitoring enabled)
+  postgresql_user:
+    name: "hx_monitor"
+    state: present
+    role_attr_flags: LOGIN
+  become: true
+  become_user: postgres
+  when: hx_pg_monitoring_enabled | bool
+  register: hx_pg_monitor_user_creation
+  tags: [users]
+
+- name: Grant monitoring privileges
+  postgresql_privs:
+    database: "{{ hx_pg_db }}"
+    roles: "hx_monitor"
+    privs: CONNECT
+    type: database
+    state: present
+  become: true
+  become_user: postgres
+  when: hx_pg_monitoring_enabled | bool
+  tags: [users]
+
+- name: Create user management summary
+  set_fact:
+    hx_pg_user_summary:
+      database_created: "{{ hx_pg_database_creation is defined and hx_pg_database_creation is changed }}"
+      app_user_created: "{{ hx_pg_user_creation is defined and hx_pg_user_creation is changed }}"
+      app_user_exists: "{{ hx_pg_app_user_exists.stdout | trim == '1' }}"
+      password_test_passed: "{{ hx_pg_password_test is defined and hx_pg_password_test.rc == 0 }}"
+      gss_user_created: "{{ hx_pg_gss_user_creation is defined and hx_pg_gss_user_creation is changed }}"
+      monitor_user_created: "{{ hx_pg_monitor_user_creation is defined and hx_pg_monitor_user_creation is changed }}"
+  tags: [users]
+
+- name: Log user management completion
+  lineinfile:
+    path: "{{ hx_pg_log_dir }}/users.log"
+    line: "{{ ansible_date_time.iso8601 }} - User management completed: {{ hx_pg_user_summary | to_json }}"
+    create: yes
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  when: hx_pg_audit_logging_enabled | bool
+  tags: [users]
+
+- name: Display user management summary
+  debug:
+    msg:
+      - "PostgreSQL user management completed"
+      - "Database '{{ hx_pg_db }}': {{ hx_pg_user_summary.database_created | ternary('Created', 'Exists') }}"
+      - "App user '{{ hx_pg_app_user }}': {{ hx_pg_user_summary.app_user_created | ternary('Created', (hx_pg_user_summary.app_user_exists | ternary('Exists', 'Not found'))) }}"
+      - "Password authentication: {{ hx_pg_user_summary.password_test_passed | ternary('✓ Working', '✗ Failed') if hx_pg_auth_test_enabled else 'Not tested' }}"
+      - "GSS user '{{ hx_pg_gss_user }}': {{ hx_pg_user_summary.gss_user_created | ternary('Created', 'Skipped') if hx_pg_gss_user | length > 0 else 'Not configured' }}"
+      - "Monitor user: {{ hx_pg_user_summary.monitor_user_created | ternary('Created', 'Skipped') if hx_pg_monitoring_enabled else 'Not configured' }}"
+  tags: [users]

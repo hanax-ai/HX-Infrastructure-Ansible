@@ -1,0 +1,219 @@
+
+---
+# Production Maintenance Playbook - Phase 2 Day 2
+# Comprehensive maintenance procedures with enhanced safety
+
+- name: Production System Maintenance
+  hosts: all
+  gather_facts: true
+  serial: 1  # Process one host at a time for safety
+
+  vars:
+    safety_operation_name: "Production System Maintenance"
+    safety_confirmation_required: true
+    safety_require_backup: true
+    safety_require_maintenance_window: true
+    safety_dangerous_command_protection: true
+    safety_check_monitoring: true
+    safety_backup_database: "{{ 'database' in group_names }}"
+
+  pre_tasks:
+    - name: Include operational safety framework
+      include_role:
+        name: operational_safety
+      tags: [safety, pre_tasks]
+
+    - name: Verify maintenance window
+      fail:
+        msg: "Maintenance only allowed during scheduled window: {{ maintenance_windows.primary.start }}-{{ maintenance_windows.primary.end }} {{ maintenance_windows.primary.timezone }}"
+      when:
+        - ansible_date_time.hour | int < (maintenance_windows.primary.start[:2] | int)
+        - ansible_date_time.hour | int > (maintenance_windows.primary.end[:2] | int)
+      tags: [safety, maintenance_window]
+
+    - name: Check for active alerts
+      uri:
+        url: "{{ monitoring_config.api_url | default('http://localhost:9090/api/v1/alerts') }}"
+        method: GET
+        timeout: 10
+      register: alert_check
+      ignore_errors: true
+      tags: [safety, monitoring]
+
+    - name: Fail if critical alerts present
+      fail:
+        msg: "Critical alerts detected. Resolve before maintenance: {{ alert_check.json.data.alerts | map(attribute='labels.alertname') | list }}"
+      when:
+        - alert_check is succeeded
+        - alert_check.json.data.alerts | length > 0
+        - alert_check.json.data.alerts | selectattr('labels.severity', 'equalto', 'critical') | list | length > 0
+      tags: [safety, monitoring]
+
+  tasks:
+    - name: Create maintenance status file
+      file:
+        path: "/tmp/maintenance_in_progress"
+        state: touch
+        owner: root
+        group: root
+        mode: '0644'
+      tags: [maintenance, status]
+
+    - name: Update package cache
+      package:
+        update_cache: yes
+      when: ansible_os_family in ['Debian', 'RedHat']
+      tags: [maintenance, packages]
+
+    - name: Check for available updates
+      shell: |
+        if command -v apt >/dev/null 2>&1; then
+          apt list --upgradable 2>/dev/null | grep -v "WARNING" | wc -l
+        elif command -v yum >/dev/null 2>&1; then
+          yum check-update --quiet | wc -l
+        else
+          echo "0"
+        fi
+      register: available_updates
+      changed_when: false
+      tags: [maintenance, packages]
+
+    - name: Log available updates
+      debug:
+        msg: "{{ available_updates.stdout }} updates available for {{ inventory_hostname }}"
+      tags: [maintenance, packages]
+
+    - name: Apply security updates only
+      package:
+        name: "*"
+        state: latest
+        security: yes
+      when:
+        - ansible_os_family == 'RedHat'
+        - available_updates.stdout | int > 0
+      tags: [maintenance, security_updates]
+
+    - name: Apply security updates (Debian/Ubuntu)
+      shell: |
+        unattended-upgrade -d
+      when:
+        - ansible_os_family == 'Debian'
+        - available_updates.stdout | int > 0
+      tags: [maintenance, security_updates]
+
+    - name: Clean package cache
+      shell: |
+        if command -v apt >/dev/null 2>&1; then
+          apt autoremove -y && apt autoclean
+        elif command -v yum >/dev/null 2>&1; then
+          yum clean all
+        fi
+      tags: [maintenance, cleanup]
+
+    - name: Rotate logs
+      shell: |
+        logrotate -f /etc/logrotate.conf
+      ignore_errors: true
+      tags: [maintenance, logs]
+
+    - name: Check disk usage
+      shell: df -h | awk '$5 > 80 {print $0}'
+      register: disk_usage_check
+      changed_when: false
+      tags: [maintenance, disk]
+
+    - name: Alert on high disk usage
+      debug:
+        msg: "WARNING: High disk usage detected on {{ inventory_hostname }}: {{ disk_usage_check.stdout_lines }}"
+      when: disk_usage_check.stdout_lines | length > 0
+      tags: [maintenance, disk]
+
+    - name: Check system services
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop: "{{ critical_services | default(['ssh', 'networking']) }}"
+      tags: [maintenance, services]
+
+    - name: Verify database connectivity (database servers)
+      postgresql_ping:
+        db: "{{ database_config.name }}"
+        login_host: "{{ database_config.host }}"
+        login_user: "{{ database_config.user | default('postgres') }}"
+      when: "'database' in group_names"
+      tags: [maintenance, database]
+
+    - name: Check application health (app servers)
+      uri:
+        url: "http://localhost:{{ application_config.port | default(8080) }}/health"
+        method: GET
+        timeout: 10
+      when: "'application' in group_names"
+      ignore_errors: true
+      register: app_health
+      tags: [maintenance, application]
+
+    - name: Restart services if needed
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+      loop: "{{ services_to_restart | default([]) }}"
+      when: services_to_restart is defined
+      tags: [maintenance, restart]
+
+  post_tasks:
+    - name: Remove maintenance status file
+      file:
+        path: "/tmp/maintenance_in_progress"
+        state: absent
+      tags: [maintenance, status]
+
+    - name: Generate maintenance report
+      template:
+        src: maintenance_report.j2
+        dest: "/var/log/maintenance-report-{{ ansible_date_time.epoch }}.txt"
+        owner: root
+        group: root
+        mode: '0644'
+      vars:
+        maintenance_timestamp: "{{ ansible_date_time.iso8601 }}"
+        updates_applied: "{{ available_updates.stdout | default('0') }}"
+        disk_warnings: "{{ disk_usage_check.stdout_lines | default([]) }}"
+        service_status: "{{ ansible_facts.services | default({}) }}"
+      tags: [maintenance, reporting]
+
+    - name: Send maintenance completion notification
+      mail:
+        to: "{{ maintenance_notification_email | default('ops@hana-x.ai') }}"
+        subject: "Maintenance Completed - {{ inventory_hostname }}"
+        body: |
+          Maintenance completed successfully on {{ inventory_hostname }}
+
+          Timestamp: {{ ansible_date_time.iso8601 }}
+          Updates Applied: {{ available_updates.stdout | default('0') }}
+          Duration: {{ ansible_play_duration | default('Unknown') }}
+
+          Report available at: /var/log/maintenance-report-{{ ansible_date_time.epoch }}.txt
+      when: maintenance_notification_email is defined
+      delegate_to: localhost
+      tags: [maintenance, notification]
+
+  handlers:
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+      when: "'web' in group_names"
+
+    - name: restart postgresql
+      systemd:
+        name: postgresql
+        state: restarted
+      when: "'database' in group_names"
+
+    - name: restart application
+      systemd:
+        name: "{{ application_config.service_name | default('hx-app') }}"
+        state: restarted
+      when: "'application' in group_names"

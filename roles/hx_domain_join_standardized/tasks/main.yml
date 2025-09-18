@@ -1,29 +1,43 @@
 
 ---
-# Main tasks for hx_domain_join_standardized role
-# Implements SOLID principles with comprehensive Active Directory domain join
+# HX Domain Join Main Tasks
+# Orchestrates all Active Directory domain integration operations
 
-- name: Include validation tasks
-  ansible.builtin.include_tasks: validate.yml
-  tags: [validation, always]
-
-- name: Include preparation tasks
-  ansible.builtin.include_tasks: prepare.yml
-  tags: [preparation, setup]
+- name: Include variable validation
+  include_tasks: validate.yml
+  tags: [validation, hx_domain_join]
 
 - name: Include installation tasks
-  ansible.builtin.include_tasks: install.yml
-  tags: [installation, domain_join]
+  include_tasks: install.yml
+  when: hx_domain_join_enabled | bool
+  tags: [install, hx_domain_join]
 
 - name: Include configuration tasks
-  ansible.builtin.include_tasks: configure.yml
-  tags: [configuration, setup]
+  include_tasks: configure.yml
+  when: hx_domain_join_enabled | bool
+  tags: [configure, hx_domain_join]
+
+- name: Include domain join tasks
+  include_tasks: join_domain.yml
+  when: hx_domain_join_enabled | bool
+  tags: [join_domain, hx_domain_join]
 
 - name: Include security tasks
-  ansible.builtin.include_tasks: security.yml
-  tags: [security, hardening]
+  include_tasks: security.yml
+  when: hx_domain_security_enabled | bool
+  tags: [security, hx_domain_join]
 
-- name: Include verification tasks
-  ansible.builtin.include_tasks: verify.yml
-  tags: [verification, testing]
-  when: hx_domain_join_run_tests | default(true)
+- name: Include health check tasks
+  include_tasks: health_checks.yml
+  when: hx_domain_health_checks_enabled | bool
+  tags: [health_checks, hx_domain_join]
+
+- name: Display deployment summary
+  debug:
+    msg:
+      - "HX Domain Join deployment completed successfully"
+      - "Domain: {{ hx_domain_join_enabled | ternary(hx_ad_domain, 'Disabled') }}"
+      - "Computer: {{ hx_domain_join_enabled | ternary(hx_ad_computer_name, 'N/A') }}"
+      - "SSSD: {{ hx_sssd_enabled | ternary('Enabled', 'Disabled') }}"
+      - "Security: {{ hx_domain_security_enabled | ternary('Enabled', 'Disabled') }}"
+  tags: [hx_domain_join]

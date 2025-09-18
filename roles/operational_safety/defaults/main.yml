@@ -1,0 +1,61 @@
+
+---
+# Operational Safety Role Defaults - Phase 2 Day 2
+
+# Safety confirmation settings
+safety_confirmation_required: true
+safety_require_backup: true
+safety_require_maintenance_window: false
+safety_dangerous_command_protection: true
+safety_create_rollback_script: true
+safety_check_monitoring: false
+safety_check_cluster_health: false
+
+# Backup configuration
+safety_backup_base_dir: "/opt/ansible-backups"
+safety_backup_database: false
+safety_backup_paths:
+  - "/etc"
+  - "/opt/config"
+  - "/var/lib/important"
+
+# Logging configuration
+operational_safety_log_dir: "/var/log/ansible-safety"
+
+# Dangerous commands list (can be overridden)
+safety_dangerous_commands:
+  - "rm -rf"
+  - "dd if="
+  - "mkfs"
+  - "fdisk"
+  - "parted"
+  - "wipefs"
+  - "shred"
+  - "format"
+  - "del /s"
+  - "rmdir /s"
+  - "truncate -s 0"
+  - ">"  # Redirection that could overwrite files
+
+# Maintenance window (24-hour format)
+safety_maintenance_start: "02:00"
+safety_maintenance_end: "06:00"
+
+# Environment-specific settings
+safety_forbidden_environments: []
+
+# Default risks for operations
+safety_risks:
+  - "System downtime"
+  - "Data loss"
+  - "Service interruption"
+  - "Configuration corruption"
+  - "Security policy changes"
+
+# Monitoring integration
+monitoring_api_url: "http://localhost:9090/api/v1/alerts"
+
+# Database backup settings
+db_host: "localhost"
+db_user: "postgres"
+db_name: "hx_db"

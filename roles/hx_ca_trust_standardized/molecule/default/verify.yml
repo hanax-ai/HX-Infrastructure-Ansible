@@ -1,0 +1,111 @@
+
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if certificate file exists
+      stat:
+        path: /usr/local/share/ca-certificates/hx-root-ca.crt
+      register: cert_file
+
+    - name: Assert certificate file exists
+      assert:
+        that:
+          - cert_file.stat.exists
+          - cert_file.stat.isreg
+        fail_msg: "Certificate file does not exist"
+        success_msg: "Certificate file exists"
+
+    - name: Check certificate file permissions
+      assert:
+        that:
+          - cert_file.stat.mode == "0644"
+          - cert_file.stat.pw_name == "root"
+          - cert_file.stat.gr_name == "root"
+        fail_msg: "Certificate file has incorrect permissions"
+        success_msg: "Certificate file permissions are correct"
+
+    - name: Verify certificate can be parsed
+      command: openssl x509 -in /usr/local/share/ca-certificates/hx-root-ca.crt -noout -subject
+      register: cert_parse
+      changed_when: false
+
+    - name: Assert certificate parsing succeeded
+      assert:
+        that:
+          - cert_parse.rc == 0
+          - "'HX Test CA' in cert_parse.stdout"
+        fail_msg: "Certificate parsing failed"
+        success_msg: "Certificate parsing successful"
+
+    - name: Check if certificate is in system trust store
+      shell: |
+        cert_hash=$(openssl x509 -in /usr/local/share/ca-certificates/hx-root-ca.crt -hash -noout)
+        test -L "/etc/ssl/certs/${cert_hash}.0"
+      register: trust_store_check
+      changed_when: false
+
+    - name: Assert certificate is in trust store
+      assert:
+        that:
+          - trust_store_check.rc == 0
+        fail_msg: "Certificate not found in system trust store"
+        success_msg: "Certificate is in system trust store"
+
+    - name: Check required directories exist
+      stat:
+        path: "{{ item }}"
+      register: required_dirs
+      loop:
+        - /var/backups/hx/ca-certificates
+        - /var/log/hx/ca-trust
+
+    - name: Assert required directories exist
+      assert:
+        that:
+          - item.stat.exists
+          - item.stat.isdir
+        fail_msg: "Required directory {{ item.item }} does not exist"
+        success_msg: "Required directories exist"
+      loop: "{{ required_dirs.results }}"
+
+    - name: Check log files were created
+      stat:
+        path: /var/log/hx/ca-trust/deployment.log
+      register: log_file
+
+    - name: Assert log file exists
+      assert:
+        that:
+          - log_file.stat.exists
+        fail_msg: "Deployment log file does not exist"
+        success_msg: "Deployment log file exists"
+
+    - name: Verify certificate monitoring script (if monitoring enabled)
+      stat:
+        path: /usr/local/bin/hx-ca-monitor
+      register: monitor_script
+      when: hx_ca_monitoring_enabled | default(false)
+
+    - name: Assert monitoring script exists (if enabled)
+      assert:
+        that:
+          - monitor_script.stat.exists
+          - monitor_script.stat.executable
+        fail_msg: "Certificate monitoring script not found or not executable"
+        success_msg: "Certificate monitoring script is properly installed"
+      when: hx_ca_monitoring_enabled | default(false)
+
+    - name: Test certificate validation functionality
+      command: openssl verify -CAfile /usr/local/share/ca-certificates/hx-root-ca.crt /usr/local/share/ca-certificates/hx-root-ca.crt
+      register: cert_validation
+      changed_when: false
+
+    - name: Assert certificate validation passes
+      assert:
+        that:
+          - cert_validation.rc == 0
+          - "'OK' in cert_validation.stdout"
+        fail_msg: "Certificate validation failed"
+        success_msg: "Certificate validation passed"

@@ -1,0 +1,89 @@
+---
+# Operational Safety Framework
+# Provides safety checks and confirmation prompts for dangerous operations
+
+- name: Safety confirmation for destructive operations
+  pause:
+    prompt: |
+      ⚠️  OPERATIONAL SAFETY WARNING ⚠️
+
+      You are about to perform a potentially destructive operation:
+      Operation: {{ safety_operation_name | default('Unknown operation') }}
+      Target: {{ safety_target | default('Unknown target') }}
+      Environment: {{ environment_type | default('Unknown environment') }}
+
+      This operation may cause:
+      {{ safety_risks | default(['System downtime', 'Data loss', 'Service interruption']) | join('\n      - ') }}
+
+      Type 'CONFIRM' to proceed, or press Ctrl+C to abort:
+    echo: yes
+  register: safety_confirmation
+  when:
+    - safety_confirmation_required | default(false) | bool
+    - not ansible_check_mode
+  tags: [safety, confirmation]
+
+- name: Validate safety confirmation
+  fail:
+    msg: "Operation aborted - confirmation not provided or invalid"
+  when:
+    - safety_confirmation_required | default(false) | bool
+    - not ansible_check_mode
+    - safety_confirmation.user_input | default('') != 'CONFIRM'
+  tags: [safety, validation]
+
+- name: Log safety operation
+  lineinfile:
+    path: "{{ ansible_log_path | default('/var/log/ansible.log') }}"
+    line: "{{ ansible_date_time.iso8601 }} - SAFETY: {{ safety_operation_name | default('Operation') }} confirmed by {{ ansible_user_id }} on {{ inventory_hostname }}"
+    create: yes
+    owner: root
+    group: root
+    mode: '0640'
+  when:
+    - safety_confirmation_required | default(false) | bool
+    - safety_confirmation.user_input | default('') == 'CONFIRM'
+  delegate_to: localhost
+  run_once: true
+  tags: [safety, logging]
+
+- name: Pre-operation backup check
+  block:
+    - name: Verify backup exists before destructive operation
+      stat:
+        path: "{{ safety_backup_path }}"
+      register: backup_check
+      when: safety_backup_path is defined
+
+    - name: Fail if required backup missing
+      fail:
+        msg: "Required backup not found at {{ safety_backup_path }}. Create backup before proceeding."
+      when:
+        - safety_backup_path is defined
+        - not backup_check.stat.exists
+  when: safety_require_backup | default(false) | bool
+  tags: [safety, backup]
+
+- name: Environment protection check
+  fail:
+    msg: "This operation is not allowed in {{ environment_type }} environment"
+  when:
+    - safety_forbidden_environments is defined
+    - environment_type | default('unknown') in safety_forbidden_environments
+  tags: [safety, environment]
+
+- name: Maintenance window check
+  block:
+    - name: Get current time
+      setup:
+        filter: ansible_date_time
+
+    - name: Check if within maintenance window
+      fail:
+        msg: "Operation only allowed during maintenance window: {{ safety_maintenance_window | default('Not defined') }}"
+      when:
+        - safety_maintenance_window is defined
+        - not (ansible_date_time.hour | int >= safety_maintenance_start | default(2) and
+               ansible_date_time.hour | int <= safety_maintenance_end | default(6))
+  when: safety_require_maintenance_window | default(false) | bool
+  tags: [safety, maintenance]

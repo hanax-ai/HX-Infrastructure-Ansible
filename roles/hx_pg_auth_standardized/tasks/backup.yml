@@ -1,43 +1,136 @@
+
 ---
-# PostgreSQL Backup and Recovery Tasks
-- name: "Hx | PostgreSQL Auth | Create backup directory"
+# Backup Tasks for HX PostgreSQL Authentication
+
+- name: Create backup directory
   file:
-    path: "{{ hx_pg_backup_directory }}"
+    path: "{{ hx_pg_backup_dir }}"
     state: directory
     owner: postgres
     group: postgres
     mode: '0750'
-  become: true
-  tags: ['backup']
+  tags: [backup]
 
-- name: "Hx | PostgreSQL Auth | Create backup script"
-  template:
-    src: pg_backup.sh.j2
-    dest: /usr/local/bin/pg_backup.sh
+- name: Create timestamped backup subdirectory
+  file:
+    path: "{{ hx_pg_backup_dir }}/{{ hx_pg_backup_file_prefix }}_{{ hx_pg_backup_timestamp }}"
+    state: directory
     owner: postgres
     group: postgres
     mode: '0750'
-  become: true
-  tags: ['backup']
+  register: hx_pg_backup_subdir
+  tags: [backup]
 
-- name: "Hx | PostgreSQL Auth | Schedule automated backups"
-  cron:
-    name: "PostgreSQL automated backup"
-    user: postgres
-    minute: "{{ hx_pg_backup_minute | default('0') }}"
-    hour: "{{ hx_pg_backup_hour | default('2') }}"
-    job: "/usr/local/bin/pg_backup.sh"
-    state: "{{ 'present' if hx_pg_enable_automated_backup | default(true) else 'absent' }}"
-  become: true
-  tags: ['backup']
+- name: Backup existing PostgreSQL configuration files
+  shell: |
+    set -euo pipefail
+    backup_dir="{{ hx_pg_backup_subdir.path }}"
 
-- name: "Hx | PostgreSQL Auth | Configure WAL archiving"
+    # Backup main configuration files
+    config_files=(
+      "{{ hx_pg_conf_path }}"
+      "{{ hx_pg_hba_path }}"
+      "{{ hx_pg_ident_path }}"
+    )
+
+    for config_file in "${config_files[@]}"; do
+      if [ -f "$config_file" ]; then
+        cp "$config_file" "$backup_dir/$(basename $config_file).bak"
+        echo "Backed up: $config_file"
+      else
+        echo "File not found: $config_file"
+      fi
+    done
+
+    # Backup SSL certificates if they exist
+    ssl_files=(
+      "{{ hx_pg_ssl_cert_path }}"
+      "{{ hx_pg_ssl_key_path }}"
+      "{{ hx_pg_ssl_ca_path }}"
+    )
+
+    for ssl_file in "${ssl_files[@]}"; do
+      if [ -f "$ssl_file" ]; then
+        cp "$ssl_file" "$backup_dir/$(basename $ssl_file).bak"
+        echo "Backed up SSL file: $ssl_file"
+      fi
+    done
+
+    echo "Configuration backup completed in: $backup_dir"
+  args:
+    executable: /bin/bash
+  register: hx_pg_config_backup
+  changed_when: true
+  tags: [backup]
+
+- name: Create database schema backup (if database exists)
+  shell: |
+    set -euo pipefail
+    backup_dir="{{ hx_pg_backup_subdir.path }}"
+
+    # Check if database exists
+    if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw "{{ hx_pg_db }}"; then
+      # Backup database schema
+      sudo -u postgres pg_dump -s "{{ hx_pg_db }}" > "$backup_dir/{{ hx_pg_db }}_schema.sql"
+      echo "Database schema backed up"
+
+      # Backup user roles and permissions
+      sudo -u postgres pg_dumpall --roles-only > "$backup_dir/roles_backup.sql"
+      echo "User roles backed up"
+    else
+      echo "Database {{ hx_pg_db }} does not exist, skipping schema backup"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_pg_schema_backup
+  changed_when: "'backed up' in hx_pg_schema_backup.stdout"
+  failed_when: false
+  tags: [backup]
+
+- name: Create backup manifest
+  template:
+    src: backup_manifest.j2
+    dest: "{{ hx_pg_backup_subdir.path }}/backup_manifest.txt"
+    owner: postgres
+    group: postgres
+    mode: '0640'
+  tags: [backup]
+
+- name: Clean up old backups
+  shell: |
+    set -euo pipefail
+    backup_base_dir="{{ hx_pg_backup_dir }}"
+    retention_days="{{ hx_pg_backup_retention_days }}"
+
+    # Find and remove backups older than retention period
+    find "$backup_base_dir" -name "{{ hx_pg_backup_file_prefix }}_*" -type d -mtime +$retention_days -exec rm -rf {} \; 2>/dev/null || true
+
+    # Count remaining backups
+    backup_count=$(find "$backup_base_dir" -name "{{ hx_pg_backup_file_prefix }}_*" -type d | wc -l)
+    echo "Backup cleanup completed. $backup_count backups retained."
+  args:
+    executable: /bin/bash
+  register: hx_pg_backup_cleanup
+  changed_when: true
+  tags: [backup]
+
+- name: Log backup completion
   lineinfile:
-    path: "{{ hx_pg_data_directory }}/postgresql.conf"
-    regexp: "^#?archive_mode"
-    line: "archive_mode = on"
-    backup: true
-  become: true
-  when: hx_pg_enable_wal_archiving | default(false)
-  notify: restart postgresql
-  tags: ['backup', 'wal']
+    path: "{{ hx_pg_log_dir }}/backup.log"
+    line: "{{ ansible_date_time.iso8601 }} - PostgreSQL configuration backup completed: {{ hx_pg_backup_subdir.path }}"
+    create: yes
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  when: hx_pg_audit_logging_enabled | bool
+  tags: [backup]
+
+- name: Display backup summary
+  debug:
+    msg:
+      - "PostgreSQL backup completed"
+      - "Backup location: {{ hx_pg_backup_subdir.path }}"
+      - "Configuration files: Backed up"
+      - "Database schema: {{ 'Backed up' if 'backed up' in hx_pg_schema_backup.stdout else 'Skipped' }}"
+      - "Cleanup: {{ hx_pg_backup_cleanup.stdout }}"
+  tags: [backup]

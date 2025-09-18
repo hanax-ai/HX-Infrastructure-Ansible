@@ -1,111 +1,306 @@
+
 ---
-- name: "Hx | PostgreSQL Auth | Set secure file permissions on config files"
+# Security Tasks for HX PostgreSQL Authentication
+
+- name: Ensure password encryption is set to SCRAM-SHA-256
+  lineinfile:
+    path: "{{ hx_pg_conf_path }}"
+    regexp: '^\s*#?\s*password_encryption\s*='
+    line: "password_encryption = '{{ hx_pg_password_encryption }}'"
+    backup: yes
+  notify: reload postgresql config
+  tags: [security]
+
+- name: Enforce SSL connections
+  lineinfile:
+    path: "{{ hx_pg_conf_path }}"
+    regexp: '^\s*#?\s*ssl\s*='
+    line: "ssl = {{ hx_pg_ssl_enabled | ternary('on', 'off') }}"
+    backup: yes
+  notify: reload postgresql config
+  tags: [security]
+
+- name: Set minimum TLS protocol version
+  lineinfile:
+    path: "{{ hx_pg_conf_path }}"
+    regexp: '^\s*#?\s*ssl_min_protocol_version\s*='
+    line: "ssl_min_protocol_version = '{{ hx_pg_ssl_min_protocol_version }}'"
+    backup: yes
+  when:
+    - hx_pg_enforce_tls_floor | bool
+    - hx_pg_ssl_min_protocol_version | length > 0
+  notify: reload postgresql config
+  tags: [security]
+
+- name: Configure SSL cipher suites
+  lineinfile:
+    path: "{{ hx_pg_conf_path }}"
+    regexp: '^\s*#?\s*ssl_ciphers\s*='
+    line: "ssl_ciphers = '{{ hx_pg_ssl_ciphers }}'"
+    backup: yes
+  when: hx_pg_ssl_enabled | bool
+  notify: reload postgresql config
+  tags: [security]
+
+- name: Enable SSL certificate verification
+  lineinfile:
+    path: "{{ hx_pg_conf_path }}"
+    regexp: '^\s*#?\s*ssl_ca_file\s*='
+    line: "ssl_ca_file = '{{ hx_pg_ssl_ca_file }}'"
+    backup: yes
+  when:
+    - hx_pg_ssl_enabled | bool
+    - hx_pg_ca_enabled | bool
+  notify: reload postgresql config
+  tags: [security]
+
+- name: Secure file permissions for PostgreSQL configuration
   file:
     path: "{{ item.path }}"
     owner: "{{ item.owner }}"
     group: "{{ item.group }}"
     mode: "{{ item.mode }}"
   loop:
-    - path: "{{ hx_pg_config_dir }}/postgresql.conf"
-      owner: "postgres"
-      group: "postgres"
-      mode: "0644"
-    - path: "{{ hx_pg_config_dir }}/pg_hba.conf"
-      owner: "postgres"
-      group: "postgres"
-      mode: "0640"
-    - path: "{{ hx_pg_data_dir }}"
-      owner: "postgres"
-      group: "postgres"
-      mode: "0700"
-  tags: ['security']
+    - { path: "{{ hx_pg_conf_path }}", owner: "postgres", group: "postgres", mode: "0644" }
+    - { path: "{{ hx_pg_hba_path }}", owner: "postgres", group: "postgres", mode: "0640" }
+    - { path: "{{ hx_pg_ident_path }}", owner: "postgres", group: "postgres", mode: "0640" }
+  tags: [security]
 
-- name: "Hx | PostgreSQL Auth | Remove default PostgreSQL users if they exist"
-  postgresql_user:
-    name: "{{ item }}"
-    state: absent
-    login_host: "localhost"
-    login_user: "postgres"
-    login_password: "{{ vault_postgres_password | default('') }}"
+- name: Secure SSL certificate file permissions
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
   loop:
-    - "template0"
-    - "template1"
-  become: true
-  become_user: postgres
+    - { path: "{{ hx_pg_ssl_cert_path }}", owner: "postgres", group: "postgres", mode: "0644" }
+    - { path: "{{ hx_pg_ssl_key_path }}", owner: "postgres", group: "postgres", mode: "0600" }
+    - { path: "{{ hx_pg_ssl_ca_path }}", owner: "postgres", group: "postgres", mode: "0644" }
+  when: hx_pg_ssl_enabled | bool
+  tags: [security]
+
+- name: Secure Kerberos keytab permissions
+  file:
+    path: "{{ hx_pg_keytab_computed_path }}"
+    owner: postgres
+    group: postgres
+    mode: '0600'
+  when:
+    - hx_pg_gss_user | length > 0
+    - hx_pg_keytab_computed_path | length > 0
+  tags: [security]
+
+- name: Validate HBA configuration for security
+  shell: |
+    set -euo pipefail
+    hba_file="{{ hx_pg_hba_path }}"
+    security_issues=0
+
+    # Check for insecure authentication methods
+    if grep -q "trust" "$hba_file"; then
+      echo "WARNING: Trust authentication method found (insecure)"
+      security_issues=$((security_issues + 1))
+    fi
+
+    if grep -q "password" "$hba_file" && ! grep -q "scram-sha-256\|md5" "$hba_file"; then
+      echo "WARNING: Plain text password authentication found (insecure)"
+      security_issues=$((security_issues + 1))
+    fi
+
+    # Check for unencrypted connections
+    if grep -q "^host" "$hba_file" && ! grep -q "hostssl\|hostgssenc" "$hba_file"; then
+      echo "WARNING: Unencrypted host connections allowed"
+      security_issues=$((security_issues + 1))
+    fi
+
+    if [ $security_issues -eq 0 ]; then
+      echo "HBA security validation passed"
+    else
+      echo "HBA security validation found $security_issues issues"
+    fi
+
+    exit $security_issues
+  args:
+    executable: /bin/bash
+  register: hx_pg_hba_security_check
+  when: hx_pg_hardening_enabled | bool
+  changed_when: false
+  failed_when: hx_pg_hba_security_check.rc > 0 and hx_pg_hardening_enabled | bool
+  tags: [security]
+
+- name: Check for weak SSL/TLS configuration
+  shell: |
+    set -euo pipefail
+    config_file="{{ hx_pg_conf_path }}"
+    security_issues=0
+
+    # Check SSL is enabled
+    if ! grep -q "^ssl = on" "$config_file"; then
+      echo "WARNING: SSL is not enabled"
+      security_issues=$((security_issues + 1))
+    fi
+
+    # Check minimum TLS version
+    if grep -q "ssl_min_protocol_version.*TLSv1[^.2-3]" "$config_file"; then
+      echo "WARNING: Weak TLS protocol version configured"
+      security_issues=$((security_issues + 1))
+    fi
+
+    # Check password encryption
+    if ! grep -q "password_encryption.*scram-sha-256" "$config_file"; then
+      echo "WARNING: Weak password encryption method"
+      security_issues=$((security_issues + 1))
+    fi
+
+    if [ $security_issues -eq 0 ]; then
+      echo "SSL/TLS security validation passed"
+    else
+      echo "SSL/TLS security validation found $security_issues issues"
+    fi
+
+    exit $security_issues
+  args:
+    executable: /bin/bash
+  register: hx_pg_ssl_security_check
+  when: hx_pg_hardening_enabled | bool
+  changed_when: false
+  failed_when: hx_pg_ssl_security_check.rc > 0 and hx_pg_hardening_enabled | bool
+  tags: [security]
+
+- name: Test SSL connection security
+  shell: |
+    set -euo pipefail
+    export PGPASSWORD="{{ hx_pg_app_password }}"
+
+    # Test SSL connection
+    psql "host={{ ansible_default_ipv4.address }} port={{ hx_pg_port }} \
+          dbname={{ hx_pg_db }} user={{ hx_pg_app_user }} \
+          sslmode=require sslrootcert={{ hx_pg_ca_path }}" \
+      -c "SELECT version(), current_setting('ssl_version');" \
+      -c "\conninfo"
+  args:
+    executable: /bin/bash
+  register: hx_pg_ssl_connection_test
+  when:
+    - hx_pg_ssl_test_enabled | bool
+    - hx_pg_ssl_enabled | bool
+    - hx_pg_app_password | length > 0
+  changed_when: false
+  failed_when: hx_pg_ssl_connection_test.rc != 0
+  no_log: true
+  tags: [security]
+
+- name: Verify certificate chain
+  shell: |
+    set -euo pipefail
+    cert_file="{{ hx_pg_ssl_cert_path }}"
+    ca_file="{{ hx_pg_ssl_ca_path }}"
+
+    if [ -f "$cert_file" ] && [ -f "$ca_file" ]; then
+      openssl verify -CAfile "$ca_file" "$cert_file"
+      echo "Certificate chain verification passed"
+    else
+      echo "Certificate files not found, skipping verification"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_pg_cert_chain_check
+  when:
+    - hx_pg_ssl_enabled | bool
+    - hx_pg_ca_enabled | bool
+  changed_when: false
   failed_when: false
-  tags: ['security']
+  tags: [security]
 
-- name: "Hx | PostgreSQL Auth | Configure connection limits per user"
-  postgresql_query:
-    db: "postgres"
-    query: "ALTER USER {{ item.name }} CONNECTION LIMIT {{ item.connection_limit | default(10) }};"
-    login_host: "localhost"
-    login_user: "postgres"
-    login_password: "{{ vault_postgres_password | default('') }}"
-  loop: "{{ hx_pg_users }}"
-  become: true
-  become_user: postgres
-  when: 
-    - hx_pg_users | length > 0
-    - "'CHANGE_ME' not in item.password"
-  tags: ['security']
+- name: Run security compliance checks
+  shell: |
+    set -euo pipefail
+    compliance_score=0
+    total_checks=0
 
-- name: "Hx | PostgreSQL Auth | Set password expiration for users"
-  postgresql_query:
-    db: "postgres"
-    query: "ALTER USER {{ item.name }} VALID UNTIL '{{ item.expires | default('2025-12-31') }}';"
-    login_host: "localhost"
-    login_user: "postgres"
-    login_password: "{{ vault_postgres_password | default('') }}"
-  loop: "{{ hx_pg_users }}"
-  become: true
-  become_user: postgres
-  when: 
-    - hx_pg_users | length > 0
-    - "'CHANGE_ME' not in item.password"
-    - item.expires is defined
-  tags: ['security']
+    # Check 1: SSL enabled
+    total_checks=$((total_checks + 1))
+    if sudo -u postgres psql -tAc "SHOW ssl;" | grep -q "on"; then
+      compliance_score=$((compliance_score + 1))
+      echo "✓ SSL enabled"
+    else
+      echo "✗ SSL disabled"
+    fi
 
-- name: "Hx | PostgreSQL Auth | Configure audit logging"
-  postgresql_query:
-    db: "postgres"
-    query: |
-      CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
-      CREATE EXTENSION IF NOT EXISTS pgaudit;
-    login_host: "localhost"
-    login_user: "postgres"
-    login_password: "{{ vault_postgres_password | default('') }}"
-  become: true
-  become_user: postgres
+    # Check 2: Strong password encryption
+    total_checks=$((total_checks + 1))
+    if sudo -u postgres psql -tAc "SELECT current_setting('password_encryption');" | grep -q "scram-sha-256"; then
+      compliance_score=$((compliance_score + 1))
+      echo "✓ Strong password encryption"
+    else
+      echo "✗ Weak password encryption"
+    fi
+
+    # Check 3: Connection logging
+    total_checks=$((total_checks + 1))
+    if sudo -u postgres psql -tAc "SHOW log_connections;" | grep -q "on"; then
+      compliance_score=$((compliance_score + 1))
+      echo "✓ Connection logging enabled"
+    else
+      echo "✗ Connection logging disabled"
+    fi
+
+    # Check 4: Minimum TLS version
+    total_checks=$((total_checks + 1))
+    tls_version=$(sudo -u postgres psql -tAc "SHOW ssl_min_protocol_version;" 2>/dev/null || echo "")
+    if [[ "$tls_version" =~ TLSv1\.[2-3] ]]; then
+      compliance_score=$((compliance_score + 1))
+      echo "✓ Strong TLS version: $tls_version"
+    else
+      echo "✗ Weak or unset TLS version: $tls_version"
+    fi
+
+    compliance_percentage=$((compliance_score * 100 / total_checks))
+    echo "Security compliance: $compliance_score/$total_checks ($compliance_percentage%)"
+
+    if [ $compliance_percentage -lt 80 ]; then
+      echo "WARNING: Security compliance below 80%"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_pg_compliance_check
+  when: hx_pg_hardening_enabled | bool
+  changed_when: false
   failed_when: false
-  tags: ['security']
+  tags: [security]
 
-- name: "Hx | PostgreSQL Auth | Configure firewall rules"
-  ufw:
-    rule: allow
-    port: "{{ hx_pg_port }}"
-    src: "{{ item }}"
-    proto: tcp
-  loop:
-    - "127.0.0.1"
-    - "::1"
-  when: ansible_facts['os_family'] == "Debian"
-  tags: ['security']
+- name: Create security audit report
+  template:
+    src: security_audit.j2
+    dest: "{{ hx_pg_log_dir }}/security_audit_{{ hx_pg_backup_timestamp }}.txt"
+    owner: postgres
+    group: postgres
+    mode: '0640'
+  when: hx_pg_audit_logging_enabled | bool
+  tags: [security]
 
-- name: "Hx | PostgreSQL Auth | Disable unnecessary PostgreSQL features"
+- name: Log security configuration completion
   lineinfile:
-    path: "{{ hx_pg_config_dir }}/postgresql.conf"
-    regexp: "^#?{{ item.key }}"
-    line: "{{ item.key }} = {{ item.value }}"
-    backup: true
-  loop:
-    - key: "shared_preload_libraries"
-      value: "'pg_stat_statements'"
-    - key: "track_activities"
-      value: "on"
-    - key: "track_counts"
-      value: "on"
-    - key: "track_functions"
-      value: "all"
-  notify: restart postgresql
-  tags: ['security']
+    path: "{{ hx_pg_log_dir }}/security.log"
+    line: "{{ ansible_date_time.iso8601 }} - PostgreSQL security configuration completed"
+    create: yes
+    owner: postgres
+    group: postgres
+    mode: '0640'
+  when: hx_pg_audit_logging_enabled | bool
+  tags: [security]
+
+- name: Display security summary
+  debug:
+    msg:
+      - "PostgreSQL security configuration completed"
+      - "Password encryption: {{ hx_pg_password_encryption }}"
+      - "SSL/TLS: {{ hx_pg_ssl_enabled | ternary('Enabled', 'Disabled') }}"
+      - "TLS minimum version: {{ hx_pg_ssl_min_protocol_version if hx_pg_ssl_min_protocol_version else 'Default' }}"
+      - "HBA security check: {{ (hx_pg_hba_security_check.rc == 0) | ternary('Passed', 'Issues found') if hx_pg_hba_security_check is defined else 'Skipped' }}"
+      - "SSL security check: {{ (hx_pg_ssl_security_check.rc == 0) | ternary('Passed', 'Issues found') if hx_pg_ssl_security_check is defined else 'Skipped' }}"
+      - "SSL connection test: {{ (hx_pg_ssl_connection_test.rc == 0) | ternary('Passed', 'Failed') if hx_pg_ssl_connection_test is defined else 'Skipped' }}"
+      - "Certificate chain: {{ 'Verified' if hx_pg_cert_chain_check is defined and 'passed' in hx_pg_cert_chain_check.stdout else 'Skipped' }}"
+      - "Compliance check: {{ hx_pg_compliance_check.stdout_lines[-1] if hx_pg_compliance_check is defined else 'Skipped' }}"
+  tags: [security]

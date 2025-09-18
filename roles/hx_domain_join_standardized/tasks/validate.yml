@@ -1,233 +1,107 @@
 
 ---
-# Validation tasks for hx_domain_join_standardized role
-# Comprehensive input validation and system compatibility checks
+# Variable Validation Tasks for HX Domain Join
 
-- name: Validate required domain variables
-  ansible.builtin.assert:
+- name: Load validation rules
+  set_fact:
+    hx_domain_validation_rules: "{{ lookup('file', role_path + '/vars/validation.yml') | from_yaml }}"
+  tags: [validation]
+
+- name: Validate boolean variables
+  assert:
     that:
-      - hx_domain_join_domain_name is defined
-      - hx_domain_join_domain_name | length > 0
-      - hx_domain_join_domain_name | regex_search('^\w+\.\w+')
-      - hx_domain_join_domain_netbios is defined
-      - hx_domain_join_domain_netbios | length > 0
-      - hx_domain_join_realm is defined
-      - hx_domain_join_realm | length > 0
-    fail_msg: "Domain configuration variables must be properly defined"
-    success_msg: "Domain configuration validation passed"
-
-- name: Validate domain controllers
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_domain_controllers is defined
-      - hx_domain_join_domain_controllers | length > 0
-      - hx_domain_join_preferred_dc is defined
-      - hx_domain_join_preferred_dc in hx_domain_join_domain_controllers
-    fail_msg: "Domain controllers must be properly configured"
-    success_msg: "Domain controllers validation passed"
-
-- name: Validate authentication credentials
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_admin_user is defined
-      - hx_domain_join_admin_user | length > 0
-      - hx_domain_join_admin_password is defined
-      - hx_domain_join_admin_password | length > 0
-      - hx_domain_join_service_account is defined
-      - hx_domain_join_service_password is defined
-    fail_msg: "Authentication credentials must be properly defined"
-    success_msg: "Authentication credentials validation passed"
-
-- name: Validate computer account settings
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_computer_name is defined
-      - hx_domain_join_computer_name | length > 0
-      - hx_domain_join_computer_name | length <= 15  # NetBIOS name limit
-      - hx_domain_join_computer_ou is defined
-      - hx_domain_join_computer_ou | regex_search('^(OU=|CN=)')
-    fail_msg: "Computer account settings must be valid"
-    success_msg: "Computer account settings validation passed"
-
-- name: Validate DNS configuration
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_dns_servers is defined
-      - hx_domain_join_dns_servers | length > 0
-      - hx_domain_join_dns_search_domains is defined
-      - hx_domain_join_dns_timeout | int > 0
-      - hx_domain_join_dns_timeout | int <= 30
-    fail_msg: "DNS configuration must be valid"
-    success_msg: "DNS configuration validation passed"
-  when: hx_domain_join_configure_dns | default(true)
-
-- name: Validate Kerberos settings
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_kerberos_encryption_types is defined
-      - hx_domain_join_kerberos_encryption_types | length > 0
-      - hx_domain_join_kerberos_ticket_lifetime | regex_search('^\d+[hdm]$')
-      - hx_domain_join_kerberos_renew_lifetime | regex_search('^\d+[hdm]$')
-    fail_msg: "Kerberos settings must be valid"
-    success_msg: "Kerberos settings validation passed"
-
-- name: Validate access control groups
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_allowed_groups is defined
-      - hx_domain_join_allowed_groups | length > 0
-      - hx_domain_join_sudo_groups is defined
-    fail_msg: "Access control groups must be defined"
-    success_msg: "Access control groups validation passed"
-
-- name: Validate SSSD configuration
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_sssd_id_provider in ['ad', 'ldap']
-      - hx_domain_join_sssd_auth_provider in ['ad', 'ldap', 'krb5']
-      - hx_domain_join_sssd_access_provider in ['ad', 'ldap', 'simple']
-      - hx_domain_join_sssd_debug_level | int >= 0
-      - hx_domain_join_sssd_debug_level | int <= 10
-    fail_msg: "SSSD configuration must be valid"
-    success_msg: "SSSD configuration validation passed"
-  when: hx_domain_join_use_sssd | default(true)
-
-- name: Validate LDAP settings
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_ldap_search_base is defined
-      - hx_domain_join_ldap_search_base | regex_search('^DC=')
-      - hx_domain_join_ldap_min_id | int > 0
-      - hx_domain_join_ldap_max_id | int > hx_domain_join_ldap_min_id | int
-      - hx_domain_join_ldap_schema in ['ad', 'rfc2307', 'rfc2307bis']
-    fail_msg: "LDAP settings must be valid"
-    success_msg: "LDAP settings validation passed"
-
-- name: Validate timeout settings
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_cache_timeout | int > 0
-      - hx_domain_join_connectivity_timeout | int > 0
-      - hx_domain_join_connectivity_timeout | int <= 60
-      - hx_domain_join_session_timeout | int > 0
-      - hx_domain_join_idle_timeout | int > 0
-    fail_msg: "Timeout settings must be positive integers within reasonable ranges"
-    success_msg: "Timeout settings validation passed"
-
-- name: Validate backup settings
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_backup_retention_days | int > 0
-      - hx_domain_join_backup_retention_days | int <= 365
-      - hx_domain_join_backup_dir is defined
-      - hx_domain_join_backup_dir | length > 0
-    fail_msg: "Backup settings must be valid"
-    success_msg: "Backup settings validation passed"
-  when: hx_domain_join_backup_enabled | default(false)
-
-- name: Validate log level
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_log_level in ['DEBUG', 'INFO', 'WARN', 'ERROR']
-    fail_msg: "Log level must be DEBUG, INFO, WARN, or ERROR"
-    success_msg: "Log level validation passed"
-
-- name: Validate compliance mode
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_compliance_mode in ['standard', 'strict', 'custom']
-    fail_msg: "Compliance mode must be standard, strict, or custom"
-    success_msg: "Compliance mode validation passed"
-
-- name: Check system compatibility
-  ansible.builtin.assert:
-    that:
-      - ansible_os_family in ['Debian', 'RedHat']
-      - ansible_python_version is version('3.6', '>=')
-      - ansible_architecture in ['x86_64', 'aarch64']
-    fail_msg: "System must be Debian/RedHat family with Python 3.6+ on x86_64/aarch64"
-    success_msg: "System compatibility validation passed"
-
-- name: Validate network connectivity to domain controllers
-  ansible.builtin.wait_for:
-    host: "{{ item }}"
-    port: 389  # LDAP port
-    timeout: "{{ hx_domain_join_connectivity_timeout }}"
-  loop: "{{ hx_domain_join_domain_controllers }}"
-  register: dc_connectivity
-  failed_when: false
-
-- name: Assert domain controller connectivity
-  ansible.builtin.assert:
-    that:
-      - dc_connectivity.results | selectattr('failed', 'equalto', false) | list | length > 0
-    fail_msg: "At least one domain controller must be reachable"
-    success_msg: "Domain controller connectivity validation passed"
-
-- name: Check DNS resolution for domain
-  ansible.builtin.command:
-    cmd: "nslookup {{ hx_domain_join_domain_name }}"
-  register: dns_resolution
-  changed_when: false
-  failed_when: false
-
-- name: Validate DNS resolution
-  ansible.builtin.assert:
-    that:
-      - dns_resolution.rc == 0
-    fail_msg: "Domain name must be resolvable via DNS"
-    success_msg: "DNS resolution validation passed"
-
-- name: Check for existing domain membership
-  ansible.builtin.command:
-    cmd: realm list
-  register: existing_realm
-  changed_when: false
-  failed_when: false
-
-- name: Set domain join status fact
-  ansible.builtin.set_fact:
-    hx_domain_already_joined: "{{ hx_domain_join_domain_name in existing_realm.stdout }}"
-
-- name: Validate home directory template
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_home_directory_template is defined
-      - "'%u' in hx_domain_join_home_directory_template"
-      - hx_domain_join_home_directory_template | regex_search('^/')
-    fail_msg: "Home directory template must be valid and contain %u placeholder"
-    success_msg: "Home directory template validation passed"
-
-- name: Validate notification settings
-  ansible.builtin.assert:
-    that:
-      - hx_domain_join_notification_email | regex_search('@')
-      - hx_domain_join_notification_events is defined
-      - hx_domain_join_notification_events | length > 0
-    fail_msg: "Notification settings must be valid"
-    success_msg: "Notification settings validation passed"
-  when: hx_domain_join_notifications_enabled | default(false)
-
-- name: Check required system commands
-  ansible.builtin.command:
-    cmd: "which {{ item }}"
-  register: command_check
-  changed_when: false
-  failed_when: command_check.rc != 0
+      - item.value is boolean
+    fail_msg: "Variable {{ item.key }} must be a boolean value"
+    success_msg: "Variable {{ item.key }} validation passed"
   loop:
-    - systemctl
-    - hostnamectl
-    - timedatectl
-  when: ansible_service_mgr == "systemd"
+    - { key: "hx_domain_join_enabled", value: "{{ hx_domain_join_enabled }}" }
+    - { key: "hx_domain_security_enabled", value: "{{ hx_domain_security_enabled }}" }
+    - { key: "hx_sssd_enabled", value: "{{ hx_sssd_enabled }}" }
+    - { key: "hx_krb5_enabled", value: "{{ hx_krb5_enabled }}" }
+  tags: [validation]
 
-- name: Log validation completion
-  ansible.builtin.debug:
+- name: Validate required string variables
+  assert:
+    that:
+      - item is defined
+      - item | length > 0
+    fail_msg: "Required variable {{ item }} is not defined or empty"
+    success_msg: "Required variable validation passed"
+  loop:
+    - "{{ hx_ad_domain }}"
+    - "{{ hx_ad_admin_user }}"
+    - "{{ hx_ad_realm }}"
+    - "{{ hx_ad_computer_name }}"
+  tags: [validation]
+
+- name: Validate domain name format
+  assert:
+    that:
+      - hx_ad_domain | regex_search('^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    fail_msg: "Domain name '{{ hx_ad_domain }}' is not a valid FQDN"
+    success_msg: "Domain name format validation passed"
+  tags: [validation]
+
+- name: Validate realm format (should be uppercase)
+  assert:
+    that:
+      - hx_ad_realm | regex_search('^[A-Z0-9.-]+$')
+      - hx_ad_realm == hx_ad_realm | upper
+    fail_msg: "Realm '{{ hx_ad_realm }}' must be uppercase"
+    success_msg: "Realm format validation passed"
+  tags: [validation]
+
+- name: Validate computer name format
+  assert:
+    that:
+      - hx_ad_computer_name | regex_search('^[A-Z0-9-]{1,15}$')
+      - hx_ad_computer_name | length <= 15
+    fail_msg: "Computer name '{{ hx_ad_computer_name }}' must be uppercase, max 15 chars, alphanumeric and hyphens only"
+    success_msg: "Computer name format validation passed"
+  tags: [validation]
+
+- name: Validate admin username format
+  assert:
+    that:
+      - hx_ad_admin_user | regex_search('^[a-zA-Z0-9._-]+$')
+    fail_msg: "Admin username '{{ hx_ad_admin_user }}' contains invalid characters"
+    success_msg: "Admin username format validation passed"
+  tags: [validation]
+
+- name: Validate admin password is provided
+  assert:
+    that:
+      - hx_ad_admin_password is defined
+      - hx_ad_admin_password | length >= 8
+    fail_msg: "Admin password must be provided and at least 8 characters long"
+    success_msg: "Admin password validation passed"
+  no_log: true
+  tags: [validation]
+
+- name: Validate timeout values
+  assert:
+    that:
+      - item.value | int > 0
+      - item.value | int <= 3600
+    fail_msg: "Timeout value {{ item.key }} must be between 1 and 3600 seconds"
+    success_msg: "Timeout validation passed"
+  loop:
+    - { key: "hx_domain_join_timeout", value: "{{ hx_domain_join_timeout }}" }
+    - { key: "hx_domain_discovery_timeout", value: "{{ hx_domain_discovery_timeout }}" }
+  tags: [validation]
+
+- name: Check if already joined to a domain
+  command: "{{ hx_realm_list_cmd }}"
+  register: hx_current_realm_status
+  changed_when: false
+  failed_when: false
+  tags: [validation]
+
+- name: Display current domain status
+  debug:
     msg:
-      - "Domain join validation completed successfully"
-      - "Domain: {{ hx_domain_join_domain_name }}"
-      - "Realm: {{ hx_domain_join_realm }}"
-      - "Computer Name: {{ hx_domain_join_computer_name }}"
-      - "Already Joined: {{ hx_domain_already_joined | default(false) }}"
-      - "Domain Controllers: {{ hx_domain_join_domain_controllers | length }}"
-      - "SSSD Enabled: {{ hx_domain_join_use_sssd }}"
-  when: hx_domain_join_enable_logging | default(true)
+      - "Current domain status check completed"
+      - "Target domain: {{ hx_ad_domain }}"
+      - "Computer name: {{ hx_ad_computer_name }}"
+      - "Current realm status: {{ 'Joined' if hx_current_realm_status.stdout | length > 0 else 'Not joined' }}"
+  tags: [validation]

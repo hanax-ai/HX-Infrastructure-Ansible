@@ -1,0 +1,101 @@
+
+---
+# Phase 3 Reliability Validation Playbook - Day 1
+# Comprehensive dependency and configuration validation
+
+- name: "Phase 3 | Core Reliability Framework Validation"
+  hosts: all
+  gather_facts: true
+  become: false
+
+  vars:
+    phase3_validation_enabled: true
+    validation_report_path: "/tmp/phase3_validation_report.json"
+
+  pre_tasks:
+    - name: "Phase 3 | Display validation start"
+      debug:
+        msg:
+          - "Starting Phase 3 Core Reliability Framework Validation"
+          - "Target: {{ inventory_hostname }}"
+          - "Environment: {{ environment_type | default('unknown') }}"
+          - "Timestamp: {{ ansible_date_time.iso8601 }}"
+
+    - name: "Phase 3 | Create validation directories"
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "/tmp/phase3-validation"
+        - "/tmp/dependency-cache"
+      delegate_to: localhost
+      run_once: true
+
+  roles:
+    - role: dependency_validator
+      when: phase3_validation_enabled | bool
+      vars:
+        dependency_validation_enabled: true
+        dependency_validation_strict_mode: "{{ environment_type == 'production' }}"
+        system_requirements:
+          min_memory_gb: "{{ 4 if environment_type == 'production' else 2 }}"
+          min_disk_gb: "{{ 20 if environment_type == 'production' else 10 }}"
+        network_dependencies:
+          connectivity_checks:
+            - host: "8.8.8.8"
+              port: 53
+              protocol: udp
+            - host: "github.com"
+              port: 443
+              protocol: tcp
+          dns_resolution_checks:
+            - "google.com"
+            - "github.com"
+            - "{{ ansible_default_ipv4.gateway | default('8.8.8.8') }}"
+
+    - role: config_validator
+      when: phase3_validation_enabled | bool
+      vars:
+        config_validation_enabled: true
+        config_validation_strict_mode: "{{ environment_type == 'production' }}"
+        validation_rules:
+          required_variables:
+            all_hosts:
+              - "environment_type"
+              - "ansible_user"
+            production:
+              - "operational_safety"
+              - "backup_configuration"
+              - "security_hardening"
+              - "monitoring_config"
+
+  post_tasks:
+    - name: "Phase 3 | Generate comprehensive validation report"
+      template:
+        src: phase3_validation_report.json.j2
+        dest: "{{ validation_report_path }}"
+        mode: '0644'
+      delegate_to: localhost
+      vars:
+        validation_timestamp: "{{ ansible_date_time.iso8601 }}"
+        validation_host: "{{ inventory_hostname }}"
+        validation_environment: "{{ environment_type | default('unknown') }}"
+
+    - name: "Phase 3 | Display validation completion"
+      debug:
+        msg:
+          - "Phase 3 Core Reliability Framework Validation Completed"
+          - "Host: {{ inventory_hostname }}"
+          - "Status: SUCCESS"
+          - "Report: {{ validation_report_path }}"
+          - "Next: Review validation results and proceed with template quality enhancements"
+
+  handlers:
+    - name: "Phase 3 | Archive validation results"
+      archive:
+        path: "/tmp/phase3-validation"
+        dest: "/tmp/phase3_validation_{{ ansible_date_time.epoch }}.tar.gz"
+        format: gz
+      delegate_to: localhost
+

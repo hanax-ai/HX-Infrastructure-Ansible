@@ -1,0 +1,141 @@
+
+---
+- name: Install reliability monitoring dependencies
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python3-psutil
+    - python3-requests
+    - curl
+    - jq
+    - netcat
+  tags:
+    - reliability
+    - setup
+
+- name: Create reliability monitor directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /opt/reliability_monitor
+    - /var/log/ansible
+    - /etc/reliability_monitor
+    - /var/lib/reliability_monitor
+  tags:
+    - reliability
+    - setup
+
+- name: Deploy reliability monitor scripts
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - src: health_checker.py.j2
+      dest: /opt/reliability_monitor/health_checker.py
+      mode: '0755'
+    - src: service_recovery.py.j2
+      dest: /opt/reliability_monitor/service_recovery.py
+      mode: '0755'
+    - src: circuit_breaker.py.j2
+      dest: /opt/reliability_monitor/circuit_breaker.py
+      mode: '0755'
+    - src: performance_monitor.py.j2
+      dest: /opt/reliability_monitor/performance_monitor.py
+      mode: '0755'
+  notify:
+    - restart reliability monitor
+  tags:
+    - reliability
+    - scripts
+
+- name: Deploy reliability monitor configuration
+  template:
+    src: reliability_config.yml.j2
+    dest: /etc/reliability_monitor/config.yml
+    mode: '0644'
+  notify:
+    - restart reliability monitor
+  tags:
+    - reliability
+    - config
+
+- name: Create systemd service for reliability monitor
+  template:
+    src: reliability-monitor.service.j2
+    dest: /etc/systemd/system/reliability-monitor.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart reliability monitor
+  tags:
+    - reliability
+    - systemd
+
+- name: Enable and start reliability monitor service
+  systemd:
+    name: reliability-monitor
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  when: service_monitoring.enabled | default(true)
+  tags:
+    - reliability
+    - service
+
+- name: Setup log rotation for reliability monitor
+  template:
+    src: reliability-monitor.logrotate.j2
+    dest: /etc/logrotate.d/reliability-monitor
+    mode: '0644'
+  tags:
+    - reliability
+    - logging
+
+- name: Create health check cron jobs
+  cron:
+    name: "{{ item.name }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour | default('*') }}"
+    job: "{{ item.job }}"
+    user: root
+  loop:
+    - name: "Health Check - Services"
+      minute: "*/{{ service_monitoring.check_interval // 60 | default(1) }}"
+      job: "/opt/reliability_monitor/health_checker.py --type services"
+    - name: "Performance Monitor"
+      minute: "*/5"
+      job: "/opt/reliability_monitor/performance_monitor.py"
+    - name: "Backup Verification"
+      minute: "0"
+      hour: "*/{{ backup_verification.check_interval // 3600 | default(1) }}"
+      job: "/opt/reliability_monitor/health_checker.py --type backup"
+  when: health_checks.enabled | default(true)
+  tags:
+    - reliability
+    - cron
+
+- name: Validate reliability monitor configuration
+  command: /opt/reliability_monitor/health_checker.py --validate-config
+  register: config_validation
+  failed_when: config_validation.rc != 0
+  changed_when: false
+  tags:
+    - reliability
+    - validation
+
+- name: Set reliability monitor facts
+  set_fact:
+    reliability_monitor_facts:
+      version: "1.0.0"
+      config_path: "/etc/reliability_monitor/config.yml"
+      log_path: "{{ error_handling.log_file | default('/var/log/ansible/reliability_monitor.log') }}"
+      service_enabled: "{{ service_monitoring.enabled | default(true) }}"
+      health_checks_enabled: "{{ health_checks.enabled | default(true) }}"
+      circuit_breaker_enabled: "{{ circuit_breaker.enabled | default(true) }}"
+  tags:
+    - reliability
+    - facts

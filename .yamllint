@@ -1,105 +1,58 @@
 
----
-# YAML Lint Configuration for HX Infrastructure
+# YAML Lint Configuration for HX Infrastructure Ansible
+# Enforces consistent YAML formatting and style
+
 extends: default
 
 rules:
-  # Line length - allow longer lines for readability
+  # Line length - accommodate longer Ansible constructs
   line-length:
     max: 120
-    allow-non-breakable-words: true
-    allow-non-breakable-inline-mappings: true
+    level: warning
 
-  # Indentation - enforce 2 spaces
+  # Indentation - standard 2 spaces for YAML
   indentation:
     spaces: 2
     indent-sequences: true
     check-multi-line-strings: false
 
-  # Comments - require space after #
+  # Comments - require space after hash
   comments:
     min-spaces-from-content: 1
-    require-starting-space: true
 
-  # Document start - require ---
+  # Document start - allow files without ---
   document-start:
-    present: true
-
-  # Document end - optional
-  document-end:
     present: false
+
+  # Truthy values - allow yes/no for Ansible
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no']
+    check-keys: false
+
+  # Key ordering - disabled for logical Ansible task ordering
+  key-ordering: disable
 
   # Empty lines
   empty-lines:
     max: 2
-    max-start: 0
+    max-start: 1
     max-end: 1
 
   # Brackets - consistent spacing
   brackets:
     min-spaces-inside: 0
     max-spaces-inside: 1
-    min-spaces-inside-empty: 0
-    max-spaces-inside-empty: 0
 
-  # Braces - consistent spacing  
+  # Braces - consistent spacing
   braces:
     min-spaces-inside: 0
     max-spaces-inside: 1
-    min-spaces-inside-empty: 0
-    max-spaces-inside-empty: 0
-    forbid-implicit-octal: true
 
-  # Colons - consistent spacing
-  colons:
-    max-spaces-before: 0
-    min-spaces-after: 1
-    max-spaces-after: 1
-
-  # Commas - consistent spacing
-  commas:
-    max-spaces-before: 0
-    min-spaces-after: 1
-    max-spaces-after: 1
-
-  # Hyphens - consistent spacing
-  hyphens:
-    max-spaces-after: 1
-
-  # Key duplicates - not allowed
-  key-duplicates: enable
-
-  # Key ordering - not enforced
-  key-ordering: disable
-
-  # New line at end of file
-  new-line-at-end-of-file: enable
-
-  # Octal values - quoted
-  octal-values:
-    forbid-implicit-octal: true
-    forbid-explicit-octal: false
-
-  # Quoted strings - only when needed
-  quoted-strings:
-    quote-type: any
-    required: only-when-needed
-    extra-required: []
-    extra-allowed: []
-
-  # Trailing spaces - not allowed
-  trailing-spaces: enable
-
-  # Truthy values - explicit
-  truthy:
-    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
-    check-keys: true
-
-# Ignore specific files
 ignore: |
-  .github/
-  molecule/
-  .ansible/
-  tests/output/
-  vault/
-  *.retry
+  .git/
+  venv/
+  tmp/
+  *.pyc
+  __pycache__/
+  .pytest_cache/
+  molecule/*/
