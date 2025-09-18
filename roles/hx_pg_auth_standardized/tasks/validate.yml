@@ -1,4 +1,3 @@
-
 ---
 - name: "Hx | PostgreSQL Auth | Validate required variables"
   assert:

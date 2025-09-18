@@ -13,7 +13,7 @@ Wants=redis.service
 {% endif %}
 
 [Service]
-Type=exec
+Type=simple
 User={{ hx_litellm_user }}
 Group={{ hx_litellm_group }}
 WorkingDirectory={{ hx_litellm_home }}
