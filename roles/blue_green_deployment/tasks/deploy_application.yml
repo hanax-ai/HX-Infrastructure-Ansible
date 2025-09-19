@@ -1,0 +1,36 @@
+
+---
+# Application Deployment Tasks
+- name: Stop existing application in new environment
+  ansible.builtin.systemd:
+    name: "{{ application_name }}-{{ new_deploy_color }}"
+    state: stopped
+  ignore_errors: yes
+
+- name: Deploy application to new environment
+  ansible.builtin.copy:
+    src: "/opt/deployments/{{ new_environment }}/"
+    dest: "/opt/{{ application_name }}-{{ new_deploy_color }}/"
+    remote_src: yes
+    mode: preserve
+
+- name: Update application permissions
+  ansible.builtin.file:
+    path: "/opt/{{ application_name }}-{{ new_deploy_color }}"
+    owner: "{{ app_user | default('app') }}"
+    group: "{{ app_group | default('app') }}"
+    recurse: yes
+
+- name: Start application in new environment
+  ansible.builtin.systemd:
+    name: "{{ application_name }}-{{ new_deploy_color }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Wait for application startup
+  ansible.builtin.wait_for:
+    port: "{{ app_port | default(8080) }}"
+    host: "{{ ansible_default_ipv4.address }}"
+    delay: 10
+    timeout: 300

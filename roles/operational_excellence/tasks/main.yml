@@ -1,0 +1,22 @@
+
+---
+# Operational Excellence Framework Role - Main Tasks
+- name: Include operational metrics tasks
+  include_tasks: operational_metrics.yml
+  tags: [metrics, operations]
+
+- name: Include continuous improvement tasks
+  include_tasks: continuous_improvement.yml
+  tags: [improvement, operations]
+
+- name: Include operational dashboards tasks
+  include_tasks: operational_dashboards.yml
+  tags: [dashboards, operations]
+
+- name: Include incident management tasks
+  include_tasks: incident_management.yml
+  tags: [incidents, operations]
+
+- name: Include operational validation tasks
+  include_tasks: operational_validation.yml
+  tags: [validation, operations]

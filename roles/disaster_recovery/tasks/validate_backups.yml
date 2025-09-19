@@ -1,0 +1,76 @@
+
+---
+# Backup Validation Tasks
+- name: Create validation environment
+  ansible.builtin.file:
+    path: "{{ validation_temp_path }}"
+    state: directory
+    mode: '0755'
+
+- name: List available backups
+  ansible.builtin.shell: |
+    {% if backup_storage_type == 'aws_s3' %}
+    aws s3 ls s3://{{ backup_s3_bucket }}/{{ inventory_hostname }}/ --recursive | sort -k1,2
+    {% elif backup_storage_type == 'azure_blob' %}
+    az storage blob list --container-name {{ backup_container }} --prefix {{ inventory_hostname }}/ --query "[].{name:name, lastModified:properties.lastModified}" -o table
+    {% elif backup_storage_type == 'gcp_storage' %}
+    gsutil ls -l gs://{{ backup_gcp_bucket }}/{{ inventory_hostname }}/
+    {% else %}
+    find {{ backup_base_path }} -name "backup_*.tar.gz" -type f -printf "%T@ %p\n" | sort -n
+    {% endif %}
+  register: available_backups
+
+- name: Select backups for validation
+  ansible.builtin.set_fact:
+    backups_to_validate: "{{ available_backups.stdout_lines[-validation_backup_count:] }}"
+  vars:
+    validation_backup_count: "{{ validate_last_n_backups | default(3) }}"
+
+- name: Download and validate each backup
+  ansible.builtin.include_tasks: validate_single_backup.yml
+  loop: "{{ backups_to_validate }}"
+  loop_control:
+    loop_var: backup_item
+
+- name: Generate validation report
+  ansible.builtin.template:
+    src: backup_validation_report.json.j2
+    dest: "{{ dr_docs_path }}/backup_validation_report_{{ ansible_date_time.epoch }}.json"
+    mode: '0644'
+
+- name: Check validation results
+  ansible.builtin.set_fact:
+    validation_success_count: "{{ validation_results | selectattr('status', 'equalto', 'success') | list | length }}"
+    validation_total_count: "{{ validation_results | length }}"
+
+- name: Send validation notification
+  ansible.builtin.mail:
+    to: "{{ backup_validation_email | default(dr_notification_email) }}"
+    subject: "Backup Validation Report - {{ inventory_hostname }}"
+    body: |
+      Backup validation completed for {{ inventory_hostname }}
+      
+      Validation Summary:
+      - Total backups validated: {{ validation_total_count }}
+      - Successful validations: {{ validation_success_count }}
+      - Failed validations: {{ validation_total_count | int - validation_success_count | int }}
+      
+      {% if validation_success_count | int < validation_total_count | int %}
+      WARNING: Some backup validations failed. Please review the detailed report.
+      {% endif %}
+      
+      Validation Time: {{ ansible_date_time.iso8601 }}
+      Report Location: {{ dr_docs_path }}/backup_validation_report_{{ ansible_date_time.epoch }}.json
+  when: backup_validation_email is defined or dr_notification_email is defined
+
+- name: Clean up validation temporary files
+  ansible.builtin.file:
+    path: "{{ validation_temp_path }}"
+    state: absent
+  when: cleanup_validation_files | default(true)
+
+- name: Log validation completion
+  ansible.builtin.lineinfile:
+    path: /var/log/backup_validation.log
+    line: "{{ ansible_date_time.iso8601 }} - Backup validation completed - {{ validation_success_count }}/{{ validation_total_count }} successful"
+    create: yes

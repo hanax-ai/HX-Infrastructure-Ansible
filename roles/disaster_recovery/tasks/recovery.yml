@@ -1,0 +1,134 @@
+
+---
+# Disaster Recovery Tasks
+- name: Stop services for recovery
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+  loop: "{{ services_to_stop | default([]) }}"
+  ignore_errors: yes
+
+- name: Download latest backup from remote storage
+  ansible.builtin.shell: |
+    {% if backup_storage_type == 'aws_s3' %}
+    LATEST_BACKUP=$(aws s3 ls s3://{{ backup_s3_bucket }}/{{ inventory_hostname }}/ --recursive | sort | tail -n 1 | awk '{print $4}')
+    aws s3 cp s3://{{ backup_s3_bucket }}/$LATEST_BACKUP {{ recovery_temp_path }}/
+    {% elif backup_storage_type == 'azure_blob' %}
+    LATEST_BACKUP=$(az storage blob list --container-name {{ backup_container }} --prefix {{ inventory_hostname }}/ --query "sort_by([].{name:name, lastModified:properties.lastModified}, &lastModified)[-1].name" -o tsv)
+    az storage blob download --container-name {{ backup_container }} --name $LATEST_BACKUP --file {{ recovery_temp_path }}/$(basename $LATEST_BACKUP)
+    {% endif %}
+  register: backup_download_result
+
+- name: Extract backup archive
+  ansible.builtin.unarchive:
+    src: "{{ recovery_temp_path }}/{{ backup_download_result.stdout | basename }}"
+    dest: "{{ recovery_temp_path }}/"
+    remote_src: yes
+
+- name: Verify backup integrity
+  ansible.builtin.shell: |
+    cd {{ recovery_temp_path }}
+    if [ -f checksums.txt ]; then
+      sha256sum -c checksums.txt
+    else
+      echo "WARNING: No checksum file found"
+    fi
+  register: integrity_check
+
+- name: Restore databases
+  ansible.builtin.shell: |
+    {% for db in databases_to_backup %}
+    {% if db.type == 'mysql' %}
+    mysql -h {{ db.host }} -u {{ db.username }} -p{{ db.password }} {{ db.name }} < {{ recovery_temp_path }}/databases/{{ db.name }}_*.sql
+    {% elif db.type == 'postgresql' %}
+    PGPASSWORD={{ db.password }} psql -h {{ db.host }} -U {{ db.username }} -d {{ db.name }} -f {{ recovery_temp_path }}/databases/{{ db.name }}_*.sql
+    {% elif db.type == 'mongodb' %}
+    mongorestore --host {{ db.host }} --db {{ db.name }} {{ recovery_temp_path }}/databases/{{ db.name }}_*/{{ db.name }}
+    {% endif %}
+    {% endfor %}
+  when: databases_to_backup is defined and integrity_check.rc == 0
+
+- name: Restore configuration files
+  ansible.builtin.unarchive:
+    src: "{{ recovery_temp_path }}/configs/{{ item.name }}_*.tar.gz"
+    dest: "{{ item.path | dirname }}"
+    remote_src: yes
+  loop: "{{ config_paths_to_backup | default([]) }}"
+  when: integrity_check.rc == 0
+
+- name: Restore application data
+  ansible.builtin.synchronize:
+    src: "{{ recovery_temp_path }}/applications/{{ item.name }}/"
+    dest: "{{ item.src }}"
+    delete: yes
+    recursive: yes
+  loop: "{{ application_paths_to_backup | default([]) }}"
+  delegate_to: "{{ inventory_hostname }}"
+  when: integrity_check.rc == 0
+
+- name: Update file permissions after restore
+  ansible.builtin.file:
+    path: "{{ item.src }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode | default('0644') }}"
+    recurse: yes
+  loop: "{{ application_paths_to_backup | default([]) }}"
+
+- name: Start services after recovery
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  loop: "{{ services_to_stop | default([]) }}"
+
+- name: Wait for services to be ready
+  ansible.builtin.wait_for:
+    port: "{{ item.port }}"
+    host: "{{ item.host | default('localhost') }}"
+    delay: 10
+    timeout: 300
+  loop: "{{ service_health_checks | default([]) }}"
+
+- name: Perform post-recovery validation
+  ansible.builtin.uri:
+    url: "{{ item }}"
+    method: GET
+    status_code: 200
+  loop: "{{ recovery_validation_urls | default([]) }}"
+  register: recovery_validation_results
+
+- name: Generate recovery report
+  ansible.builtin.template:
+    src: recovery_report.json.j2
+    dest: "{{ dr_docs_path }}/recovery_report_{{ ansible_date_time.epoch }}.json"
+    mode: '0644'
+
+- name: Send recovery notification
+  ansible.builtin.mail:
+    to: "{{ dr_notification_email }}"
+    subject: "DR Recovery Completed - {{ inventory_hostname }}"
+    body: |
+      Disaster recovery completed for {{ inventory_hostname }}
+      
+      Recovery Status: {{ 'SUCCESS' if recovery_validation_results.results | selectattr('status', 'equalto', 200) | list | length == recovery_validation_results.results | length else 'PARTIAL' }}
+      Recovery Time: {{ ansible_date_time.iso8601 }}
+      
+      Services Restored: {{ services_to_stop | join(', ') }}
+      Databases Restored: {{ databases_to_backup | map(attribute='name') | join(', ') if databases_to_backup is defined else 'None' }}
+      
+      Please verify all systems are functioning correctly.
+  when: dr_notification_email is defined
+
+- name: Clean up recovery temporary files
+  ansible.builtin.file:
+    path: "{{ recovery_temp_path }}"
+    state: absent
+  when: cleanup_recovery_files | default(true)
+
+- name: Log recovery completion
+  ansible.builtin.lineinfile:
+    path: /var/log/dr_recovery.log
+    line: "{{ ansible_date_time.iso8601 }} - DR recovery completed for {{ inventory_hostname }} - Status: {{ 'SUCCESS' if recovery_validation_results.results | selectattr('status', 'equalto', 200) | list | length == recovery_validation_results.results | length else 'PARTIAL' }}"
+    create: yes

@@ -1,0 +1,36 @@
+
+---
+# Deployment Preparation Tasks
+- name: Create deployment directory
+  ansible.builtin.file:
+    path: "/opt/deployments/{{ new_environment }}"
+    state: directory
+    mode: '0755'
+
+- name: Backup current configuration
+  ansible.builtin.copy:
+    src: "/opt/{{ application_name }}/config/"
+    dest: "/opt/backups/{{ deployment_timestamp }}/config/"
+    remote_src: yes
+    backup: yes
+
+- name: Download application artifacts
+  ansible.builtin.get_url:
+    url: "{{ artifact_url }}"
+    dest: "/opt/deployments/{{ new_environment }}/{{ artifact_name }}"
+    mode: '0644'
+  when: artifact_url is defined
+
+- name: Extract application artifacts
+  ansible.builtin.unarchive:
+    src: "/opt/deployments/{{ new_environment }}/{{ artifact_name }}"
+    dest: "/opt/deployments/{{ new_environment }}/"
+    remote_src: yes
+  when: artifact_name is defined
+
+- name: Template configuration files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/opt/deployments/{{ new_environment }}/{{ item.dest }}"
+    mode: '0644'
+  loop: "{{ config_templates | default([]) }}"

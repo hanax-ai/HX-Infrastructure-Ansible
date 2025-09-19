@@ -1,0 +1,40 @@
+
+---
+# Health Check Tasks
+- name: Perform application health check
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ app_port | default(8080) }}/health"
+    method: GET
+    status_code: 200
+    timeout: 30
+  register: health_check_result
+  retries: 5
+  delay: 10
+
+- name: Perform smoke tests
+  ansible.builtin.uri:
+    url: "http://{{ ansible_default_ipv4.address }}:{{ app_port | default(8080) }}/{{ item }}"
+    method: GET
+    status_code: 200
+  loop: "{{ smoke_test_endpoints | default(['/api/status', '/api/version']) }}"
+  register: smoke_test_results
+
+- name: Validate database connectivity
+  ansible.builtin.command: >
+    {{ database_health_check_command | default('echo "No DB check configured"') }}
+  register: db_health_check
+  when: database_health_check_command is defined
+
+- name: Set health check status
+  ansible.builtin.set_fact:
+    deployment_health_check_passed: "{{ 
+      health_check_result.status == 200 and 
+      smoke_test_results.results | selectattr('status', 'equalto', 200) | list | length == smoke_test_results.results | length 
+    }}"
+
+- name: Display health check results
+  ansible.builtin.debug:
+    msg:
+      - "Health Check Status: {{ 'PASSED' if deployment_health_check_passed else 'FAILED' }}"
+      - "Health Check Response: {{ health_check_result.status | default('N/A') }}"
+      - "Smoke Tests: {{ smoke_test_results.results | length }} tests completed"

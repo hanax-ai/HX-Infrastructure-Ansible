@@ -1,0 +1,70 @@
+
+---
+# Enterprise Integration Default Variables
+
+# Paths
+iam_config_path: "/etc/iam"
+iam_scripts_path: "/opt/iam/scripts"
+compliance_scripts_path: "/opt/compliance/scripts"
+compliance_config_path: "/etc/compliance"
+compliance_dashboard_path: "/opt/compliance/dashboards"
+logging_scripts_path: "/opt/logging/scripts"
+logging_config_path: "/etc/logging"
+logging_dashboard_path: "/opt/logging/dashboards"
+backup_integration_path: "/opt/backup/enterprise"
+change_management_path: "/opt/change"
+change_dashboard_path: "/opt/change/dashboards"
+
+# IAM Settings
+enable_kerberos: true
+enable_ldap: false
+enable_mfa: false
+join_domain: false
+configure_pam: true
+configure_ssh_enterprise: true
+enable_pam_integration: false
+
+# Domain Configuration
+domain_name: ""
+domain_admin_user: ""
+domain_admin_password: ""
+
+# Compliance Settings
+compliance_frameworks:
+  - { framework: "pci_dss" }
+  - { framework: "sox" }
+  - { framework: "hipaa" }
+  - { framework: "gdpr" }
+
+enable_siem_integration: false
+enable_auto_remediation: false
+
+# Logging Settings
+siem_endpoint: ""
+enable_log_encryption: false
+
+# Enterprise Log Directories
+enterprise_log_directories:
+  - { path: "/var/log/enterprise", owner: "syslog", group: "adm", mode: "0755" }
+  - { path: "/var/log/security", owner: "root", group: "root", mode: "0700" }
+  - { path: "/var/log/audit", owner: "root", group: "root", mode: "0700" }
+  - { path: "/var/log/compliance", owner: "syslog", group: "adm", mode: "0755" }
+
+# Backup Integration Settings
+enterprise_backup_system: "bacula"  # bacula, amanda, custom
+enterprise_backup_services:
+  - "bacula-fd"
+backup_hour: "2"
+enable_backup_encryption: true
+
+# Change Management Settings
+itsm_system: ""  # servicenow, jira, remedy
+change_approval_required: true
+automated_rollback: true
+
+# Notification Settings
+iam_notification_email: ""
+compliance_notification_email: ""
+logging_notification_email: ""
+backup_notification_email: ""
+change_notification_email: ""
