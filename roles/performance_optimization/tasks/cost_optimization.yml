@@ -1,0 +1,127 @@
+
+---
+# Cost Optimization Tasks
+- name: Create cost optimization directory
+  ansible.builtin.file:
+    path: "{{ cost_optimization_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Install cost optimization tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - awscli
+    - jq
+    - python3-boto3
+
+- name: Create cost analysis scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ cost_optimization_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "cost_analyzer.py.j2", dest: "cost_analyzer.py" }
+    - { src: "resource_optimizer.sh.j2", dest: "resource_optimizer.sh" }
+    - { src: "unused_resources.py.j2", dest: "unused_resources.py" }
+    - { src: "cost_report.sh.j2", dest: "cost_report.sh" }
+
+- name: Configure resource tagging for cost tracking
+  ansible.builtin.shell: |
+    {% if cloud_provider == 'aws' %}
+    # Tag EC2 instances
+    aws ec2 create-tags --resources {{ ansible_ec2_instance_id | default('i-example') }} --tags Key=CostCenter,Value={{ cost_center | default('IT') }} Key=Environment,Value={{ environment | default('production') }} Key=Project,Value={{ project_name | default('HX-Infrastructure') }}
+    {% elif cloud_provider == 'azure' %}
+    # Tag Azure resources
+    az resource tag --tags CostCenter={{ cost_center | default('IT') }} Environment={{ environment | default('production') }} Project={{ project_name | default('HX-Infrastructure') }} --resource-group {{ resource_group_name }}
+    {% endif %}
+  when: cloud_provider is defined and enable_cost_tagging | default(true)
+
+- name: Setup automated resource scheduling
+  ansible.builtin.template:
+    src: resource_scheduler.sh.j2
+    dest: "{{ cost_optimization_path }}/resource_scheduler.sh"
+    mode: '0755'
+
+- name: Schedule non-production resource shutdown
+  ansible.builtin.cron:
+    name: "Shutdown non-prod resources"
+    minute: "0"
+    hour: "19"
+    weekday: "1-5"
+    job: "{{ cost_optimization_path }}/resource_scheduler.sh shutdown >> /var/log/cost_optimization.log 2>&1"
+    user: root
+  when: enable_resource_scheduling | default(false) and environment != 'production'
+
+- name: Schedule non-production resource startup
+  ansible.builtin.cron:
+    name: "Startup non-prod resources"
+    minute: "0"
+    hour: "8"
+    weekday: "1-5"
+    job: "{{ cost_optimization_path }}/resource_scheduler.sh startup >> /var/log/cost_optimization.log 2>&1"
+    user: root
+  when: enable_resource_scheduling | default(false) and environment != 'production'
+
+- name: Setup cost monitoring and alerting
+  ansible.builtin.template:
+    src: cost_alerts.py.j2
+    dest: "{{ cost_optimization_path }}/cost_alerts.py"
+    mode: '0755'
+
+- name: Schedule daily cost analysis
+  ansible.builtin.cron:
+    name: "Daily Cost Analysis"
+    minute: "0"
+    hour: "6"
+    job: "{{ cost_optimization_path }}/cost_analyzer.py daily >> /var/log/cost_analysis.log 2>&1"
+    user: root
+
+- name: Schedule weekly cost optimization
+  ansible.builtin.cron:
+    name: "Weekly Cost Optimization"
+    minute: "0"
+    hour: "7"
+    weekday: "1"
+    job: "{{ cost_optimization_path }}/resource_optimizer.sh >> /var/log/cost_optimization.log 2>&1"
+    user: root
+
+- name: Create cost optimization dashboard
+  ansible.builtin.template:
+    src: cost_dashboard.json.j2
+    dest: "{{ performance_dashboard_path }}/cost_optimization.json"
+    mode: '0644'
+
+- name: Configure right-sizing recommendations
+  ansible.builtin.template:
+    src: rightsizing_analyzer.py.j2
+    dest: "{{ cost_optimization_path }}/rightsizing_analyzer.py"
+    mode: '0755'
+
+- name: Setup monthly rightsizing analysis
+  ansible.builtin.cron:
+    name: "Monthly Rightsizing Analysis"
+    minute: "0"
+    hour: "4"
+    day: "1"
+    job: "{{ cost_optimization_path }}/rightsizing_analyzer.py >> /var/log/rightsizing.log 2>&1"
+    user: root
+
+- name: Create cost optimization policies
+  ansible.builtin.template:
+    src: cost_policies.json.j2
+    dest: "{{ cost_optimization_path }}/cost_policies.json"
+    mode: '0644'
+
+- name: Run initial cost analysis
+  ansible.builtin.shell: |
+    {{ cost_optimization_path }}/cost_analyzer.py baseline
+  register: cost_baseline
+  changed_when: false
+
+- name: Log cost optimization setup
+  ansible.builtin.lineinfile:
+    path: /var/log/cost_optimization.log
+    line: "{{ ansible_date_time.iso8601 }} - Cost optimization setup completed - Baseline: {{ cost_baseline.stdout_lines[-1] if cost_baseline.stdout_lines else 'Generated' }}"
+    create: yes

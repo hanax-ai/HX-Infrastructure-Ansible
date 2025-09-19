@@ -1,0 +1,134 @@
+
+---
+# Incident Management Tasks
+- name: Create incident management directory
+  ansible.builtin.file:
+    path: "{{ incident_management_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Install incident management tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python3-requests
+    - python3-yaml
+    - mailutils
+
+- name: Create incident management scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ incident_management_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "incident_detector.py.j2", dest: "incident_detector.py" }
+    - { src: "incident_responder.sh.j2", dest: "incident_responder.sh" }
+    - { src: "incident_tracker.py.j2", dest: "incident_tracker.py" }
+    - { src: "postmortem_generator.py.j2", dest: "postmortem_generator.py" }
+    - { src: "incident_escalation.py.j2", dest: "incident_escalation.py" }
+
+- name: Configure incident detection rules
+  ansible.builtin.template:
+    src: incident_rules.json.j2
+    dest: "{{ incident_management_path }}/incident_rules.json"
+    mode: '0644'
+
+- name: Setup incident response procedures
+  ansible.builtin.template:
+    src: incident_procedures.json.j2
+    dest: "{{ incident_management_path }}/incident_procedures.json"
+    mode: '0644'
+
+- name: Configure incident escalation matrix
+  ansible.builtin.template:
+    src: escalation_matrix.json.j2
+    dest: "{{ incident_management_path }}/escalation_matrix.json"
+    mode: '0644'
+
+- name: Create incident notification templates
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ incident_management_path }}/templates/{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - { src: "incident_alert.html.j2", dest: "incident_alert.html" }
+    - { src: "incident_update.html.j2", dest: "incident_update.html" }
+    - { src: "incident_resolution.html.j2", dest: "incident_resolution.html" }
+
+- name: Setup incident detection monitoring
+  ansible.builtin.cron:
+    name: "Incident Detection"
+    minute: "*/2"
+    hour: "*"
+    job: "{{ incident_management_path }}/incident_detector.py >> /var/log/incident_detection.log 2>&1"
+    user: root
+
+- name: Schedule incident tracking updates
+  ansible.builtin.cron:
+    name: "Incident Tracking Updates"
+    minute: "*/5"
+    hour: "*"
+    job: "{{ incident_management_path }}/incident_tracker.py update >> /var/log/incident_tracking.log 2>&1"
+    user: root
+
+- name: Schedule incident escalation checks
+  ansible.builtin.cron:
+    name: "Incident Escalation Check"
+    minute: "*/10"
+    hour: "*"
+    job: "{{ incident_management_path }}/incident_escalation.py >> /var/log/incident_escalation.log 2>&1"
+    user: root
+
+- name: Create incident dashboard
+  ansible.builtin.template:
+    src: incident_dashboard.json.j2
+    dest: "{{ operational_dashboards_path }}/incident_management.json"
+    mode: '0644'
+
+- name: Setup automated incident response
+  ansible.builtin.template:
+    src: auto_incident_response.sh.j2
+    dest: "{{ incident_management_path }}/auto_incident_response.sh"
+    mode: '0755'
+
+- name: Configure incident metrics collection
+  ansible.builtin.template:
+    src: incident_metrics.py.j2
+    dest: "{{ incident_management_path }}/incident_metrics.py"
+    mode: '0755'
+
+- name: Schedule daily incident metrics
+  ansible.builtin.cron:
+    name: "Daily Incident Metrics"
+    minute: "0"
+    hour: "9"
+    job: "{{ incident_management_path }}/incident_metrics.py daily >> /var/log/incident_metrics.log 2>&1"
+    user: root
+
+- name: Setup weekly postmortem generation
+  ansible.builtin.cron:
+    name: "Weekly Postmortem Generation"
+    minute: "0"
+    hour: "10"
+    weekday: "1"
+    job: "{{ incident_management_path }}/postmortem_generator.py weekly >> /var/log/postmortem_generation.log 2>&1"
+    user: root
+
+- name: Create incident communication channels
+  ansible.builtin.template:
+    src: incident_communications.json.j2
+    dest: "{{ incident_management_path }}/incident_communications.json"
+    mode: '0644'
+
+- name: Setup incident knowledge base
+  ansible.builtin.template:
+    src: incident_knowledge_base.json.j2
+    dest: "{{ incident_management_path }}/incident_knowledge_base.json"
+    mode: '0644'
+
+- name: Log incident management setup
+  ansible.builtin.lineinfile:
+    path: /var/log/incident_management.log
+    line: "{{ ansible_date_time.iso8601 }} - Incident management setup completed"
+    create: yes

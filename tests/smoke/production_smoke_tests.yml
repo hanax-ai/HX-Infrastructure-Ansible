@@ -1,0 +1,121 @@
+
+---
+- name: Production Environment Smoke Tests
+  hosts: production
+  gather_facts: true
+  serial: 1  # Run tests one host at a time in production
+  
+  vars:
+    max_response_time: 1.0
+    max_cpu_load_multiplier: 1.5
+    max_memory_usage: 85.0
+    max_disk_usage: 80
+    
+  tasks:
+    - name: Test basic connectivity
+      ping:
+      register: ping_result
+      
+    - name: Verify system is responsive
+      assert:
+        that:
+          - ping_result is succeeded
+        fail_msg: "System is not responsive"
+        success_msg: "System connectivity verified"
+
+    - name: Check critical services are running
+      systemd:
+        name: "{{ item }}"
+      register: service_status
+      loop:
+        - nginx
+        - mysql
+        - redis-server
+        - "{{ app_service_name | default('application') }}"
+      failed_when: service_status.status.ActiveState != "active"
+
+    - name: Verify web server is responding
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}/health"
+        method: GET
+        status_code: 200
+        timeout: 5
+      register: web_health_check
+
+    - name: Check HTTPS endpoint (if SSL enabled)
+      uri:
+        url: "https://{{ ansible_default_ipv4.address }}/health"
+        method: GET
+        status_code: 200
+        validate_certs: true
+        timeout: 5
+      when: ssl_enabled | default(true)
+      register: https_health_check
+
+    - name: Test load balancer health (if applicable)
+      uri:
+        url: "http://{{ load_balancer_ip | default(ansible_default_ipv4.address) }}/health"
+        method: GET
+        status_code: 200
+        timeout: 5
+      when: load_balancer_ip is defined
+      register: lb_health_check
+
+    - name: Check database connectivity
+      mysql_db:
+        name: "{{ app_database_name | default('production_db') }}"
+        state: present
+        login_user: "{{ mysql_user | default('app_user') }}"
+        login_password: "{{ mysql_password }}"
+        login_host: "{{ mysql_host | default('localhost') }}"
+      register: db_check
+
+    - name: Verify Redis is accessible
+      redis:
+        command: ping
+        login_host: "{{ redis_host | default('localhost') }}"
+        login_port: "{{ redis_port | default(6379) }}"
+        login_password: "{{ redis_password | default(omit) }}"
+      register: redis_check
+
+    - name: Test critical API endpoints
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}/api/{{ item }}"
+        method: GET
+        status_code: 200
+        timeout: 10
+      loop:
+        - status
+        - version
+        - health
+      register: api_checks
+
+    - name: Test authentication endpoint
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}/api/auth/status"
+        method: GET
+        status_code: [200, 401]  # 401 is acceptable for auth endpoint
+        timeout: 10
+      register: auth_check
+
+    - name: Check system resources
+      block:
+        - name: Check disk space
+          shell: df -h / | awk 'NR==2 {print $5}' | sed 's/%//'
+          register: disk_usage
+          
+        - name: Verify sufficient disk space
+          assert:
+            that:
+              - disk_usage.stdout | int < max_disk_usage
+            fail_msg: "Disk usage is {{ disk_usage.stdout }}% - exceeds {{ max_disk_usage }}% threshold"
+            success_msg: "Disk usage is {{ disk_usage.stdout }}% - within acceptable limits"
+
+        - name: Check memory usage
+          shell: free | awk 'NR==2{printf "%.2f", $3*100/$2}'
+          register: memory_usage
+          
+        - name: Verify memory usage is reasonable
+          assert:
+            that:
+              - memory_usage.stdout | float

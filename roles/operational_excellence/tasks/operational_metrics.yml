@@ -1,0 +1,155 @@
+
+---
+# Operational Metrics and KPIs Tasks
+- name: Create operational metrics directory
+  ansible.builtin.file:
+    path: "{{ operational_metrics_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Install metrics collection tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python3-pip
+    - python3-psutil
+    - python3-requests
+    - curl
+    - jq
+
+- name: Install Python metrics libraries
+  ansible.builtin.pip:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - prometheus_client
+    - psutil
+    - requests
+    - pandas
+    - matplotlib
+
+- name: Create operational metrics collection scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ operational_metrics_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "kpi_collector.py.j2", dest: "kpi_collector.py" }
+    - { src: "sla_monitor.py.j2", dest: "sla_monitor.py" }
+    - { src: "operational_health.sh.j2", dest: "operational_health.sh" }
+    - { src: "metrics_aggregator.py.j2", dest: "metrics_aggregator.py" }
+    - { src: "performance_calculator.py.j2", dest: "performance_calculator.py" }
+
+- name: Configure operational KPIs
+  ansible.builtin.template:
+    src: operational_kpis.json.j2
+    dest: "{{ operational_metrics_path }}/operational_kpis.json"
+    mode: '0644'
+
+- name: Setup SLA definitions
+  ansible.builtin.template:
+    src: sla_definitions.json.j2
+    dest: "{{ operational_metrics_path }}/sla_definitions.json"
+    mode: '0644'
+
+- name: Configure metrics thresholds
+  ansible.builtin.template:
+    src: metrics_thresholds.json.j2
+    dest: "{{ operational_metrics_path }}/metrics_thresholds.json"
+    mode: '0644'
+
+- name: Schedule KPI collection
+  ansible.builtin.cron:
+    name: "KPI Collection"
+    minute: "*/5"
+    hour: "*"
+    job: "{{ operational_metrics_path }}/kpi_collector.py >> /var/log/kpi_collection.log 2>&1"
+    user: root
+
+- name: Schedule SLA monitoring
+  ansible.builtin.cron:
+    name: "SLA Monitoring"
+    minute: "*/10"
+    hour: "*"
+    job: "{{ operational_metrics_path }}/sla_monitor.py >> /var/log/sla_monitoring.log 2>&1"
+    user: root
+
+- name: Schedule operational health checks
+  ansible.builtin.cron:
+    name: "Operational Health Check"
+    minute: "*/2"
+    hour: "*"
+    job: "{{ operational_metrics_path }}/operational_health.sh >> /var/log/operational_health.log 2>&1"
+    user: root
+
+- name: Schedule daily metrics aggregation
+  ansible.builtin.cron:
+    name: "Daily Metrics Aggregation"
+    minute: "0"
+    hour: "1"
+    job: "{{ operational_metrics_path }}/metrics_aggregator.py daily >> /var/log/metrics_aggregation.log 2>&1"
+    user: root
+
+- name: Schedule weekly performance calculation
+  ansible.builtin.cron:
+    name: "Weekly Performance Calculation"
+    minute: "0"
+    hour: "2"
+    weekday: "1"
+    job: "{{ operational_metrics_path }}/performance_calculator.py weekly >> /var/log/performance_calculation.log 2>&1"
+    user: root
+
+- name: Create operational metrics alerting
+  ansible.builtin.template:
+    src: metrics_alerting.py.j2
+    dest: "{{ operational_metrics_path }}/metrics_alerting.py"
+    mode: '0755'
+
+- name: Schedule metrics alerting
+  ansible.builtin.cron:
+    name: "Operational Metrics Alerting"
+    minute: "*/5"
+    hour: "*"
+    job: "{{ operational_metrics_path }}/metrics_alerting.py >> /var/log/metrics_alerts.log 2>&1"
+    user: root
+
+- name: Setup metrics export for external systems
+  ansible.builtin.template:
+    src: metrics_exporter.py.j2
+    dest: "{{ operational_metrics_path }}/metrics_exporter.py"
+    mode: '0755'
+
+- name: Schedule metrics export
+  ansible.builtin.cron:
+    name: "Metrics Export"
+    minute: "*/15"
+    hour: "*"
+    job: "{{ operational_metrics_path }}/metrics_exporter.py >> /var/log/metrics_export.log 2>&1"
+    user: root
+
+- name: Create operational scorecard generator
+  ansible.builtin.template:
+    src: operational_scorecard.py.j2
+    dest: "{{ operational_metrics_path }}/operational_scorecard.py"
+    mode: '0755'
+
+- name: Schedule daily operational scorecard
+  ansible.builtin.cron:
+    name: "Daily Operational Scorecard"
+    minute: "0"
+    hour: "8"
+    job: "{{ operational_metrics_path }}/operational_scorecard.py >> /var/log/operational_scorecard.log 2>&1"
+    user: root
+
+- name: Initialize metrics baseline
+  ansible.builtin.shell: |
+    {{ operational_metrics_path }}/kpi_collector.py --baseline
+  register: metrics_baseline
+  changed_when: false
+
+- name: Log operational metrics setup
+  ansible.builtin.lineinfile:
+    path: /var/log/operational_metrics.log
+    line: "{{ ansible_date_time.iso8601 }} - Operational metrics setup completed - Baseline: {{ metrics_baseline.stdout_lines[-1] if metrics_baseline.stdout_lines else 'Generated' }}"
+    create: yes

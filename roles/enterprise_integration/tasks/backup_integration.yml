@@ -1,0 +1,90 @@
+
+---
+# Enterprise Backup Integration Tasks
+- name: Install enterprise backup tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - bacula-client
+    - amanda-client
+    - duplicity
+    - restic
+
+- name: Configure Bacula client (if using Bacula)
+  ansible.builtin.template:
+    src: bacula-fd.conf.j2
+    dest: /etc/bacula/bacula-fd.conf
+    mode: '0640'
+    backup: yes
+  notify: restart bacula-fd
+  when: enterprise_backup_system == "bacula"
+
+- name: Configure Amanda client (if using Amanda)
+  ansible.builtin.template:
+    src: amanda-client.conf.j2
+    dest: /etc/amanda/amanda-client.conf
+    mode: '0644'
+    backup: yes
+  when: enterprise_backup_system == "amanda"
+
+- name: Setup enterprise backup scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ backup_integration_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "enterprise_backup.sh.j2", dest: "enterprise_backup.sh" }
+    - { src: "backup_verification.sh.j2", dest: "backup_verification.sh" }
+    - { src: "backup_restore.sh.j2", dest: "backup_restore.sh" }
+    - { src: "backup_monitoring.py.j2", dest: "backup_monitoring.py" }
+
+- name: Configure backup policies
+  ansible.builtin.template:
+    src: backup_policies.json.j2
+    dest: "{{ backup_integration_path }}/backup_policies.json"
+    mode: '0644'
+
+- name: Setup backup scheduling integration
+  ansible.builtin.cron:
+    name: "Enterprise Backup Integration"
+    minute: "0"
+    hour: "{{ backup_hour | default('2') }}"
+    job: "{{ backup_integration_path }}/enterprise_backup.sh >> /var/log/enterprise_backup.log 2>&1"
+    user: root
+
+- name: Configure backup monitoring
+  ansible.builtin.cron:
+    name: "Backup Monitoring"
+    minute: "*/30"
+    hour: "*"
+    job: "{{ backup_integration_path }}/backup_monitoring.py >> /var/log/backup_monitoring.log 2>&1"
+    user: root
+
+- name: Setup backup verification
+  ansible.builtin.cron:
+    name: "Daily Backup Verification"
+    minute: "0"
+    hour: "8"
+    job: "{{ backup_integration_path }}/backup_verification.sh >> /var/log/backup_verification.log 2>&1"
+    user: root
+
+- name: Configure backup encryption
+  ansible.builtin.template:
+    src: backup_encryption.conf.j2
+    dest: "{{ backup_integration_path }}/encryption.conf"
+    mode: '0600'
+  when: enable_backup_encryption | default(true)
+
+- name: Start and enable backup services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop: "{{ enterprise_backup_services | default(['bacula-fd']) }}"
+
+- name: Log backup integration setup
+  ansible.builtin.lineinfile:
+    path: /var/log/backup_integration.log
+    line: "{{ ansible_date_time.iso8601 }} - Enterprise backup integration completed for {{ enterprise_backup_system | default('default') }}"
+    create: yes

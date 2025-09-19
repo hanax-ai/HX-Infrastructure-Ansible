@@ -1,0 +1,93 @@
+
+---
+# Capacity Planning Tasks
+- name: Create capacity planning directory
+  ansible.builtin.file:
+    path: "{{ capacity_planning_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Install capacity planning tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python3-pip
+    - python3-matplotlib
+    - python3-pandas
+    - python3-numpy
+
+- name: Create capacity analysis scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ capacity_planning_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "capacity_analyzer.py.j2", dest: "capacity_analyzer.py" }
+    - { src: "trend_analysis.py.j2", dest: "trend_analysis.py" }
+    - { src: "forecast_capacity.py.j2", dest: "forecast_capacity.py" }
+    - { src: "capacity_report.sh.j2", dest: "capacity_report.sh" }
+
+- name: Setup capacity data collection
+  ansible.builtin.cron:
+    name: "Capacity Data Collection"
+    minute: "0"
+    hour: "*/4"
+    job: "{{ capacity_planning_path }}/capacity_analyzer.py collect >> /var/log/capacity_data.log 2>&1"
+    user: root
+
+- name: Setup weekly capacity analysis
+  ansible.builtin.cron:
+    name: "Weekly Capacity Analysis"
+    minute: "0"
+    hour: "2"
+    weekday: "1"
+    job: "{{ capacity_planning_path }}/trend_analysis.py >> /var/log/capacity_analysis.log 2>&1"
+    user: root
+
+- name: Setup monthly capacity forecasting
+  ansible.builtin.cron:
+    name: "Monthly Capacity Forecasting"
+    minute: "0"
+    hour: "3"
+    day: "1"
+    job: "{{ capacity_planning_path }}/forecast_capacity.py >> /var/log/capacity_forecast.log 2>&1"
+    user: root
+
+- name: Create capacity thresholds configuration
+  ansible.builtin.template:
+    src: capacity_thresholds.json.j2
+    dest: "{{ capacity_planning_path }}/capacity_thresholds.json"
+    mode: '0644'
+
+- name: Setup capacity alerting
+  ansible.builtin.template:
+    src: capacity_alerts.sh.j2
+    dest: "{{ capacity_planning_path }}/capacity_alerts.sh"
+    mode: '0755'
+
+- name: Schedule capacity alerting
+  ansible.builtin.cron:
+    name: "Capacity Threshold Alerts"
+    minute: "*/15"
+    hour: "*"
+    job: "{{ capacity_planning_path }}/capacity_alerts.sh >> /var/log/capacity_alerts.log 2>&1"
+    user: root
+
+- name: Create capacity planning dashboard
+  ansible.builtin.template:
+    src: capacity_dashboard.json.j2
+    dest: "{{ performance_dashboard_path }}/capacity_planning.json"
+    mode: '0644'
+
+- name: Generate initial capacity baseline
+  ansible.builtin.shell: |
+    {{ capacity_planning_path }}/capacity_analyzer.py baseline
+  register: capacity_baseline
+  changed_when: false
+
+- name: Log capacity planning setup
+  ansible.builtin.lineinfile:
+    path: /var/log/capacity_planning.log
+    line: "{{ ansible_date_time.iso8601 }} - Capacity planning setup completed - Baseline: {{ capacity_baseline.stdout_lines[-1] if capacity_baseline.stdout_lines else 'Generated' }}"
+    create: yes

@@ -1,0 +1,145 @@
+
+---
+# Auto-scaling Configuration Tasks
+- name: Install auto-scaling dependencies
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - awscli
+    - jq
+    - curl
+
+- name: Create auto-scaling configuration directory
+  ansible.builtin.file:
+    path: "{{ autoscaling_config_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Deploy auto-scaling policies configuration
+  ansible.builtin.template:
+    src: autoscaling_policies.json.j2
+    dest: "{{ autoscaling_config_path }}/autoscaling_policies.json"
+    mode: '0644'
+
+- name: Create auto-scaling scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ autoscaling_scripts_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "scale_out.sh.j2", dest: "scale_out.sh" }
+    - { src: "scale_in.sh.j2", dest: "scale_in.sh" }
+    - { src: "scaling_decision.sh.j2", dest: "scaling_decision.sh" }
+    - { src: "health_check_scaling.sh.j2", dest: "health_check_scaling.sh" }
+
+- name: Configure AWS Auto Scaling (if using AWS)
+  ansible.builtin.shell: |
+    # Create Auto Scaling Group
+    aws autoscaling create-auto-scaling-group \
+      --auto-scaling-group-name {{ autoscaling_group_name }} \
+      --launch-template LaunchTemplateName={{ launch_template_name }},Version='$Latest' \
+      --min-size {{ min_instances }} \
+      --max-size {{ max_instances }} \
+      --desired-capacity {{ desired_instances }} \
+      --vpc-zone-identifier "{{ subnet_ids | join(',') }}" \
+      --health-check-type ELB \
+      --health-check-grace-period 300 \
+      --tags "Key=Name,Value={{ autoscaling_group_name }},PropagateAtLaunch=true"
+    
+    # Create scaling policies
+    aws autoscaling put-scaling-policy \
+      --auto-scaling-group-name {{ autoscaling_group_name }} \
+      --policy-name scale-out-policy \
+      --policy-type TargetTrackingScaling \
+      --target-tracking-configuration file://{{ autoscaling_config_path }}/scale_out_policy.json
+    
+    aws autoscaling put-scaling-policy \
+      --auto-scaling-group-name {{ autoscaling_group_name }} \
+      --policy-name scale-in-policy \
+      --policy-type TargetTrackingScaling \
+      --target-tracking-configuration file://{{ autoscaling_config_path }}/scale_in_policy.json
+  when: cloud_provider == "aws" and create_autoscaling_group | default(false)
+
+- name: Configure Azure Auto Scaling (if using Azure)
+  ansible.builtin.shell: |
+    # Create Virtual Machine Scale Set
+    az vmss create \
+      --resource-group {{ resource_group_name }} \
+      --name {{ vmss_name }} \
+      --image {{ vm_image }} \
+      --vm-sku {{ vm_sku }} \
+      --instance-count {{ desired_instances }} \
+      --vnet-name {{ vnet_name }} \
+      --subnet {{ subnet_name }} \
+      --lb {{ load_balancer_name }} \
+      --backend-pool-name {{ backend_pool_name }}
+    
+    # Configure autoscale settings
+    az monitor autoscale create \
+      --resource-group {{ resource_group_name }} \
+      --resource {{ vmss_name }} \
+      --resource-type Microsoft.Compute/virtualMachineScaleSets \
+      --name {{ autoscale_name }} \
+      --min-count {{ min_instances }} \
+      --max-count {{ max_instances }} \
+      --count {{ desired_instances }}
+  when: cloud_provider == "azure" and create_vmss | default(false)
+
+- name: Setup auto-scaling monitoring
+  ansible.builtin.cron:
+    name: "Auto-scaling Decision Engine"
+    minute: "*/2"
+    hour: "*"
+    job: "{{ autoscaling_scripts_path }}/scaling_decision.sh >> /var/log/autoscaling.log 2>&1"
+    user: root
+
+- name: Create scaling metrics collection
+  ansible.builtin.template:
+    src: scaling_metrics.sh.j2
+    dest: "{{ autoscaling_scripts_path }}/scaling_metrics.sh"
+    mode: '0755'
+
+- name: Setup scaling metrics cron job
+  ansible.builtin.cron:
+    name: "Scaling Metrics Collection"
+    minute: "*/1"
+    hour: "*"
+    job: "{{ autoscaling_scripts_path }}/scaling_metrics.sh >> /var/log/scaling_metrics.log 2>&1"
+    user: root
+
+- name: Configure load balancer health checks
+  ansible.builtin.template:
+    src: lb_health_check.conf.j2
+    dest: /etc/nginx/conf.d/health_check.conf
+    backup: yes
+  notify: reload nginx
+  when: configure_load_balancer | default(false)
+
+- name: Create auto-scaling notification system
+  ansible.builtin.template:
+    src: scaling_notification.sh.j2
+    dest: "{{ autoscaling_scripts_path }}/scaling_notification.sh"
+    mode: '0755'
+
+- name: Test auto-scaling configuration
+  ansible.builtin.shell: |
+    echo "Testing auto-scaling configuration..."
+    
+    # Test scaling decision logic
+    {{ autoscaling_scripts_path }}/scaling_decision.sh --dry-run
+    
+    # Test health check
+    {{ autoscaling_scripts_path }}/health_check_scaling.sh
+    
+    # Test metrics collection
+    {{ autoscaling_scripts_path }}/scaling_metrics.sh --test
+    
+    echo "Auto-scaling configuration test completed"
+  register: autoscaling_test_result
+
+- name: Log auto-scaling setup
+  ansible.builtin.lineinfile:
+    path: /var/log/autoscaling_setup.log
+    line: "{{ ansible_date_time.iso8601 }} - Auto-scaling setup completed - Test result: {{ autoscaling_test_result.stdout_lines[-1] }}"
+    create: yes

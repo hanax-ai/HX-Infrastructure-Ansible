@@ -1,0 +1,124 @@
+
+---
+# Operational Excellence Validation Tasks
+- name: Create validation directory
+  ansible.builtin.file:
+    path: "{{ operational_validation_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Create operational validation scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ operational_validation_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "operational_validator.py.j2", dest: "operational_validator.py" }
+    - { src: "readiness_checker.sh.j2", dest: "readiness_checker.sh" }
+    - { src: "certification_validator.py.j2", dest: "certification_validator.py" }
+    - { src: "compliance_validator.sh.j2", dest: "compliance_validator.sh" }
+    - { src: "performance_validator.py.j2", dest: "performance_validator.py" }
+
+- name: Configure validation criteria
+  ansible.builtin.template:
+    src: validation_criteria.json.j2
+    dest: "{{ operational_validation_path }}/validation_criteria.json"
+    mode: '0644'
+
+- name: Setup operational excellence checklist
+  ansible.builtin.template:
+    src: excellence_checklist.json.j2
+    dest: "{{ operational_validation_path }}/excellence_checklist.json"
+    mode: '0644'
+
+- name: Configure certification requirements
+  ansible.builtin.template:
+    src: certification_requirements.json.j2
+    dest: "{{ operational_validation_path }}/certification_requirements.json"
+    mode: '0644'
+
+- name: Run comprehensive operational validation
+  ansible.builtin.shell: |
+    {{ operational_validation_path }}/operational_validator.py --comprehensive
+  register: operational_validation_result
+  changed_when: false
+
+- name: Run production readiness check
+  ansible.builtin.shell: |
+    {{ operational_validation_path }}/readiness_checker.sh
+  register: readiness_check_result
+  changed_when: false
+
+- name: Run certification validation
+  ansible.builtin.shell: |
+    {{ operational_validation_path }}/certification_validator.py
+  register: certification_result
+  changed_when: false
+
+- name: Run compliance validation
+  ansible.builtin.shell: |
+    {{ operational_validation_path }}/compliance_validator.sh
+  register: compliance_validation_result
+  changed_when: false
+
+- name: Run performance validation
+  ansible.builtin.shell: |
+    {{ operational_validation_path }}/performance_validator.py
+  register: performance_validation_result
+  changed_when: false
+
+- name: Generate operational excellence report
+  ansible.builtin.template:
+    src: operational_excellence_report.j2
+    dest: "{{ operational_validation_path }}/operational_excellence_report_{{ ansible_date_time.epoch }}.html"
+    mode: '0644'
+
+- name: Create validation summary
+  ansible.builtin.template:
+    src: validation_summary.json.j2
+    dest: "{{ operational_validation_path }}/validation_summary.json"
+    mode: '0644'
+
+- name: Schedule weekly operational validation
+  ansible.builtin.cron:
+    name: "Weekly Operational Validation"
+    minute: "0"
+    hour: "6"
+    weekday: "1"
+    job: "{{ operational_validation_path }}/operational_validator.py weekly >> /var/log/operational_validation.log 2>&1"
+    user: root
+
+- name: Schedule monthly certification check
+  ansible.builtin.cron:
+    name: "Monthly Certification Check"
+    minute: "0"
+    hour: "7"
+    day: "1"
+    job: "{{ operational_validation_path }}/certification_validator.py monthly >> /var/log/certification_validation.log 2>&1"
+    user: root
+
+- name: Send validation notification
+  ansible.builtin.mail:
+    to: "{{ operational_excellence_email | default('ops@company.com') }}"
+    subject: "Operational Excellence Validation - {{ inventory_hostname }}"
+    body: |
+      Operational Excellence Validation Completed
+      
+      Validation Results:
+      - Operational Validation: {{ 'PASSED' if operational_validation_result.rc == 0 else 'FAILED' }}
+      - Readiness Check: {{ 'PASSED' if readiness_check_result.rc == 0 else 'FAILED' }}
+      - Certification: {{ 'PASSED' if certification_result.rc == 0 else 'FAILED' }}
+      - Compliance: {{ 'PASSED' if compliance_validation_result.rc == 0 else 'FAILED' }}
+      - Performance: {{ 'PASSED' if performance_validation_result.rc == 0 else 'FAILED' }}
+      
+      Timestamp: {{ ansible_date_time.iso8601 }}
+      Host: {{ inventory_hostname }}
+      
+      Detailed report: {{ operational_validation_path }}/operational_excellence_report_{{ ansible_date_time.epoch }}.html
+  when: operational_excellence_email is defined
+
+- name: Log operational validation completion
+  ansible.builtin.lineinfile:
+    path: /var/log/operational_validation.log
+    line: "{{ ansible_date_time.iso8601 }} - Operational excellence validation completed - Overall Status: {{ 'CERTIFIED' if (operational_validation_result.rc == 0 and readiness_check_result.rc == 0 and certification_result.rc == 0) else 'NEEDS_ATTENTION' }}"
+    create: yes

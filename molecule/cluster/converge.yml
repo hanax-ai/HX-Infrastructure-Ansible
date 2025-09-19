@@ -1,0 +1,53 @@
+
+---
+- name: Converge Cluster Test
+  hosts: k8s_cluster
+  connection: kubectl
+  gather_facts: false
+  tasks:
+    - name: Create test namespace
+      kubernetes.core.k8s:
+        name: molecule-test
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Deploy test pod
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            name: test-pod
+            namespace: molecule-test
+            labels:
+              app: molecule-test
+          spec:
+            containers:
+            - name: test-container
+              image: nginx:alpine
+              ports:
+              - containerPort: 80
+        state: present
+        wait: true
+        wait_condition:
+          type: Ready
+          status: "True"
+        wait_timeout: 300
+
+    - name: Create test service
+      kubernetes.core.k8s:
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: test-service
+            namespace: molecule-test
+          spec:
+            selector:
+              app: molecule-test
+            ports:
+            - port: 80
+              targetPort: 80
+        state: present
+
