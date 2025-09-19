@@ -1,0 +1,93 @@
+
+---
+# Operational Excellence Default Variables
+
+# Paths
+operational_metrics_path: "/opt/operational/metrics"
+continuous_improvement_path: "/opt/operational/improvement"
+operational_dashboards_path: "/opt/operational/dashboards"
+incident_management_path: "/opt/operational/incidents"
+operational_validation_path: "/opt/operational/validation"
+
+# Dashboard Settings
+dashboard_port: 8080
+dashboard_host: "0.0.0.0"
+enable_dashboard_auth: false
+
+# Operational KPIs
+operational_kpis:
+  - name: "system_availability"
+    target: 99.9
+    threshold: 99.5
+  - name: "response_time"
+    target: 200
+    threshold: 500
+  - name: "error_rate"
+    target: 0.1
+    threshold: 1.0
+  - name: "deployment_frequency"
+    target: 10
+    threshold: 5
+  - name: "mttr"
+    target: 30
+    threshold: 60
+
+# SLA Definitions
+sla_definitions:
+  - name: "critical_services"
+    availability: 99.95
+    response_time: 100
+  - name: "standard_services"
+    availability: 99.9
+    response_time: 200
+  - name: "batch_services"
+    availability: 99.5
+    response_time: 1000
+
+# Incident Management
+incident_severity_levels:
+  - "critical"
+  - "high"
+  - "medium"
+  - "low"
+
+incident_escalation_times:
+  critical: 15
+  high: 30
+  medium: 60
+  low: 120
+
+# Continuous Improvement
+improvement_categories:
+  - "automation"
+  - "performance"
+  - "reliability"
+  - "security"
+  - "cost"
+
+# Validation Criteria
+validation_criteria:
+  operational_readiness: 90
+  performance_benchmark: 85
+  security_compliance: 95
+  automation_coverage: 80
+  monitoring_coverage: 90
+
+# Notification Settings
+operational_excellence_email: ""
+incident_notification_email: ""
+improvement_notification_email: ""
+dashboard_notification_email: ""
+
+# Certification Settings
+enable_certification: true
+certification_level: "enterprise"
+certification_frameworks:
+  - "itil"
+  - "iso20000"
+  - "cobit"
+
+# Reporting Settings
+enable_automated_reporting: true
+report_frequency: "weekly"
+report_format: "html"

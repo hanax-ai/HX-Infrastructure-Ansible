@@ -1,0 +1,50 @@
+
+---
+# Traffic Switching Tasks
+- name: Update load balancer configuration
+  ansible.builtin.template:
+    src: nginx_upstream.conf.j2
+    dest: /etc/nginx/conf.d/upstream.conf
+    backup: yes
+  notify: reload nginx
+
+- name: Update DNS records (if using DNS switching)
+  ansible.builtin.uri:
+    url: "{{ dns_api_endpoint }}/{{ domain_name }}"
+    method: PUT
+    body_format: json
+    body:
+      type: "A"
+      name: "{{ application_name }}"
+      content: "{{ new_environment_ip }}"
+      ttl: 60
+    headers:
+      Authorization: "Bearer {{ dns_api_token }}"
+  when: dns_switching_enabled | default(false)
+
+- name: Wait for traffic switch propagation
+  ansible.builtin.pause:
+    seconds: "{{ traffic_switch_delay | default(30) }}"
+
+- name: Verify traffic is routing to new environment
+  ansible.builtin.uri:
+    url: "http://{{ load_balancer_ip }}/health"
+    method: GET
+    status_code: 200
+  register: traffic_verification
+  retries: 3
+  delay: 10
+
+- name: Update deployment color in parameter store
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    regexp: '^CURRENT_DEPLOY_COLOR='
+    line: 'CURRENT_DEPLOY_COLOR={{ new_deploy_color }}'
+    create: yes
+  when: traffic_verification.status == 200
+
+- name: Log successful deployment
+  ansible.builtin.lineinfile:
+    path: /var/log/deployments.log
+    line: "{{ ansible_date_time.iso8601 }} - SUCCESS: Switched traffic to {{ new_environment }}"
+    create: yes

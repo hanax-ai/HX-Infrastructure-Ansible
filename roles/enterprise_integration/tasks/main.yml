@@ -1,0 +1,22 @@
+
+---
+# Enterprise Integration Role - Main Tasks
+- name: Include identity and access management tasks
+  include_tasks: iam_integration.yml
+  tags: [iam, security, enterprise]
+
+- name: Include compliance and audit tasks
+  include_tasks: compliance_audit.yml
+  tags: [compliance, audit, enterprise]
+
+- name: Include enterprise logging tasks
+  include_tasks: enterprise_logging.yml
+  tags: [logging, monitoring, enterprise]
+
+- name: Include backup integration tasks
+  include_tasks: backup_integration.yml
+  tags: [backup, enterprise]
+
+- name: Include change management tasks
+  include_tasks: change_management.yml
+  tags: [change, workflow, enterprise]

@@ -1,0 +1,352 @@
+
+name: Advanced CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, 'feature/*' ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly security scan
+
+env:
+  PYTHON_VERSION: '3.11'
+  ANSIBLE_VERSION: '>=6.0.0'
+
+jobs:
+  lint-and-syntax:
+    name: Lint and Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible${{ env.ANSIBLE_VERSION }}
+          pip install ansible-lint yamllint flake8 molecule[docker]
+          pip install -r requirements.txt || echo "No requirements.txt found"
+
+      - name: Run YAML Lint
+        run: yamllint .
+
+      - name: Run Ansible Lint
+        run: ansible-lint --force-color
+
+      - name: Run Python Lint
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Syntax Check
+        run: |
+          find . -name "*.yml" -o -name "*.yaml" | xargs -I {} ansible-playbook --syntax-check {}
+
+  security-scanning:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    needs: lint-and-syntax
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run KICS Scan
+        uses: checkmarx/kics-github-action@v1.7.0
+        with:
+          path: '.'
+          fail_on: high,medium
+          output_formats: 'json,sarif'
+          output_path: 'kics-results'
+          platform_type: 'ansible'
+
+      - name: Upload KICS scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'kics-results/results.sarif'
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/iac@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          file: .
+          args: --severity-threshold=medium
+
+      - name: Upload Snyk results to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
+  molecule-testing:
+    name: Molecule Testing
+    runs-on: ubuntu-latest
+    needs: lint-and-syntax
+    strategy:
+      matrix:
+        scenario: [default, cluster]
+        python-version: ['3.9', '3.11']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible${{ env.ANSIBLE_VERSION }}
+          pip install molecule[docker] molecule-plugins[docker]
+          pip install pytest-testinfra
+
+      - name: Set up Docker Buildx
+        if: matrix.scenario == 'default'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run Molecule tests
+        run: |
+          cd molecule/${{ matrix.scenario }}
+          molecule test
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: molecule-test-results-${{ matrix.scenario }}-py${{ matrix.python-version }}
+          path: |
+            molecule/${{ matrix.scenario }}/.molecule/
+            molecule/${{ matrix.scenario }}/tests/
+
+  integration-testing:
+    name: Integration Testing
+    runs-on: ubuntu-latest
+    needs: [lint-and-syntax, security-scanning]
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible${{ env.ANSIBLE_VERSION }}
+          pip install pytest pytest-ansible
+
+      - name: Run integration tests
+        run: |
+          ansible-playbook tests/integration/test_basic.yml -i tests/inventory/test_hosts
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: false
+
+      - name: Generate test report
+        run: |
+          pytest tests/integration/ --junitxml=integration-test-results.xml
+        if: always()
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results
+          path: integration-test-results.xml
+
+  performance-testing:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: molecule-testing
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible${{ env.ANSIBLE_VERSION }}
+          pip install ansible-runner time
+
+      - name: Run performance benchmarks
+        run: |
+          ./scripts/performance/benchmark.sh
+        timeout-minutes: 30
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: performance-results
+          path: performance-results.json
+
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    needs: [security-scanning, molecule-testing, integration-testing, performance-testing]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Evaluate quality gate
+        run: |
+          python scripts/quality-gate/evaluate.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Quality Gate Status
+        run: |
+          if [ -f quality-gate-passed ]; then
+            echo "✅ Quality gate passed"
+            exit 0
+          else
+            echo "❌ Quality gate failed"
+            exit 1
+          fi
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: quality-gate
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible${{ env.ANSIBLE_VERSION }}
+
+      - name: Deploy to staging
+        run: |
+          ansible-playbook playbooks/deployment/deploy.yml -i environments/staging/inventory.yml
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: false
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+
+      - name: Run smoke tests
+        run: |
+          ansible-playbook tests/smoke/staging_smoke_tests.yml -i environments/staging/inventory.yml
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: quality-gate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible${{ env.ANSIBLE_VERSION }}
+
+      - name: Deploy to production
+        run: |
+          ansible-playbook playbooks/deployment/deploy.yml -i environments/production/inventory.yml
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: false
+          PRODUCTION_SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+
+      - name: Run smoke tests
+        run: |
+          ansible-playbook tests/smoke/production_smoke_tests.yml -i environments/production/inventory.yml
+
+      - name: Create deployment tag
+        run: |
+          git tag "deployment-$(date +%Y%m%d-%H%M%S)"
+          git push origin --tags
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Notification
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    steps:
+      - name: Notify deployment status
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()
+

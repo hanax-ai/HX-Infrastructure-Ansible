@@ -1,0 +1,177 @@
+
+---
+# Compliance and Audit Tasks
+- name: Install compliance tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - aide
+    - auditd
+    - lynis
+    - rkhunter
+    - chkrootkit
+
+- name: Configure AIDE for file integrity monitoring
+  ansible.builtin.template:
+    src: aide.conf.j2
+    dest: /etc/aide.conf
+    backup: yes
+
+- name: Initialize AIDE database
+  ansible.builtin.shell: |
+    aide --init
+    mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+  args:
+    creates: /var/lib/aide/aide.db.gz
+
+- name: Configure auditd for compliance logging
+  ansible.builtin.template:
+    src: auditd.conf.j2
+    dest: /etc/audit/auditd.conf
+    backup: yes
+  notify: restart auditd
+
+- name: Configure audit rules
+  ansible.builtin.template:
+    src: audit.rules.j2
+    dest: /etc/audit/rules.d/compliance.rules
+    backup: yes
+  notify: restart auditd
+
+- name: Create compliance scanning scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ compliance_scripts_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "compliance_scan.sh.j2", dest: "compliance_scan.sh" }
+    - { src: "security_audit.sh.j2", dest: "security_audit.sh" }
+    - { src: "vulnerability_scan.sh.j2", dest: "vulnerability_scan.sh" }
+    - { src: "compliance_report.py.j2", dest: "compliance_report.py" }
+
+- name: Setup compliance frameworks configuration
+  ansible.builtin.template:
+    src: "{{ item.framework }}_config.json.j2"
+    dest: "{{ compliance_config_path }}/{{ item.framework }}_config.json"
+    mode: '0644'
+  loop: "{{ compliance_frameworks | default([]) }}"
+
+- name: Schedule daily compliance scans
+  ansible.builtin.cron:
+    name: "Daily Compliance Scan"
+    minute: "0"
+    hour: "3"
+    job: "{{ compliance_scripts_path }}/compliance_scan.sh >> /var/log/compliance_scan.log 2>&1"
+    user: root
+
+- name: Schedule weekly security audit
+  ansible.builtin.cron:
+    name: "Weekly Security Audit"
+    minute: "0"
+    hour: "4"
+    weekday: "1"
+    job: "{{ compliance_scripts_path }}/security_audit.sh >> /var/log/security_audit.log 2>&1"
+    user: root
+
+- name: Schedule monthly vulnerability scan
+  ansible.builtin.cron:
+    name: "Monthly Vulnerability Scan"
+    minute: "0"
+    hour: "5"
+    day: "1"
+    job: "{{ compliance_scripts_path }}/vulnerability_scan.sh >> /var/log/vulnerability_scan.log 2>&1"
+    user: root
+
+- name: Configure compliance monitoring
+  ansible.builtin.template:
+    src: compliance_monitor.conf.j2
+    dest: /etc/compliance/monitor.conf
+    mode: '0644'
+
+- name: Setup audit log rotation
+  ansible.builtin.template:
+    src: audit_logrotate.j2
+    dest: /etc/logrotate.d/audit_logs
+    mode: '0644'
+
+- name: Configure SIEM integration
+  ansible.builtin.template:
+    src: siem_config.conf.j2
+    dest: /etc/rsyslog.d/60-siem-integration.conf
+    backup: yes
+  notify: restart rsyslog
+  when: enable_siem_integration | default(false)
+
+- name: Create compliance dashboard
+  ansible.builtin.template:
+    src: compliance_dashboard.json.j2
+    dest: "{{ compliance_dashboard_path }}/compliance_overview.json"
+    mode: '0644'
+
+- name: Setup compliance alerting
+  ansible.builtin.template:
+    src: compliance_alerts.sh.j2
+    dest: "{{ compliance_scripts_path }}/compliance_alerts.sh"
+    mode: '0755'
+
+- name: Schedule compliance alerting
+  ansible.builtin.cron:
+    name: "Compliance Alerts"
+    minute: "*/30"
+    hour: "*"
+    job: "{{ compliance_scripts_path }}/compliance_alerts.sh >> /var/log/compliance_alerts.log 2>&1"
+    user: root
+
+- name: Configure data retention policies
+  ansible.builtin.template:
+    src: data_retention.conf.j2
+    dest: /etc/compliance/data_retention.conf
+    mode: '0644'
+
+- name: Setup automated remediation
+  ansible.builtin.template:
+    src: auto_remediation.sh.j2
+    dest: "{{ compliance_scripts_path }}/auto_remediation.sh"
+    mode: '0755'
+  when: enable_auto_remediation | default(false)
+
+- name: Create compliance evidence collection
+  ansible.builtin.template:
+    src: evidence_collector.py.j2
+    dest: "{{ compliance_scripts_path }}/evidence_collector.py"
+    mode: '0755'
+
+- name: Schedule evidence collection
+  ansible.builtin.cron:
+    name: "Compliance Evidence Collection"
+    minute: "0"
+    hour: "1"
+    job: "{{ compliance_scripts_path }}/evidence_collector.py >> /var/log/evidence_collection.log 2>&1"
+    user: root
+
+- name: Start and enable compliance services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - auditd
+
+- name: Run initial compliance scan
+  ansible.builtin.shell: |
+    {{ compliance_scripts_path }}/compliance_scan.sh --initial
+  register: initial_compliance_scan
+  changed_when: false
+
+- name: Generate compliance baseline
+  ansible.builtin.shell: |
+    {{ compliance_scripts_path }}/compliance_report.py --baseline
+  register: compliance_baseline
+  changed_when: false
+
+- name: Log compliance setup completion
+  ansible.builtin.lineinfile:
+    path: /var/log/compliance_setup.log
+    line: "{{ ansible_date_time.iso8601 }} - Compliance and audit setup completed - Initial scan: {{ initial_compliance_scan.stdout_lines[-1] if initial_compliance_scan.stdout_lines else 'Completed' }}"
+    create: yes

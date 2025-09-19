@@ -1,0 +1,119 @@
+
+---
+# Disaster Recovery Preparation Tasks
+- name: Create DR documentation
+  ansible.builtin.template:
+    src: dr_runbook.md.j2
+    dest: "{{ dr_docs_path }}/dr_runbook_{{ inventory_hostname }}.md"
+    mode: '0644'
+
+- name: Setup DR environment variables
+  ansible.builtin.lineinfile:
+    path: /etc/environment
+    regexp: "^{{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
+    create: yes
+  loop:
+    - { key: "DR_MODE", value: "{{ dr_mode | default('normal') }}" }
+    - { key: "DR_REGION", value: "{{ dr_region | default('us-west-2') }}" }
+    - { key: "RTO_TARGET", value: "{{ rto_target_minutes | default(60) }}" }
+    - { key: "RPO_TARGET", value: "{{ rpo_target_minutes | default(15) }}" }
+
+- name: Install DR monitoring tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - rsync
+    - awscli
+    - jq
+    - curl
+    - netcat
+
+- name: Create DR scripts directory
+  ansible.builtin.file:
+    path: "{{ dr_scripts_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Deploy DR automation scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ dr_scripts_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "failover_script.sh.j2", dest: "failover.sh" }
+    - { src: "health_check_script.sh.j2", dest: "health_check.sh" }
+    - { src: "recovery_validation.sh.j2", dest: "recovery_validation.sh" }
+
+- name: Setup DR monitoring cron jobs
+  ansible.builtin.cron:
+    name: "{{ item.name }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    job: "{{ item.job }}"
+    user: "{{ item.user | default('root') }}"
+  loop:
+    - name: "DR Health Check"
+      minute: "*/5"
+      hour: "*"
+      job: "{{ dr_scripts_path }}/health_check.sh >> /var/log/dr_health.log 2>&1"
+    - name: "DR Backup Validation"
+      minute: "0"
+      hour: "2"
+      job: "{{ dr_scripts_path }}/recovery_validation.sh >> /var/log/dr_validation.log 2>&1"
+
+- name: Configure DR network settings
+  ansible.builtin.template:
+    src: dr_network_config.j2
+    dest: /etc/dr/network_config
+    mode: '0644'
+  notify: update network configuration
+
+- name: Setup DR database connections
+  ansible.builtin.template:
+    src: dr_database_config.j2
+    dest: /etc/dr/database_config
+    mode: '0600'
+  when: databases_to_backup is defined
+
+- name: Create DR contact information
+  ansible.builtin.template:
+    src: dr_contacts.json.j2
+    dest: "{{ dr_docs_path }}/dr_contacts.json"
+    mode: '0644'
+
+- name: Validate DR prerequisites
+  ansible.builtin.shell: |
+    echo "Validating DR prerequisites..."
+    
+    # Check network connectivity to DR region
+    if ! nc -z {{ dr_region_endpoint }} 443; then
+      echo "ERROR: Cannot reach DR region endpoint"
+      exit 1
+    fi
+    
+    # Check backup storage accessibility
+    {% if backup_storage_type == 'aws_s3' %}
+    if ! aws s3 ls s3://{{ backup_s3_bucket }}/ > /dev/null 2>&1; then
+      echo "ERROR: Cannot access backup S3 bucket"
+      exit 1
+    fi
+    {% endif %}
+    
+    # Check required tools
+    for tool in rsync aws jq curl; do
+      if ! command -v $tool > /dev/null 2>&1; then
+        echo "ERROR: Required tool $tool not found"
+        exit 1
+      fi
+    done
+    
+    echo "DR prerequisites validation completed successfully"
+  register: dr_validation_result
+
+- name: Log DR preparation status
+  ansible.builtin.lineinfile:
+    path: /var/log/dr_preparation.log
+    line: "{{ ansible_date_time.iso8601 }} - DR preparation completed for {{ inventory_hostname }}"
+    create: yes

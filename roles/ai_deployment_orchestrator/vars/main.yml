@@ -1,0 +1,58 @@
+---
+# AI Deployment Orchestrator Configuration
+ai_orchestrator:
+  enabled: true
+  decision_engine:
+    model_path: "/opt/hx/ai-models/deployment-decision.pkl"
+    confidence_threshold: 0.85
+    fallback_strategy: "conservative"
+  
+  deployment_strategies:
+    - name: "blue_green"
+      weight: 0.4
+      conditions:
+        - "traffic_load < 80%"
+        - "error_rate < 0.1%"
+    - name: "canary"
+      weight: 0.3
+      conditions:
+        - "traffic_load >= 80%"
+        - "new_feature_flag == true"
+    - name: "rolling"
+      weight: 0.3
+      conditions:
+        - "maintenance_window == true"
+
+  risk_assessment:
+    factors:
+      - traffic_patterns
+      - system_health
+      - historical_performance
+      - resource_utilization
+    thresholds:
+      low_risk: 0.2
+      medium_risk: 0.5
+      high_risk: 0.8
+
+  automation_levels:
+    full_auto: ["dev", "test"]
+    approval_required: ["staging"]
+    manual_only: ["prod"]
+
+# Performance Optimization with AI/ML
+performance_ai:
+  predictive_scaling:
+    enabled: true
+    model_type: "lstm"
+    prediction_window: "1h"
+    scaling_buffer: 0.2
+  
+  resource_optimization:
+    cpu_target: 70
+    memory_target: 80
+    cost_optimization: true
+    
+  anomaly_detection:
+    enabled: true
+    sensitivity: "medium"
+    alert_threshold: 0.7

@@ -1,0 +1,142 @@
+---
+- name: Create continuous improvement directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /opt/hx/continuous-improvement
+    - /opt/hx/ai-models/optimization
+    - /var/log/hx-improvement
+    - /opt/hx/benchmarks
+    - /opt/hx/reports
+
+- name: Install continuous improvement dependencies
+  pip:
+    name:
+      - scikit-learn>=1.3.0
+      - pandas>=2.0.0
+      - numpy>=1.24.0
+      - matplotlib>=3.7.0
+      - seaborn>=0.12.0
+      - plotly>=5.15.0
+      - dash>=2.11.0
+      - scipy>=1.11.0
+      - statsmodels>=0.14.0
+      - optuna>=3.3.0
+      - mlflow>=2.5.0
+    state: present
+    virtualenv: /opt/hx/venv
+
+- name: Deploy continuous improvement engine
+  template:
+    src: improvement_engine.py.j2
+    dest: /opt/hx/continuous-improvement/engine.py
+    mode: '0755'
+  notify: restart continuous improvement
+
+- name: Deploy performance optimizer
+  template:
+    src: performance_optimizer.py.j2
+    dest: /opt/hx/continuous-improvement/performance_optimizer.py
+    mode: '0755'
+  notify: restart continuous improvement
+
+- name: Deploy feedback loop analyzer
+  template:
+    src: feedback_analyzer.py.j2
+    dest: /opt/hx/continuous-improvement/feedback_analyzer.py
+    mode: '0755'
+  notify: restart continuous improvement
+
+- name: Deploy benchmarking suite
+  template:
+    src: benchmarking_suite.py.j2
+    dest: /opt/hx/continuous-improvement/benchmarking.py
+    mode: '0755'
+  notify: restart continuous improvement
+
+- name: Deploy quality gates validator
+  template:
+    src: quality_gates.py.j2
+    dest: /opt/hx/continuous-improvement/quality_gates.py
+    mode: '0755'
+  notify: restart continuous improvement
+
+- name: Create continuous improvement systemd service
+  template:
+    src: hx-continuous-improvement.service.j2
+    dest: /etc/systemd/system/hx-continuous-improvement.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart continuous improvement
+
+- name: Deploy configuration files
+  template:
+    src: improvement_config.yml.j2
+    dest: /opt/hx/continuous-improvement/config.yml
+    mode: '0644'
+  notify: restart continuous improvement
+
+- name: Create optimization workflows
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - src: performance_workflow.py.j2
+      dest: /opt/hx/continuous-improvement/workflows/performance.py
+    - src: cost_workflow.py.j2
+      dest: /opt/hx/continuous-improvement/workflows/cost.py
+    - src: security_workflow.py.j2
+      dest: /opt/hx/continuous-improvement/workflows/security.py
+
+- name: Create ML model training script
+  template:
+    src: train_optimization_models.py.j2
+    dest: /opt/hx/continuous-improvement/train_models.py
+    mode: '0755'
+
+- name: Set up cron jobs for continuous improvement
+  cron:
+    name: "{{ item.name }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    job: "{{ item.job }}"
+    user: root
+  loop:
+    - name: "Hourly optimization check"
+      minute: "0"
+      hour: "*"
+      job: "/opt/hx/venv/bin/python /opt/hx/continuous-improvement/engine.py --mode hourly"
+    - name: "Daily optimization cycle"
+      minute: "0"
+      hour: "6"
+      job: "/opt/hx/venv/bin/python /opt/hx/continuous-improvement/engine.py --mode daily"
+    - name: "Weekly deep analysis"
+      minute: "0"
+      hour: "2"
+      job: "/opt/hx/venv/bin/python /opt/hx/continuous-improvement/engine.py --mode weekly"
+      weekday: "0"
+    - name: "Model retraining"
+      minute: "30"
+      hour: "5"
+      job: "/opt/hx/venv/bin/python /opt/hx/continuous-improvement/train_models.py"
+
+- name: Start and enable continuous improvement service
+  systemd:
+    name: hx-continuous-improvement
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Verify continuous improvement health
+  uri:
+    url: "http://localhost:8087/health"
+    method: GET
+    timeout: 10
+  register: improvement_health
+  retries: 5
+  delay: 10
+  until: improvement_health.status == 200

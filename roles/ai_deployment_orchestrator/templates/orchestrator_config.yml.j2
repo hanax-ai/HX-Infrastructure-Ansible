@@ -1,0 +1,65 @@
+---
+# AI Deployment Orchestrator Configuration
+ai_orchestrator:
+  enabled: {{ ai_orchestrator.enabled | default(true) }}
+  
+  decision_engine:
+    model_path: "{{ ai_orchestrator.decision_engine.model_path | default('/opt/hx/ai-models/deployment-decision.pkl') }}"
+    confidence_threshold: {{ ai_orchestrator.decision_engine.confidence_threshold | default(0.85) }}
+    fallback_strategy: "{{ ai_orchestrator.decision_engine.fallback_strategy | default('conservative') }}"
+  
+  deployment_strategies:
+{% for strategy in ai_orchestrator.deployment_strategies %}
+    - name: "{{ strategy.name }}"
+      weight: {{ strategy.weight }}
+      conditions:
+{% for condition in strategy.conditions %}
+        - "{{ condition }}"
+{% endfor %}
+{% endfor %}
+  
+  risk_assessment:
+    factors:
+{% for factor in ai_orchestrator.risk_assessment.factors %}
+      - {{ factor }}
+{% endfor %}
+    thresholds:
+      low_risk: {{ ai_orchestrator.risk_assessment.thresholds.low_risk }}
+      medium_risk: {{ ai_orchestrator.risk_assessment.thresholds.medium_risk }}
+      high_risk: {{ ai_orchestrator.risk_assessment.thresholds.high_risk }}
+  
+  automation_levels:
+{% for level, envs in ai_orchestrator.automation_levels.items() %}
+    {{ level }}:
+{% for env in envs %}
+      - "{{ env }}"
+{% endfor %}
+{% endfor %}
+
+# Performance AI Configuration
+performance_ai:
+  predictive_scaling:
+    enabled: {{ performance_ai.predictive_scaling.enabled | default(true) }}
+    model_type: "{{ performance_ai.predictive_scaling.model_type | default('lstm') }}"
+    prediction_window: "{{ performance_ai.predictive_scaling.prediction_window | default('1h') }}"
+    scaling_buffer: {{ performance_ai.predictive_scaling.scaling_buffer | default(0.2) }}
+  
+  resource_optimization:
+    cpu_target: {{ performance_ai.resource_optimization.cpu_target | default(70) }}
+    memory_target: {{ performance_ai.resource_optimization.memory_target | default(80) }}
+    cost_optimization: {{ performance_ai.resource_optimization.cost_optimization | default(true) }}
+  
+  anomaly_detection:
+    enabled: {{ performance_ai.anomaly_detection.enabled | default(true) }}
+    sensitivity: "{{ performance_ai.anomaly_detection.sensitivity | default('medium') }}"
+    alert_threshold: {{ performance_ai.anomaly_detection.alert_threshold | default(0.7) }}
+
+# Prometheus integration
+prometheus_url: "{{ prometheus_url | default('http://localhost:9090') }}"
+
+# Logging configuration
+logging:
+  level: INFO
+  file: /var/log/hx-orchestrator/orchestrator.log
+  max_size: 100MB
+  backup_count: 5

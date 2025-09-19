@@ -1,0 +1,116 @@
+
+---
+# Continuous Improvement Process Tasks
+- name: Create continuous improvement directory
+  ansible.builtin.file:
+    path: "{{ continuous_improvement_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Create improvement tracking scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ continuous_improvement_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "improvement_tracker.py.j2", dest: "improvement_tracker.py" }
+    - { src: "process_analyzer.py.j2", dest: "process_analyzer.py" }
+    - { src: "automation_opportunities.sh.j2", dest: "automation_opportunities.sh" }
+    - { src: "efficiency_calculator.py.j2", dest: "efficiency_calculator.py" }
+    - { src: "improvement_report.py.j2", dest: "improvement_report.py" }
+
+- name: Configure improvement processes
+  ansible.builtin.template:
+    src: improvement_processes.json.j2
+    dest: "{{ continuous_improvement_path }}/improvement_processes.json"
+    mode: '0644'
+
+- name: Setup improvement tracking database
+  ansible.builtin.template:
+    src: improvement_tracking.json.j2
+    dest: "{{ continuous_improvement_path }}/improvement_tracking.json"
+    mode: '0644'
+
+- name: Configure automation opportunity detection
+  ansible.builtin.template:
+    src: automation_rules.json.j2
+    dest: "{{ continuous_improvement_path }}/automation_rules.json"
+    mode: '0644'
+
+- name: Schedule daily process analysis
+  ansible.builtin.cron:
+    name: "Daily Process Analysis"
+    minute: "0"
+    hour: "7"
+    job: "{{ continuous_improvement_path }}/process_analyzer.py daily >> /var/log/process_analysis.log 2>&1"
+    user: root
+
+- name: Schedule weekly automation opportunity scan
+  ansible.builtin.cron:
+    name: "Weekly Automation Opportunities"
+    minute: "0"
+    hour: "9"
+    weekday: "1"
+    job: "{{ continuous_improvement_path }}/automation_opportunities.sh >> /var/log/automation_opportunities.log 2>&1"
+    user: root
+
+- name: Schedule monthly efficiency calculation
+  ansible.builtin.cron:
+    name: "Monthly Efficiency Calculation"
+    minute: "0"
+    hour: "10"
+    day: "1"
+    job: "{{ continuous_improvement_path }}/efficiency_calculator.py monthly >> /var/log/efficiency_calculation.log 2>&1"
+    user: root
+
+- name: Schedule quarterly improvement report
+  ansible.builtin.cron:
+    name: "Quarterly Improvement Report"
+    minute: "0"
+    hour: "11"
+    day: "1"
+    month: "1,4,7,10"
+    job: "{{ continuous_improvement_path }}/improvement_report.py quarterly >> /var/log/improvement_reports.log 2>&1"
+    user: root
+
+- name: Create improvement suggestion system
+  ansible.builtin.template:
+    src: improvement_suggestions.py.j2
+    dest: "{{ continuous_improvement_path }}/improvement_suggestions.py"
+    mode: '0755'
+
+- name: Setup improvement workflow
+  ansible.builtin.template:
+    src: improvement_workflow.json.j2
+    dest: "{{ continuous_improvement_path }}/improvement_workflow.json"
+    mode: '0644'
+
+- name: Configure improvement metrics
+  ansible.builtin.template:
+    src: improvement_metrics.json.j2
+    dest: "{{ continuous_improvement_path }}/improvement_metrics.json"
+    mode: '0644'
+
+- name: Create improvement dashboard configuration
+  ansible.builtin.template:
+    src: improvement_dashboard.json.j2
+    dest: "{{ operational_dashboards_path }}/continuous_improvement.json"
+    mode: '0644'
+
+- name: Setup improvement notification system
+  ansible.builtin.template:
+    src: improvement_notifications.py.j2
+    dest: "{{ continuous_improvement_path }}/improvement_notifications.py"
+    mode: '0755'
+
+- name: Initialize improvement baseline
+  ansible.builtin.shell: |
+    {{ continuous_improvement_path }}/process_analyzer.py --baseline
+  register: improvement_baseline
+  changed_when: false
+
+- name: Log continuous improvement setup
+  ansible.builtin.lineinfile:
+    path: /var/log/continuous_improvement.log
+    line: "{{ ansible_date_time.iso8601 }} - Continuous improvement setup completed - Baseline: {{ improvement_baseline.stdout_lines[-1] if improvement_baseline.stdout_lines else 'Generated' }}"
+    create: yes

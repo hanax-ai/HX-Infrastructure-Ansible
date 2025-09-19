@@ -5,49 +5,52 @@ dependency:
 driver:
   name: docker
 platforms:
-  - name: hx-infrastructure-ubuntu
-    image: quay.io/ansible/molecule-ubuntu:latest
+  - name: instance-ubuntu-20
+    image: quay.io/ansible/molecule-ubuntu:20.04
     pre_build_image: true
     privileged: true
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: "/lib/systemd/systemd"
     tmpfs:
       - /run
       - /tmp
-    capabilities:
-      - SYS_ADMIN
-    command: /lib/systemd/systemd
-  - name: hx-infrastructure-centos
-    image: quay.io/ansible/molecule-centos:latest
+  - name: instance-ubuntu-22
+    image: quay.io/ansible/molecule-ubuntu:22.04
     pre_build_image: true
     privileged: true
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: "/lib/systemd/systemd"
     tmpfs:
       - /run
       - /tmp
-    capabilities:
-      - SYS_ADMIN
-    command: /usr/sbin/init
+  - name: instance-centos-8
+    image: quay.io/ansible/molecule-centos:8
+    pre_build_image: true
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: "/lib/systemd/systemd"
+    tmpfs:
+      - /run
+      - /tmp
 provisioner:
   name: ansible
   config_options:
     defaults:
       interpreter_python: auto_silent
       callback_whitelist: profile_tasks, timer, yaml
-      stdout_callback: yaml
     ssh_connection:
       pipelining: false
   inventory:
     host_vars:
-      hx-infrastructure-ubuntu:
-        ansible_python_interpreter: /usr/bin/python3
-      hx-infrastructure-centos:
-        ansible_python_interpreter: /usr/bin/python3
-  lint: |
-    set -e
-    yamllint .
-    ansible-lint
+      instance-ubuntu-20:
+        ansible_user: root
+      instance-ubuntu-22:
+        ansible_user: root
+      instance-centos-8:
+        ansible_user: root
 verifier:
   name: ansible
 scenario:
@@ -65,3 +68,9 @@ scenario:
     - verify
     - cleanup
     - destroy
+lint: |
+  set -e
+  yamllint .
+  ansible-lint
+  flake8
+
