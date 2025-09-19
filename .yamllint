@@ -1,52 +1,31 @@
-
-# YAML Lint Configuration for HX Infrastructure Ansible
-# Enforces consistent YAML formatting and style
-
 extends: default
 
 rules:
-  # Line length - accommodate longer Ansible constructs
   line-length:
     max: 120
     level: warning
-
-  # Indentation - standard 2 spaces for YAML
+  
   indentation:
     spaces: 2
     indent-sequences: true
     check-multi-line-strings: false
-
-  # Comments - require space after hash
+  
   comments:
     min-spaces-from-content: 1
-
-  # Document start - allow files without ---
+  
   document-start:
     present: false
-
-  # Truthy values - allow yes/no for Ansible
+  
   truthy:
     allowed-values: ['true', 'false', 'yes', 'no']
     check-keys: false
-
-  # Key ordering - disabled for logical Ansible task ordering
+  
   key-ordering: disable
-
-  # Empty lines
+  
   empty-lines:
     max: 2
     max-start: 1
     max-end: 1
-
-  # Brackets - consistent spacing
-  brackets:
-    min-spaces-inside: 0
-    max-spaces-inside: 1
-
-  # Braces - consistent spacing
-  braces:
-    min-spaces-inside: 0
-    max-spaces-inside: 1
 
 ignore: |
   .git/
