@@ -1,0 +1,66 @@
+
+---
+# HX PostgreSQL Authentication Role Internal Variables
+# Computed values and constants
+
+# Configuration Paths
+hx_pg_conf_dir: "/etc/postgresql/{{ hx_pg_cluster_version }}/{{ hx_pg_cluster_name }}"
+hx_pg_data_dir: "/var/lib/postgresql/{{ hx_pg_cluster_version }}/{{ hx_pg_cluster_name }}"
+hx_pg_conf_path: "{{ hx_pg_conf_dir }}/postgresql.conf"
+hx_pg_hba_path: "{{ hx_pg_conf_dir }}/pg_hba.conf"
+hx_pg_ident_path: "{{ hx_pg_conf_dir }}/pg_ident.conf"
+
+# SSL Certificate Paths
+hx_pg_ssl_cert_path: "{{ hx_pg_conf_dir }}/{{ hx_pg_ssl_cert_file }}"
+hx_pg_ssl_key_path: "{{ hx_pg_conf_dir }}/{{ hx_pg_ssl_key_file }}"
+hx_pg_ssl_ca_path: "{{ hx_pg_conf_dir }}/{{ hx_pg_ssl_ca_file }}"
+
+# Computed Keytab Path
+hx_pg_keytab_computed_path: "{{ hx_pg_keytab_path if hx_pg_keytab_path else hx_pg_conf_dir + '/postgres.keytab' }}"
+
+# Backup Configuration
+hx_pg_backup_timestamp: "{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}{{ ansible_date_time.second }}"
+hx_pg_backup_file_prefix: "pg_auth_backup"
+
+# Service Configuration
+hx_pg_service_full_name: "{{ hx_pg_service_name }}@{{ hx_pg_cluster_version }}-{{ hx_pg_cluster_name }}"
+
+# Required Directories
+hx_pg_required_directories:
+  - "{{ hx_pg_backup_dir }}"
+  - "{{ hx_pg_log_dir }}"
+  - "{{ hx_pg_conf_dir }}"
+
+# Connection Strings
+hx_pg_superuser_connection: "postgresql://postgres@localhost:{{ hx_pg_port }}/postgres"
+hx_pg_app_connection: "postgresql://{{ hx_pg_app_user }}:{{ hx_pg_app_password }}@{{ ansible_default_ipv4.address }}:{{ hx_pg_port }}/{{ hx_pg_db }}"
+hx_pg_ssl_connection: "postgresql://{{ hx_pg_app_user }}@{{ ansible_default_ipv4.address }}:{{ hx_pg_port }}/{{ hx_pg_db }}?sslmode=require&sslcert={{ hx_pg_ssl_cert_path }}&sslkey={{ hx_pg_ssl_key_path }}&sslrootcert={{ hx_pg_ca_path }}"
+
+# Validation Commands
+hx_pg_validation_commands:
+  config_check: "sudo -u postgres {{ hx_pg_cluster_version }}/bin/postgres --check-config -D {{ hx_pg_data_dir }}"
+  hba_check: "sudo -u postgres psql -tAc \"SELECT COUNT(*) FROM pg_hba_file_rules WHERE error IS NOT NULL;\""
+  ssl_check: "sudo -u postgres psql -tAc \"SHOW ssl;\""
+  auth_check: "sudo -u postgres psql -tAc \"SELECT current_setting('password_encryption');\""
+  connection_test: "psql '{{ hx_pg_app_connection }}' -c '\\conninfo'"
+
+# Security Validation
+hx_pg_security_checks:
+  - name: "SSL enabled"
+    query: "SHOW ssl"
+    expected: "on"
+  - name: "Password encryption"
+    query: "SELECT current_setting('password_encryption')"
+    expected: "scram-sha-256"
+  - name: "Log connections"
+    query: "SHOW log_connections"
+    expected: "on"
+  - name: "SSL min protocol"
+    query: "SHOW ssl_min_protocol_version"
+    expected: "{{ hx_pg_ssl_min_protocol_version }}"
+
+# Performance Monitoring Queries
+hx_pg_performance_queries:
+  active_connections: "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'"
+  database_size: "SELECT pg_size_pretty(pg_database_size('{{ hx_pg_db }}'))"
+  cache_hit_ratio: "SELECT round(sum(blks_hit)*100/sum(blks_hit+blks_read), 2) AS cache_hit_ratio FROM pg_stat_database WHERE datname = '{{ hx_pg_db }}'"

@@ -1,0 +1,103 @@
+
+---
+# Installation Tasks for HX Domain Join
+
+- name: Create required directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ hx_domain_required_directories }}"
+  tags: [install]
+
+- name: Update package cache
+  apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+  tags: [install]
+
+- name: Install required packages for domain join
+  package:
+    name: "{{ hx_domain_packages }}"
+    state: present
+  register: hx_domain_package_install
+  retries: 3
+  delay: 5
+  until: hx_domain_package_install is succeeded
+  tags: [install]
+
+- name: Create backup of existing configuration files
+  shell: |
+    set -euo pipefail
+    backup_dir="{{ hx_domain_backup_dir }}/pre-join-{{ hx_domain_backup_timestamp }}"
+    mkdir -p "$backup_dir"
+
+    # Backup existing configuration files
+    for config_file in /etc/sssd/sssd.conf /etc/krb5.conf /etc/nsswitch.conf /etc/realmd.conf; do
+      if [ -f "$config_file" ]; then
+        cp "$config_file" "$backup_dir/$(basename $config_file).bak"
+        echo "Backed up: $config_file"
+      fi
+    done
+
+    echo "Configuration backup completed in: $backup_dir"
+  args:
+    executable: /bin/bash
+  register: hx_domain_config_backup
+  when: hx_domain_backup_enabled | bool
+  changed_when: true
+  tags: [install]
+
+- name: Stop SSSD service if running
+  systemd:
+    name: "{{ hx_sssd_service }}"
+    state: stopped
+  failed_when: false
+  tags: [install]
+
+- name: Clear SSSD cache
+  shell: |
+    set -euo pipefail
+    if [ -d "/var/lib/sss" ]; then
+      rm -rf /var/lib/sss/db/*
+      rm -rf /var/lib/sss/mc/*
+      echo "SSSD cache cleared"
+    else
+      echo "SSSD cache directory not found"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_sssd_cache_clear
+  changed_when: "'SSSD cache cleared' in hx_sssd_cache_clear.stdout"
+  tags: [install]
+
+- name: Ensure realmd service is running
+  systemd:
+    name: "{{ hx_realmd_service }}"
+    state: started
+    enabled: true
+  tags: [install]
+
+- name: Log installation completion
+  lineinfile:
+    path: "{{ hx_domain_log_dir }}/installation.log"
+    line: "{{ ansible_date_time.iso8601 }} - Domain join packages installed successfully"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_domain_audit_logging_enabled | bool
+  tags: [install]
+
+- name: Display installation summary
+  debug:
+    msg:
+      - "Domain join installation completed"
+      - "Packages installed: {{ hx_domain_packages | length }}"
+      - "Configuration backup: {{ hx_domain_backup_enabled | ternary('Created', 'Disabled') }}"
+      - "SSSD cache: Cleared"
+      - "Realmd service: Started"
+  tags: [install]

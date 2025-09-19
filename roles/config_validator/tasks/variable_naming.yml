@@ -1,0 +1,70 @@
+
+---
+# Variable Naming Validation Tasks - Phase 3 Day 1
+
+- name: "Variable Naming | Get all variable names"
+  set_fact:
+    all_variable_names: "{{ hostvars[inventory_hostname].keys() | list }}"
+
+- name: "Variable Naming | Filter user-defined variables"
+  set_fact:
+    user_variables: "{{ all_variable_names | reject('match', '^ansible_.*') | reject('match', '^hostvars$') | reject('match', '^groups$') | reject('match', '^group_names$') | reject('match', '^inventory_hostname$') | list }}"
+
+- name: "Variable Naming | Check variable naming conventions - prefixes"
+  debug:
+    msg: "Variable '{{ item }}' does not follow standard prefix conventions"
+  loop: "{{ user_variables }}"
+  when:
+    - variable_naming_conventions.prefix_patterns | length > 0
+    - not (variable_naming_conventions.prefix_patterns | map('regex_search', '^' + item) | select('string') | list | length > 0)
+  failed_when:
+    - config_validation_strict_mode | bool
+    - variable_naming_conventions.prefix_patterns | length > 0
+    - not (variable_naming_conventions.prefix_patterns | map('regex_search', '^' + item) | select('string') | list | length > 0)
+
+- name: "Variable Naming | Check forbidden patterns"
+  assert:
+    that:
+      - not (variable_naming_conventions.forbidden_patterns | map('regex_search', item) | select('string') | list | length > 0)
+    fail_msg: "Variable '{{ item }}' uses forbidden naming pattern"
+    success_msg: "Variable '{{ item }}' naming is acceptable"
+  loop: "{{ user_variables }}"
+  when: variable_naming_conventions.forbidden_patterns | length > 0
+
+- name: "Variable Naming | Check variable length constraints"
+  assert:
+    that:
+      - item | length <= variable_naming_conventions.max_length
+    fail_msg: "Variable '{{ item }}' exceeds maximum length of {{ variable_naming_conventions.max_length }} characters"
+    success_msg: "Variable '{{ item }}' length is acceptable"
+  loop: "{{ user_variables }}"
+  when: variable_naming_conventions.max_length is defined
+
+- name: "Variable Naming | Check snake_case convention"
+  assert:
+    that:
+      - item | regex_search('^[a-z][a-z0-9_]*$')
+    fail_msg: "Variable '{{ item }}' does not follow snake_case convention"
+    success_msg: "Variable '{{ item }}' follows snake_case convention"
+  loop: "{{ user_variables }}"
+  when:
+    - variable_naming_conventions.case_style == "snake_case"
+    - not item.startswith('ansible_')
+
+- name: "Variable Naming | Generate naming compliance report"
+  set_fact:
+    naming_compliance_report:
+      total_variables: "{{ user_variables | length }}"
+      compliant_variables: "{{ user_variables | select('regex', '^[a-z][a-z0-9_]*$') | list | length }}"
+      non_compliant_variables: "{{ user_variables | reject('regex', '^[a-z][a-z0-9_]*$') | list }}"
+      forbidden_pattern_violations: "{{ user_variables | select('regex', variable_naming_conventions.forbidden_patterns | join('|')) | list }}"
+
+- name: "Variable Naming | Display naming validation summary"
+  debug:
+    msg:
+      - "Variable Naming Validation Summary:"
+      - "  Total Variables: {{ naming_compliance_report.total_variables }}"
+      - "  Compliant Variables: {{ naming_compliance_report.compliant_variables }}"
+      - "  Non-compliant Variables: {{ naming_compliance_report.non_compliant_variables | length }}"
+      - "  Forbidden Pattern Violations: {{ naming_compliance_report.forbidden_pattern_violations | length }}"
+

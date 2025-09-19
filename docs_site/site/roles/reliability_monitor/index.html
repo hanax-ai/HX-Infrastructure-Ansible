@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="HX Infrastructure Team" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>reliability_monitor - HX Infrastructure Ansible - Exemplary Automation</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "reliability_monitor";
+        var mkdocs_page_input_path = "roles/reliability_monitor.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> HX Infrastructure Ansible - Exemplary Automation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Architecture</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../../architecture/overview.md">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../architecture/diagrams/">Diagrams</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../">Roles</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../../development/guidelines.md">Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/style-guide/">Style Guide</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">HX Infrastructure Ansible - Exemplary Automation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">reliability_monitor</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="reliability_monitor">reliability_monitor<a class="headerlink" href="#reliability_monitor" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h2 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h2>
+<p>The following variables can be configured for this role:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">service_monitoring</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;check_interval&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">30</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;timeout&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;retries&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;escalation_threshold&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">}</span>
+<span class="nt">health_checks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;types&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;service_status&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;port_connectivity&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;process_monitoring&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;resource_utilization&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;log_analysis&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;services&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[]}</span>
+<span class="nt">circuit_breaker</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;failure_threshold&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;recovery_timeout&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">60</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;half_open_max_calls&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;success_threshold&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">}</span>
+<span class="nt">service_recovery</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;strategies&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;restart_service&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;reload_configuration&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;failover_to_backup&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;scale_resources&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;escalation&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;level_1&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;restart_service&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;level_2&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;reload_configuration&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;level_3&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;failover_to_backup&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;level_4&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;manual_intervention&#39;</span><span class="p p-Indicator">}}</span>
+<span class="nt">performance_monitoring</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;metrics&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;cpu_usage&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;memory_usage&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;disk_usage&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;network_io&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;response_time&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;thresholds&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;cpu_warning&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">70</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;cpu_critical&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">90</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;memory_warning&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">80</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;memory_critical&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">95</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;disk_warning&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">85</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;disk_critical&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">95</span><span class="p p-Indicator">}}</span>
+<span class="nt">error_handling</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;log_level&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;INFO&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;log_file&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;/var/log/ansible/reliability_monitor.log&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;max_log_size&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;100MB&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;log_retention_days&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">30</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;alerting&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;channels&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;email&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;slack&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;webhook&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;thresholds&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;service_down&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;CRITICAL&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;performance_degraded&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;WARNING&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;recovery_failed&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;CRITICAL&#39;</span><span class="p p-Indicator">}}}</span>
+<span class="nt">backup_verification</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;check_interval&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">3600</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;verification_types&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;file_integrity&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;backup_completeness&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;restore_test&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;backup_locations&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[]}</span>
+<span class="nt">container_support</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">False</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;orchestrator&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;docker&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;health_check_endpoint&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;/health&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;readiness_probe_endpoint&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;/ready&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;liveness_probe_endpoint&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;/alive&#39;</span><span class="p p-Indicator">}</span>
+<span class="nt">service_mesh</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">False</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;type&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;istio&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;metrics_endpoint&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;/metrics&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;tracing_enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">}</span>
+<span class="nt">monitoring_integration</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;prometheus&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">False</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;endpoint&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;http://localhost:9090&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;push_gateway&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;http://localhost:9091&#39;</span><span class="p p-Indicator">},</span><span class="w"> </span><span class="s">&#39;grafana&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">False</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;endpoint&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;http://localhost:3000&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;dashboard_id&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;reliability-monitor&#39;</span><span class="p p-Indicator">},</span><span class="w"> </span><span class="s">&#39;elasticsearch&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">False</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;endpoint&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;http://localhost:9200&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;index_pattern&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;reliability-logs-*&#39;</span><span class="p p-Indicator">}}</span>
+<span class="nt">notifications</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;email&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;smtp_server&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;localhost&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;smtp_port&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">587</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;from_address&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;ansible@{{</span><span class="nv"> </span><span class="s">ansible_fqdn</span><span class="nv"> </span><span class="s">}}&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;to_addresses&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[]},</span><span class="w"> </span><span class="s">&#39;slack&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;webhook_url&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;channel&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;#alerts&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;username&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;Ansible</span><span class="nv"> </span><span class="s">Reliability</span><span class="nv"> </span><span class="s">Monitor&#39;</span><span class="p p-Indicator">},</span><span class="w"> </span><span class="s">&#39;webhook&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;url&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;method&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;POST&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;headers&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;Content-Type&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;application/json&#39;</span><span class="p p-Indicator">}}}</span>
+<span class="nt">security</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;encrypt_logs&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">False</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;secure_communications&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;audit_trail&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;access_control&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">}</span>
+<span class="nt">reliability_metrics</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;track_uptime&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;track_mttr&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;track_mtbf&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;track_availability&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;sla_target&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">99.9</span><span class="p p-Indicator">}</span>
+<span class="nt">maintenance_windows</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;default_window&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;start_time&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;02:00&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;end_time&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;04:00&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;timezone&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;UTC&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;days&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;Sunday&#39;</span><span class="p p-Indicator">]},</span><span class="w"> </span><span class="s">&#39;suppress_alerts_during_maintenance&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+
+<h2 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
+<p>No dependencies.</p>
+<h2 id="tasks">Tasks<a class="headerlink" href="#tasks" title="Permanent link">&para;</a></h2>
+<p>The following task files are included:</p>
+<ul>
+<li><code>main.yml</code></li>
+</ul>
+<h2 id="handlers">Handlers<a class="headerlink" href="#handlers" title="Permanent link">&para;</a></h2>
+<p>The following handlers are available:</p>
+<ul>
+<li><code>main.yml</code></li>
+</ul>
+<h2 id="templates">Templates<a class="headerlink" href="#templates" title="Permanent link">&para;</a></h2>
+<p>The following templates are provided:</p>
+<ul>
+<li><code>reliability-monitor.service.j2</code></li>
+<li><code>reliability_config.yml.j2</code></li>
+<li><code>health_checker.py.j2</code></li>
+</ul>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

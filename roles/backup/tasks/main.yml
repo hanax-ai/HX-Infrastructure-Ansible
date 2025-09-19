@@ -1,0 +1,48 @@
+
+---
+# Main backup automation tasks
+# Includes all backup-related task files following Ansible standards
+
+- name: Include directory setup tasks
+  include_tasks: directories.yml
+  tags: [backup, directories]
+
+- name: Include installation tasks
+  include_tasks: install.yml
+  tags: [backup, install]
+
+- name: Include encryption setup tasks
+  include_tasks: encryption.yml
+  tags: [backup, encryption]
+
+- name: Include application backup tasks
+  include_tasks: application.yml
+  tags: [backup, application]
+
+- name: Include configuration tasks
+  include_tasks: configuration.yml
+  tags: [backup, configuration]
+
+- name: Include system backup tasks
+  include_tasks: system.yml
+  tags: [backup, system]
+
+- name: Include scheduling tasks
+  include_tasks: scheduling.yml
+  tags: [backup, scheduling]
+
+- name: Include verification tasks
+  include_tasks: verification.yml
+  tags: [backup, verification]
+
+- name: Include remote storage tasks
+  include_tasks: remote_storage.yml
+  tags: [backup, remote_storage]
+
+- name: Include service management tasks
+  include_tasks: service.yml
+  tags: [backup, service]
+
+- name: Include initial validation tasks
+  include_tasks: initial_validation.yml
+  tags: [backup, validation]

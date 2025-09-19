@@ -1,0 +1,109 @@
+
+---
+# Predictive Failure Detection
+- name: Install predictive monitoring dependencies
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python3-pip
+    - python3-dev
+    - python3-numpy
+    - python3-scipy
+  when: predictive_monitoring_enabled | default(true)
+
+- name: Install Python ML libraries
+  pip:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - scikit-learn
+    - pandas
+    - numpy
+  when: predictive_monitoring_enabled | default(true)
+
+- name: Create predictive monitoring script
+  template:
+    src: predictive_monitor.py.j2
+    dest: /opt/hx-infrastructure/scripts/predictive_monitor.py
+    mode: '0755'
+  vars:
+    model_path: "{{ ml_model_path | default('/opt/hx-infrastructure/models/failure_prediction.pkl') }}"
+    threshold: "{{ prediction_threshold | default(0.8) }}"
+
+- name: Collect historical metrics for prediction
+  shell: |
+    # Collect system metrics for the last 24 hours
+    echo "timestamp,cpu_usage,memory_usage,disk_usage,load_avg,network_errors" > /tmp/metrics_history.csv
+    
+    # Get current metrics
+    cpu=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | awk -F'%' '{print $1}')
+    memory=$(free | grep Mem | awk '{printf "%.1f", ($3/$2) * 100.0}')
+    disk=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+    load=$(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//')
+    
+    # Network errors from interface statistics
+    net_errors=$(cat /proc/net/dev | grep {{ ansible_default_ipv4.interface }} | awk '{print $4+$12}')
+    
+    echo "$(date +%s),$cpu,$memory,$disk,$load,$net_errors" >> /tmp/metrics_history.csv
+  register: metrics_collection
+  changed_when: false
+
+- name: Run predictive analysis
+  script: /opt/hx-infrastructure/scripts/predictive_monitor.py /tmp/metrics_history.csv
+  register: prediction_result
+  when: predictive_monitoring_enabled | default(true)
+  failed_when: false
+
+- name: Parse prediction results
+  set_fact:
+    prediction_data: "{{ prediction_result.stdout | from_json }}"
+  when: 
+    - prediction_result is succeeded
+    - prediction_result.stdout | length > 0
+
+- name: Create predictive monitoring summary
+  set_fact:
+    predictive_metrics:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      hostname: "{{ inventory_hostname }}"
+      prediction_enabled: "{{ predictive_monitoring_enabled | default(true) }}"
+      failure_probability: "{{ prediction_data.failure_probability | default(0) }}"
+      risk_level: "{{ prediction_data.risk_level | default('unknown') }}"
+      contributing_factors: "{{ prediction_data.contributing_factors | default([]) }}"
+      recommendation: "{{ prediction_data.recommendation | default('No action required') }}"
+      model_accuracy: "{{ prediction_data.model_accuracy | default(0) }}"
+  when: prediction_data is defined
+
+- name: Log predictive metrics
+  copy:
+    content: "{{ predictive_metrics | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/predictive-metrics-{{ ansible_date_time.epoch }}.json"
+  when: 
+    - predictive_metrics is defined
+    - log_predictive_metrics | default(true)
+
+- name: Send predictive failure alerts
+  include_tasks: trigger_alert.yml
+  vars:
+    alert_type: "predictive_failure"
+    alert_message: "High failure probability detected on {{ inventory_hostname }}: {{ predictive_metrics.failure_probability }}%"
+    alert_data: "{{ predictive_metrics }}"
+    alert_severity: "warning"
+  when: 
+    - predictive_metrics is defined
+    - (predictive_metrics.failure_probability | float) > (prediction_threshold | default(0.8) * 100)
+    - alerting_enabled | default(true)
+
+- name: Update predictive model training data
+  shell: |
+    # Append current metrics to training dataset
+    echo "$(date +%s),{{ ansible_processor_vcpus }},{{ ansible_memtotal_mb }},$(df / | tail -1 | awk '{print $5}' | sed 's/%//'),$(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//'),0" >> /opt/hx-infrastructure/data/training_data.csv
+  when: 
+    - predictive_monitoring_enabled | default(true)
+    - update_training_data | default(true)
+
+- name: Clean up temporary files
+  file:
+    path: /tmp/metrics_history.csv
+    state: absent

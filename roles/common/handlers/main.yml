@@ -1,0 +1,39 @@
+---
+# Common role handlers with hx_ prefix standardization
+
+- name: restart sshd
+  systemd:
+    name: sshd
+    state: restarted
+  listen: restart sshd
+
+- name: restart fail2ban
+  systemd:
+    name: fail2ban
+    state: restarted
+    enabled: yes
+  listen: restart fail2ban
+
+- name: restart cron
+  systemd:
+    name: cron
+    state: restarted
+  listen: restart cron
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+  listen: reload systemd
+
+- name: restart rsyslog
+  systemd:
+    name: rsyslog
+    state: restarted
+  listen: restart rsyslog
+
+- name: restart ufw
+  systemd:
+    name: ufw
+    state: restarted
+  when: hx_common_firewall_enabled
+  listen: restart ufw

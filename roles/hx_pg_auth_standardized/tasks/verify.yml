@@ -1,0 +1,103 @@
+---
+- name: "Hx | PostgreSQL Auth | Verify PostgreSQL service is running"
+  service:
+    name: "{{ hx_pg_service_name }}"
+    state: started
+    enabled: true
+  tags: ['verify']
+
+- name: "Hx | PostgreSQL Auth | Test PostgreSQL connection"
+  postgresql_ping:
+    login_host: "localhost"
+    login_port: "{{ hx_pg_port }}"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  become: true
+  become_user: postgres
+  tags: ['verify']
+
+- name: "Hx | PostgreSQL Auth | Verify SSL configuration"
+  postgresql_query:
+    db: "postgres"
+    query: "SHOW ssl;"
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  register: hx_pg_ssl_status
+  become: true
+  become_user: postgres
+  when: hx_pg_ssl_enabled | default(false) | bool
+  tags: ['verify']
+
+- name: "Hx | PostgreSQL Auth | Assert SSL is enabled"
+  assert:
+    that:
+      - hx_pg_ssl_status.query_result[0].ssl == "on"
+    fail_msg: "SSL is not enabled in PostgreSQL"
+    success_msg: "SSL is properly enabled in PostgreSQL"
+  when: 
+    - hx_pg_ssl_enabled | default(false) | bool
+    - hx_pg_ssl_status is defined
+  tags: ['verify']
+
+- name: "Hx | PostgreSQL Auth | Verify user authentication"
+  postgresql_ping:
+    login_host: "localhost"
+    login_port: "{{ hx_pg_port }}"
+    login_user: "{{ item.name }}"
+    login_password: "{{ item.password }}"
+    login_db: "{{ item.db | default('postgres') }}"
+  loop: "{{ hx_pg_users }}"
+  when: 
+    - hx_pg_users | length > 0
+    - "'CHANGE_ME' not in item.password"
+  no_log: true
+  tags: ['verify']
+
+- name: "Hx | PostgreSQL Auth | Verify database creation"
+  postgresql_query:
+    db: "{{ item.name }}"
+    query: "SELECT 1;"
+    login_host: "localhost"
+    login_user: "postgres"
+    login_password: "{{ vault_postgres_password | default('') }}"
+  loop: "{{ hx_pg_databases }}"
+  become: true
+  become_user: postgres
+  when: hx_pg_databases | length > 0
+  tags: ['verify']
+
+- name: "Hx | PostgreSQL Auth | Check configuration file syntax"
+  command: >
+    {{ postgresql_bin_path | default('/usr/lib/postgresql/14/bin') }}/postgres
+    --config-file={{ hx_pg_config_dir }}/postgresql.conf
+    --check-config
+  become: true
+  become_user: postgres
+  changed_when: false
+  tags: ['verify']
+
+- name: "Hx | PostgreSQL Auth | Verify log configuration"
+  stat:
+    path: "{{ hx_pg_log_dir }}/postgresql-14-main.log"
+  register: hx_pg_log_file
+  tags: ['verify']
+
+- name: "Hx | PostgreSQL Auth | Assert log file exists"
+  assert:
+    that:
+      - hx_pg_log_file.stat.exists
+    fail_msg: "PostgreSQL log file not found"
+    success_msg: "PostgreSQL logging is properly configured"
+  tags: ['verify']
+
+- name: "Hx | PostgreSQL Auth | Display verification summary"
+  debug:
+    msg:
+      - "PostgreSQL authentication verification completed successfully"
+      - "Service status: {{ ansible_facts.services[hx_pg_service_name + '.service'].state | default('unknown') }}"
+      - "SSL enabled: {{ hx_pg_ssl_enabled | default(false) }}"
+      - "Authentication method: {{ hx_pg_auth_method }}"
+      - "Users configured: {{ hx_pg_users | length }}"
+      - "Databases configured: {{ hx_pg_databases | length }}"
+  tags: ['verify']

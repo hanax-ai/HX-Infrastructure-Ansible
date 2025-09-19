@@ -1,0 +1,28 @@
+
+# {{ ansible_managed }}
+# PostgreSQL Client Authentication Configuration File
+# HX Infrastructure Authentication Rules
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+{% for entry in hx_pg_hba_entries %}
+# {{ entry.comment | default('HBA entry') }}
+{{ entry.type }}{% if entry.database is defined %}	{{ entry.database }}{% endif %}{% if entry.user is defined %}	{{ entry.user }}{% endif %}{% if entry.address is defined %}	{{ entry.address }}{% endif %}	{{ entry.method }}{% if entry.options is defined %}	{{ entry.options }}{% endif %}
+
+{% endfor %}
+
+{% if hx_pg_hardening_enabled %}
+# Security hardening rules
+{% if hx_pg_reject_nossl %}
+# Reject non-SSL connections for remote hosts
+hostnossl	all		all		0.0.0.0/0		reject
+hostnossl	all		all		::/0			reject
+{% endif %}
+
+# Reject trust authentication (security measure)
+# local   all             all                                     trust  # DISABLED FOR SECURITY
+
+{% endif %}
+
+# Additional custom rules can be added below
+# Remember to reload PostgreSQL configuration after changes

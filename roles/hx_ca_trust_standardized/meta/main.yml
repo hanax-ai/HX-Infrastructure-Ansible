@@ -1,0 +1,32 @@
+
+---
+galaxy_info:
+  role_name: hx_ca_trust_standardized
+  author: HX Infrastructure Team
+  description: Professional-grade Certificate Authority trust management for HX Infrastructure
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - infrastructure
+    - security
+    - certificates
+    - ca
+    - trust
+    - ssl
+    - tls
+
+dependencies: []
+
+collections:
+  - community.general
+  - ansible.posix

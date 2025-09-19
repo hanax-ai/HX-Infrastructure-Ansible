@@ -1,0 +1,12 @@
+
+---
+- hosts: localhost
+  remote_user: root
+  roles:
+    - hx_ca_trust_standardized
+  vars:
+    hx_ca_host: "localhost"
+    hx_ca_root_ca_path_on_ca: "/tmp/test-ca.crt"
+    hx_ca_trust_enabled: true
+    hx_ca_security_enabled: true
+    hx_ca_validation_enabled: true

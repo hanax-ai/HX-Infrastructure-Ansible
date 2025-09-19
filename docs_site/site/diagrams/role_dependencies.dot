@@ -1,0 +1,41 @@
+digraph RoleDependencies {
+    rankdir=TB;
+    node [shape=box, style=filled, fillcolor=lightblue];
+    edge [color=darkblue];
+    
+    // Role nodes
+    "hx_ca_trust_standardized" [fillcolor=lightgreen];
+    "networking" [fillcolor=lightblue];
+    "security" [fillcolor=lightblue];
+    "web_server" [fillcolor=lightblue];
+    "dependency_validator" [fillcolor=lightblue];
+    "hx_domain_join_standardized" [fillcolor=lightgreen];
+    "ssh_key_management" [fillcolor=lightblue];
+    "backup" [fillcolor=lightblue];
+    "monitoring" [fillcolor=lightblue];
+    "reliability_monitor" [fillcolor=lightblue];
+    "common" [fillcolor=lightcoral];
+    "operational_safety" [fillcolor=lightcoral];
+    "storage" [fillcolor=lightblue];
+    "database" [fillcolor=lightblue];
+    "hx_pg_auth_standardized" [fillcolor=lightgreen];
+    "config_validator" [fillcolor=lightblue];
+    "common_templates" [fillcolor=lightblue];
+    "logging" [fillcolor=lightblue];
+    "load_balancer" [fillcolor=lightblue];
+
+    // Dependencies
+    "hx_ca_trust_standardized" -> "hx_domain_join_standardized";
+    "hx_domain_join_standardized" -> "hx_pg_auth_standardized";
+
+    // Legend
+    subgraph cluster_legend {
+        label="Legend";
+        style=filled;
+        fillcolor=white;
+        "HX Roles" [fillcolor=lightgreen];
+        "Standardized" [fillcolor=lightyellow];
+        "Core Roles" [fillcolor=lightcoral];
+        "Other Roles" [fillcolor=lightblue];
+    }
+}

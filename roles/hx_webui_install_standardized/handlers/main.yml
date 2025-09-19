@@ -1,0 +1,108 @@
+---
+# Web UI Installation Role - Handlers
+# HX Infrastructure Ansible
+
+- name: restart nginx
+  systemd:
+    name: nginx
+    state: restarted
+    daemon_reload: true
+  become: true
+  listen: "restart nginx"
+
+- name: reload nginx
+  systemd:
+    name: nginx
+    state: reloaded
+  become: true
+  listen: "reload nginx"
+
+- name: restart apache2
+  systemd:
+    name: apache2
+    state: restarted
+    daemon_reload: true
+  become: true
+  when: hx_webui_web_server == "apache2"
+  listen: "restart apache2"
+
+- name: reload apache2
+  systemd:
+    name: apache2
+    state: reloaded
+  become: true
+  when: hx_webui_web_server == "apache2"
+  listen: "reload apache2"
+
+- name: restart hx-webui
+  systemd:
+    name: "{{ hx_webui_service_name }}"
+    state: restarted
+    daemon_reload: true
+  become: true
+  listen: "restart hx-webui"
+
+- name: reload hx-webui
+  systemd:
+    name: "{{ hx_webui_service_name }}"
+    state: reloaded
+  become: true
+  listen: "reload hx-webui"
+
+- name: validate nginx config
+  command: nginx -t
+  become: true
+  register: nginx_config_validation
+  failed_when: nginx_config_validation.rc != 0
+  listen: "validate nginx config"
+
+- name: validate apache2 config
+  command: apache2ctl configtest
+  become: true
+  register: apache2_config_validation
+  failed_when: apache2_config_validation.rc != 0
+  when: hx_webui_web_server == "apache2"
+  listen: "validate apache2 config"
+
+- name: rebuild application
+  shell: |
+    cd {{ hx_webui_app_directory }}
+    {{ hx_webui_build_command }}
+  become: true
+  become_user: "{{ hx_webui_app_user }}"
+  environment: "{{ hx_webui_environment_variables }}"
+  listen: "rebuild application"
+
+- name: restart redis
+  systemd:
+    name: redis-server
+    state: restarted
+  become: true
+  when: hx_webui_enable_redis | default(false)
+  listen: "restart redis"
+
+- name: update ssl certificates
+  command: certbot renew --quiet
+  become: true
+  when: hx_webui_enable_ssl | default(false)
+  listen: "update ssl certificates"
+
+- name: clear application cache
+  shell: |
+    cd {{ hx_webui_app_directory }}
+    npm run cache:clear || echo "No cache clear command available"
+  become: true
+  become_user: "{{ hx_webui_app_user }}"
+  listen: "clear application cache"
+
+- name: update firewall rules
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  become: true
+  loop:
+    - "{{ hx_webui_web_server_port }}"
+    - "{{ hx_webui_web_server_ssl_port }}"
+  when: hx_webui_enable_firewall | default(false)
+  listen: "update firewall rules"

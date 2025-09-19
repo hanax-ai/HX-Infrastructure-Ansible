@@ -1,0 +1,61 @@
+
+---
+# Configuration Validator Main Tasks - Phase 3 Day 1
+# Standardized configuration management and validation
+
+- name: "Config Validation | Display validation start"
+  debug:
+    msg: "Starting configuration validation for {{ inventory_hostname }}"
+  when: config_validation_enabled | bool
+
+- name: "Config Validation | Include variable naming validation"
+  include_tasks: variable_naming.yml
+  when:
+    - config_validation_enabled | bool
+
+- name: "Config Validation | Include schema validation"
+  include_tasks: schema_validation.yml
+  when:
+    - config_validation_enabled | bool
+    - config_validation_schema_validation | bool
+
+- name: "Config Validation | Include template validation"
+  include_tasks: template_validation.yml
+  when:
+    - config_validation_enabled | bool
+    - template_validation.enabled | bool
+
+- name: "Config Validation | Include configuration drift detection"
+  include_tasks: drift_detection.yml
+  when:
+    - config_validation_enabled | bool
+    - drift_detection.enabled | bool
+
+- name: "Config Validation | Include standardization checks"
+  include_tasks: standardization.yml
+  when:
+    - config_validation_enabled | bool
+
+- name: "Config Validation | Generate configuration report"
+  template:
+    src: config_validation_report.json.j2
+    dest: "{{ reporting.report_path }}"
+    mode: '0644'
+  when:
+    - config_validation_enabled | bool
+    - reporting.generate_report | bool
+
+- name: "Config Validation | Generate configuration documentation"
+  template:
+    src: configuration_reference.md.j2
+    dest: "{{ documentation_generation.output_path }}"
+    mode: '0644'
+  when:
+    - config_validation_enabled | bool
+    - documentation_generation.enabled | bool
+
+- name: "Config Validation | Display validation completion"
+  debug:
+    msg: "Configuration validation completed successfully for {{ inventory_hostname }}"
+  when: config_validation_enabled | bool
+

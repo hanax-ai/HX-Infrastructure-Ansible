@@ -1,0 +1,18 @@
+---
+# Production Environment Global Variables
+environment: production
+domain_suffix: hanax.com
+log_level: warn
+backup_retention_days: 30
+
+# Security settings for production
+security_level: high
+ssl_enabled: true
+firewall_strict_mode: true
+fail2ban_enabled: true
+
+# Performance settings
+max_connections: 1000
+cache_enabled: true
+monitoring_enabled: true
+high_availability: true

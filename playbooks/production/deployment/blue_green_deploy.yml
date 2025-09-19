@@ -1,0 +1,54 @@
+
+---
+# Blue-Green Deployment Automation
+- name: Blue-Green Deployment Strategy
+  hosts: "{{ target_environment | default('production') }}"
+  become: true
+  gather_facts: true
+  vars:
+    deployment_strategy: "blue_green"
+    health_check_timeout: 300
+    rollback_enabled: true
+    
+  pre_tasks:
+    - name: Validate deployment prerequisites
+      include_role:
+        name: production_ops
+        tasks_from: validate_prerequisites
+        
+    - name: Create deployment snapshot
+      include_role:
+        name: production_ops
+        tasks_from: create_snapshot
+        
+  tasks:
+    - name: Execute Blue-Green Deployment
+      include_role:
+        name: production_ops
+        tasks_from: blue_green_deployment
+      vars:
+        current_environment: "{{ ansible_hostname }}_blue"
+        target_environment: "{{ ansible_hostname }}_green"
+        
+    - name: Perform health checks
+      include_role:
+        name: health_monitoring
+        tasks_from: comprehensive_health_check
+        
+    - name: Switch traffic to new environment
+      include_role:
+        name: production_ops
+        tasks_from: traffic_switch
+      when: health_check_passed | default(false)
+      
+  post_tasks:
+    - name: Cleanup old environment
+      include_role:
+        name: production_ops
+        tasks_from: cleanup_old_environment
+      when: deployment_successful | default(false)
+      
+    - name: Generate deployment report
+      include_role:
+        name: production_ops
+        tasks_from: generate_deployment_report

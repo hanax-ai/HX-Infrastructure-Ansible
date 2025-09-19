@@ -1,0 +1,87 @@
+
+---
+# HX Domain Join Role Default Variables
+# Active Directory Domain Integration Management
+
+# Core Service Settings
+hx_domain_join_enabled: true
+hx_domain_join_version: "1.0.0"
+
+# Active Directory Configuration
+hx_ad_domain: "dev-test.hana-x.ai"
+hx_ad_admin_user: "agent0"
+hx_ad_admin_password: ""  # Supply via vault
+hx_ad_realm: "DEV-TEST.HANA-X.AI"
+hx_ad_domain_controller: ""  # Auto-discover if empty
+hx_ad_ou_path: ""  # Organizational Unit path (optional)
+
+# Computer Account Configuration
+hx_ad_computer_name: "{{ ansible_hostname | upper }}"
+hx_ad_computer_description: "HX Infrastructure Server - {{ ansible_hostname }}"
+hx_ad_computer_location: "HX Infrastructure"
+
+# Security Settings
+hx_domain_security_enabled: true
+hx_domain_strict_validation: true
+hx_domain_require_encryption: true
+hx_domain_verify_certificates: true
+
+# SSSD Configuration
+hx_sssd_enabled: true
+hx_sssd_cache_credentials: true
+hx_sssd_enumerate_users: false
+hx_sssd_enumerate_groups: false
+hx_sssd_case_sensitive: false
+hx_sssd_use_fully_qualified_names: false
+
+# Kerberos Configuration
+hx_krb5_enabled: true
+hx_krb5_default_realm: "{{ hx_ad_realm }}"
+hx_krb5_ticket_lifetime: "24h"
+hx_krb5_renew_lifetime: "7d"
+hx_krb5_forwardable: true
+
+# DNS Configuration
+hx_dns_update_enabled: true
+hx_dns_search_domains:
+  - "{{ hx_ad_domain }}"
+hx_dns_nameservers: []  # Auto-discover if empty
+
+# Package Management
+hx_domain_packages:
+  - realmd
+  - sssd
+  - sssd-tools
+  - adcli
+  - krb5-user
+  - krb5-workstation
+  - packagekit
+  - samba-common-tools
+
+# Feature Flags
+hx_domain_backup_enabled: true
+hx_domain_monitoring_enabled: false
+hx_domain_audit_logging_enabled: true
+hx_domain_health_checks_enabled: true
+
+# Performance Settings
+hx_domain_join_timeout: 300
+hx_domain_validation_retries: 3
+hx_domain_validation_delay: 10
+hx_domain_discovery_timeout: 60
+
+# Home Directory Configuration
+hx_home_dir_enabled: false
+hx_home_dir_base: "/home"
+hx_home_dir_create: true
+hx_home_dir_umask: "0077"
+
+# Sudo Configuration
+hx_sudo_enabled: false
+hx_sudo_groups: []
+hx_sudo_users: []
+
+# Login Configuration
+hx_login_shell: "/bin/bash"
+hx_login_create_homedir: true
+hx_login_fallback_homedir: "/tmp"

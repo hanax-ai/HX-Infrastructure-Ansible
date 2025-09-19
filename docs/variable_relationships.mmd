@@ -1,0 +1,101 @@
+
+graph LR
+    subgraph "Global Configuration Flow"
+        A[environment] --> B{Environment Type}
+        B -->|development| C[Debug Mode: ON<br/>SSL Verification: OFF<br/>Backup: OFF]
+        B -->|test| D[Debug Mode: ON<br/>SSL Verification: OFF<br/>Backup: ON]
+        B -->|production| E[Debug Mode: OFF<br/>SSL Verification: ON<br/>HA: ON]
+    end
+
+    subgraph "Network Configuration Dependencies"
+        F[domain_name] --> G[SSL Certificate Generation]
+        H[network_subnet] --> I[VIP Address Calculation]
+        H --> J[DHCP Range Configuration]
+        H --> K[DNS Zone Configuration]
+        I --> L[Load Balancer VIP]
+        F --> M[Grafana Root URL]
+        F --> N[WebUI API Base URL]
+    end
+
+    subgraph "Service Interconnections"
+        O[groups['databases']] --> P[WebUI Database Connection]
+        O --> Q[Grafana Database Connection]
+        O --> R[Model Registry Connection]
+        
+        S[groups['cache_services']] --> T[WebUI Redis Connection]
+        S --> U[LiteLLM Cache Connection]
+        S --> V[Session Storage]
+        
+        W[groups['llm_services']] --> X[WebUI API Connection]
+        W --> Y[LiteLLM Backend Connection]
+        
+        Z[groups['monitoring']] --> AA[Grafana Prometheus Connection]
+        Z --> BB[Alert Manager Connection]
+    end
+
+    subgraph "Security Variable Chain"
+        CC[vault_postgres_password] --> DD[Database Authentication]
+        EE[vault_redis_password] --> FF[Cache Authentication]
+        GG[vault_jwt_secret] --> HH[WebUI Authentication]
+        II[vault_session_secret] --> JJ[Session Management]
+        KK[vault_ssl_private_key] --> LL[SSL/TLS Termination]
+        MM[vault_keepalived_password] --> NN[Load Balancer HA]
+    end
+
+    subgraph "Resource Allocation Dependencies"
+        OO[ansible_memtotal_mb] --> PP[PostgreSQL Shared Buffers<br/>25% of RAM]
+        OO --> QQ[Redis Max Memory<br/>75% of RAM]
+        OO --> RR[Elasticsearch Heap<br/>50% of RAM]
+        
+        SS[ansible_processor_vcpus] --> TT[Nginx Worker Processes]
+        SS --> UU[Ollama Threads]
+        SS --> VV[Logstash Pipeline Workers]
+        
+        WW[gpu_enabled] --> XX{GPU Available?}
+        XX -->|Yes| YY[CUDA Configuration<br/>GPU Memory Allocation<br/>Model Optimization]
+        XX -->|No| ZZ[CPU-Only Configuration<br/>Reduced Model Size]
+    end
+
+    subgraph "Configuration Templates"
+        AAA[organization] --> BBB[CA Name Generation<br/>OU Structure<br/>Group Policy Names]
+        CCC[project_name] --> DDD[Service Naming<br/>Log Prefixes<br/>Monitoring Labels]
+        EEE[project_version] --> FFF[Container Tags<br/>Backup Naming<br/>Documentation]
+    end
+
+    subgraph "Validation Dependencies"
+        GGG[Required Variables] --> HHH{All Present?}
+        HHH -->|No| III[Validation Error]
+        HHH -->|Yes| JJJ[Type Validation]
+        JJJ --> KKK[Pattern Validation]
+        KKK --> LLL[Range Validation]
+        LLL --> MMM[Dependency Validation]
+        MMM --> NNN[Cross-Service Validation]
+        NNN --> OOO[Resource Validation]
+        OOO --> PPP[Configuration Complete]
+    end
+
+    subgraph "Environment-Specific Overrides"
+        QQQ[Base Configuration] --> RRR{Environment}
+        RRR -->|dev| SSS[Development Overrides<br/>- Relaxed Security<br/>- Debug Logging<br/>- No Backups]
+        RRR -->|test| TTT[Test Overrides<br/>- Moderate Security<br/>- Verbose Logging<br/>- Short Retention]
+        RRR -->|prod| UUU[Production Overrides<br/>- Strict Security<br/>- Error Logging<br/>- Long Retention<br/>- High Availability]
+    end
+
+    %% Styling
+    classDef global fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef network fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef service fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef security fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef resource fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef template fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef validation fill:#fce4ec,stroke:#ad1457,stroke-width:2px
+    classDef environment fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
+
+    class A,B,C,D,E global
+    class F,G,H,I,J,K,L,M,N network
+    class O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB service
+    class CC,DD,EE,FF,GG,HH,II,JJ,KK,LL,MM,NN security
+    class OO,PP,QQ,RR,SS,TT,UU,VV,WW,XX,YY,ZZ resource
+    class AAA,BBB,CCC,DDD,EEE,FFF template
+    class GGG,HHH,III,JJJ,KKK,LLL,MMM,NNN,OOO,PPP validation
+    class QQQ,RRR,SSS,TTT,UUU environment

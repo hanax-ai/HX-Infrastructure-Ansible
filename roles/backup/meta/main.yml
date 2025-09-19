@@ -1,0 +1,39 @@
+
+---
+# Role metadata for backup automation
+# Following Ansible Galaxy standards
+
+galaxy_info:
+  role_name: backup
+  author: HX Infrastructure Team
+  description: Comprehensive backup automation role for HX Infrastructure
+  company: Hana-X.ai
+  license: MIT
+  min_ansible_version: 2.9
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: EL
+      versions:
+        - 8
+        - 9
+
+  galaxy_tags:
+    - backup
+    - automation
+    - system
+    - security
+    - monitoring
+
+dependencies: []
+
+collections:
+  - community.general
+  - ansible.posix

@@ -1,0 +1,262 @@
+
+---
+# Global Variables Template for HX Infrastructure
+# This template provides comprehensive defaults for all environments
+# Environment-specific values should override these defaults
+
+# Project Information
+project_name: "{{ project_name | default('HX Infrastructure') }}"
+project_version: "{{ project_version | default('3.0.0') }}"
+organization: "{{ organization | default('Hana-X AI') }}"
+environment: "{{ environment | mandatory }}"
+
+# Domain and Network Configuration
+domain_name: "{{ domain_name | mandatory }}"
+network_subnet: "{{ network_subnet | mandatory }}"
+vip_address: "{{ vip_address | default(network_subnet | ipaddr('100') | ipaddr('address')) }}"
+
+# Authentication Configuration
+default_user: "{{ default_user | default('agent0') }}"
+default_email: "{{ default_email | default('agent0@hana-x.ai') }}"
+admin_email: "{{ admin_email | default(default_email) }}"
+ssh_key_type: "{{ ssh_key_type | default('ed25519') }}"
+
+# Common Network Configuration
+dns_servers: "{{ dns_servers | default(['8.8.8.8', '8.8.4.4', '1.1.1.1']) }}"
+ntp_servers: "{{ ntp_servers | default(['0.pool.ntp.org', '1.pool.ntp.org', '2.pool.ntp.org']) }}"
+
+# Time Configuration
+timezone: "{{ timezone | default('UTC') }}"
+ntp_enabled: "{{ ntp_enabled | default(true) }}"
+chrony_enabled: "{{ chrony_enabled | default(true) }}"
+
+# Security Defaults
+security:
+  ssh_port: "{{ security_ssh_port | default(22) }}"
+  ssh_protocol: "{{ security_ssh_protocol | default(2) }}"
+  ssh_permit_root_login: "{{ security_ssh_permit_root_login | default(false) }}"
+  ssh_password_authentication: "{{ security_ssh_password_authentication | default(false) }}"
+  ssh_pubkey_authentication: "{{ security_ssh_pubkey_authentication | default(true) }}"
+  ssh_max_auth_tries: "{{ security_ssh_max_auth_tries | default(3) }}"
+  ssh_client_alive_interval: "{{ security_ssh_client_alive_interval | default(300) }}"
+  ssh_client_alive_count_max: "{{ security_ssh_client_alive_count_max | default(2) }}"
+
+# Firewall Configuration
+firewall:
+  enabled: "{{ firewall_enabled | default(true) }}"
+  default_policy: "{{ firewall_default_policy | default('deny') }}"
+  log_denied: "{{ firewall_log_denied | default(true) }}"
+  log_level: "{{ firewall_log_level | default('low') }}"
+
+# System Updates
+system_updates:
+  enabled: "{{ system_updates_enabled | default(true) }}"
+  auto_reboot: "{{ system_updates_auto_reboot | default(false) }}"
+  reboot_time: "{{ system_updates_reboot_time | default('03:00') }}"
+  security_updates_only: "{{ system_updates_security_only | default(false) }}"
+
+# Logging Configuration
+logging:
+  syslog_enabled: "{{ logging_syslog_enabled | default(true) }}"
+  log_rotation: "{{ logging_log_rotation | default(true) }}"
+  log_retention_days: "{{ logging_retention_days | default(90) }}"
+  centralized_logging: "{{ logging_centralized | default(true) }}"
+  log_level: "{{ log_level | default('info') }}"
+
+# Monitoring Defaults
+monitoring:
+  node_exporter_enabled: "{{ monitoring_node_exporter_enabled | default(true) }}"
+  node_exporter_port: "{{ monitoring_node_exporter_port | default(9100) }}"
+  filebeat_enabled: "{{ monitoring_filebeat_enabled | default(true) }}"
+  prometheus_scrape_interval: "{{ monitoring_prometheus_scrape_interval | default('15s') }}"
+  metrics_path: "{{ monitoring_metrics_path | default('/metrics') }}"
+  metrics_retention_days: "{{ monitoring_metrics_retention_days | default(90) }}"
+
+# Backup Configuration
+backup:
+  enabled: "{{ backup_enabled | default(true) }}"
+  compression: "{{ backup_compression | default(true) }}"
+  encryption: "{{ backup_encryption | default(true) }}"
+  verify_backups: "{{ backup_verify | default(true) }}"
+  cleanup_old_backups: "{{ backup_cleanup | default(true) }}"
+  retention_days: "{{ backup_retention_days | default(30) }}"
+  schedule: "{{ backup_schedule | default('0 2 * * *') }}"
+
+# Performance Tuning
+performance:
+  swappiness: "{{ performance_swappiness | default(10) }}"
+  vm_dirty_ratio: "{{ performance_vm_dirty_ratio | default(15) }}"
+  vm_dirty_background_ratio: "{{ performance_vm_dirty_background_ratio | default(5) }}"
+  tcp_keepalive_time: "{{ performance_tcp_keepalive_time | default(7200) }}"
+  tcp_keepalive_probes: "{{ performance_tcp_keepalive_probes | default(9) }}"
+  tcp_keepalive_intvl: "{{ performance_tcp_keepalive_intvl | default(75) }}"
+
+# Package Management
+packages:
+  update_cache: "{{ packages_update_cache | default(true) }}"
+  upgrade_system: "{{ packages_upgrade_system | default(false) }}"
+  install_recommended: "{{ packages_install_recommended | default(false) }}"
+  autoremove: "{{ packages_autoremove | default(true) }}"
+  autoclean: "{{ packages_autoclean | default(true) }}"
+
+# Service Management
+services:
+  enable_on_boot: "{{ services_enable_on_boot | default(true) }}"
+  start_immediately: "{{ services_start_immediately | default(true) }}"
+  restart_on_failure: "{{ services_restart_on_failure | default(true) }}"
+  restart_delay: "{{ services_restart_delay | default(5) }}"
+
+# SSL/TLS Configuration
+ssl:
+  protocols: "{{ ssl_protocols | default(['TLSv1.2', 'TLSv1.3']) }}"
+  ciphers: "{{ ssl_ciphers | default('ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS') }}"
+  prefer_server_ciphers: "{{ ssl_prefer_server_ciphers | default(true) }}"
+  session_cache: "{{ ssl_session_cache | default('shared:SSL:10m') }}"
+  session_timeout: "{{ ssl_session_timeout | default('10m') }}"
+  stapling: "{{ ssl_stapling | default(true) }}"
+  stapling_verify: "{{ ssl_stapling_verify | default(true) }}"
+
+# Database Common Configuration
+database:
+  encoding: "{{ database_encoding | default('UTF8') }}"
+  locale: "{{ database_locale | default('en_US.UTF-8') }}"
+  timezone: "{{ database_timezone | default('UTC') }}"
+  max_connections: "{{ database_max_connections | default(200) }}"
+  shared_buffers: "{{ database_shared_buffers | default('256MB') }}"
+  effective_cache_size: "{{ database_effective_cache_size | default('1GB') }}"
+  maintenance_work_mem: "{{ database_maintenance_work_mem | default('64MB') }}"
+  checkpoint_completion_target: "{{ database_checkpoint_completion_target | default(0.9) }}"
+  wal_buffers: "{{ database_wal_buffers | default('16MB') }}"
+  default_statistics_target: "{{ database_default_statistics_target | default(100) }}"
+
+# Cache Common Configuration
+cache:
+  maxmemory_policy: "{{ cache_maxmemory_policy | default('allkeys-lru') }}"
+  timeout: "{{ cache_timeout | default(0) }}"
+  tcp_keepalive: "{{ cache_tcp_keepalive | default(300) }}"
+  tcp_backlog: "{{ cache_tcp_backlog | default(511) }}"
+  databases: "{{ cache_databases | default(16) }}"
+  save_enabled: "{{ cache_save_enabled | default(true) }}"
+  rdbcompression: "{{ cache_rdbcompression | default(true) }}"
+  rdbchecksum: "{{ cache_rdbchecksum | default(true) }}"
+
+# Web Server Common Configuration
+web:
+  worker_processes: "{{ web_worker_processes | default('auto') }}"
+  worker_connections: "{{ web_worker_connections | default(1024) }}"
+  keepalive_timeout: "{{ web_keepalive_timeout | default(65) }}"
+  client_max_body_size: "{{ web_client_max_body_size | default('100M') }}"
+  server_tokens: "{{ web_server_tokens | default(false) }}"
+  gzip_enabled: "{{ web_gzip_enabled | default(true) }}"
+  gzip_comp_level: "{{ web_gzip_comp_level | default(6) }}"
+  gzip_types: "{{ web_gzip_types | default(['text/plain', 'text/css', 'application/json', 'application/javascript', 'text/xml', 'application/xml', 'application/xml+rss', 'text/javascript']) }}"
+
+# Load Balancer Configuration
+load_balancer:
+  algorithm: "{{ load_balancer_algorithm | default('round_robin') }}"
+  health_check_interval: "{{ load_balancer_health_check_interval | default('5s') }}"
+  health_check_timeout: "{{ load_balancer_health_check_timeout | default('3s') }}"
+  health_check_retries: "{{ load_balancer_health_check_retries | default(3) }}"
+  session_persistence: "{{ load_balancer_session_persistence | default(false) }}"
+  ssl_termination: "{{ load_balancer_ssl_termination | default(true) }}"
+
+# AI/ML Common Configuration
+ai_ml:
+  model_cache_size: "{{ ai_ml_model_cache_size | default('10GB') }}"
+  inference_timeout: "{{ ai_ml_inference_timeout | default(300) }}"
+  max_concurrent_requests: "{{ ai_ml_max_concurrent_requests | default(100) }}"
+  gpu_memory_fraction: "{{ ai_ml_gpu_memory_fraction | default(0.9) }}"
+  model_download_timeout: "{{ ai_ml_model_download_timeout | default(3600) }}"
+  model_validation: "{{ ai_ml_model_validation | default(true) }}"
+
+# Container Configuration
+containers:
+  runtime: "{{ containers_runtime | default('docker') }}"
+  log_driver: "{{ containers_log_driver | default('json-file') }}"
+  log_max_size: "{{ containers_log_max_size | default('10m') }}"
+  log_max_file: "{{ containers_log_max_file | default(3) }}"
+  restart_policy: "{{ containers_restart_policy | default('unless-stopped') }}"
+  memory_limit: "{{ containers_memory_limit | default('2g') }}"
+  cpu_limit: "{{ containers_cpu_limit | default('1.0') }}"
+
+# Development Tools
+development_tools:
+  install_git: "{{ development_tools_install_git | default(true) }}"
+  install_curl: "{{ development_tools_install_curl | default(true) }}"
+  install_wget: "{{ development_tools_install_wget | default(true) }}"
+  install_vim: "{{ development_tools_install_vim | default(true) }}"
+  install_htop: "{{ development_tools_install_htop | default(true) }}"
+  install_tree: "{{ development_tools_install_tree | default(true) }}"
+  install_jq: "{{ development_tools_install_jq | default(true) }}"
+
+# Notification Configuration
+notifications:
+  email_enabled: "{{ notifications_email_enabled | default(false) }}"
+  slack_enabled: "{{ notifications_slack_enabled | default(false) }}"
+  webhook_enabled: "{{ notifications_webhook_enabled | default(false) }}"
+  smtp_server: "{{ notifications_smtp_server | default('') }}"
+  smtp_port: "{{ notifications_smtp_port | default(587) }}"
+  smtp_username: "{{ notifications_smtp_username | default('') }}"
+  smtp_password: "{{ notifications_smtp_password | default('') }}"
+
+# Compliance and Auditing
+compliance:
+  audit_enabled: "{{ compliance_audit_enabled | default(true) }}"
+  audit_log_path: "{{ compliance_audit_log_path | default('/var/log/audit') }}"
+  audit_max_log_file: "{{ compliance_audit_max_log_file | default(100) }}"
+  audit_num_logs: "{{ compliance_audit_num_logs | default(5) }}"
+  audit_space_left_action: "{{ compliance_audit_space_left_action | default('email') }}"
+  audit_admin_space_left_action: "{{ compliance_audit_admin_space_left_action | default('halt') }}"
+
+# Resource Limits
+limits:
+  max_open_files: "{{ limits_max_open_files | default(65536) }}"
+  max_processes: "{{ limits_max_processes | default(32768) }}"
+  max_memory_per_process: "{{ limits_max_memory_per_process | default('2GB') }}"
+  max_cpu_per_process: "{{ limits_max_cpu_per_process | default('2.0') }}"
+
+# Environment-specific overrides
+environment_overrides:
+  debug_mode: "{{ debug_mode | default(false) }}"
+  log_level: "{{ log_level | default('info') }}"
+  ssl_verification: "{{ ssl_verification | default(true) }}"
+  performance_mode: "{{ performance_mode | default('balanced') }}"
+  security_level: "{{ security_level | default('standard') }}"
+
+# Vault Variables (these should be defined in vault files)
+vault_variables:
+  # Database passwords
+  vault_postgres_password: "{{ vault_postgres_password | default('') }}"
+  vault_postgres_replication_password: "{{ vault_postgres_replication_password | default('') }}"
+  vault_redis_password: "{{ vault_redis_password | default('') }}"
+  
+  # Application passwords
+  vault_webui_db_user: "{{ vault_webui_db_user | default('webui_user') }}"
+  vault_webui_db_password: "{{ vault_webui_db_password | default('') }}"
+  vault_model_registry_user: "{{ vault_model_registry_user | default('model_registry_user') }}"
+  vault_model_registry_password: "{{ vault_model_registry_password | default('') }}"
+  vault_monitoring_db_user: "{{ vault_monitoring_db_user | default('monitoring_user') }}"
+  vault_monitoring_db_password: "{{ vault_monitoring_db_password | default('') }}"
+  
+  # Security keys
+  vault_jwt_secret: "{{ vault_jwt_secret | default('') }}"
+  vault_session_secret: "{{ vault_session_secret | default('') }}"
+  vault_grafana_admin_password: "{{ vault_grafana_admin_password | default('') }}"
+  vault_grafana_secret_key: "{{ vault_grafana_secret_key | default('') }}"
+  vault_keepalived_password: "{{ vault_keepalived_password | default('') }}"
+  
+  # Windows specific
+  vault_safe_mode_password: "{{ vault_safe_mode_password | default('') }}"
+  
+  # OAuth credentials
+  vault_google_oauth_client_id: "{{ vault_google_oauth_client_id | default('') }}"
+  vault_google_oauth_client_secret: "{{ vault_google_oauth_client_secret | default('') }}"
+  vault_github_oauth_client_id: "{{ vault_github_oauth_client_id | default('') }}"
+  vault_github_oauth_client_secret: "{{ vault_github_oauth_client_secret | default('') }}"
+  
+  # SMTP credentials
+  vault_smtp_server: "{{ vault_smtp_server | default('') }}"
+  vault_smtp_port: "{{ vault_smtp_port | default(587) }}"
+  vault_smtp_username: "{{ vault_smtp_username | default('') }}"
+  vault_smtp_password: "{{ vault_smtp_password | default('') }}"
+  vault_smtp_from: "{{ vault_smtp_from | default('') }}"

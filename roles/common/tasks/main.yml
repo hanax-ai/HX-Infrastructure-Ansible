@@ -1,0 +1,141 @@
+---
+# Common role tasks with hx_ prefix standardization
+
+- name: Update package cache
+  apt:
+    update_cache: yes
+    cache_valid_time: "{{ hx_common_update_cache_valid_time }}"
+  when: ansible_os_family == "Debian"
+  tags:
+    - hx_common
+    - hx_packages
+
+- name: Install common system packages
+  package:
+    name: "{{ hx_common_system_packages }}"
+    state: present
+  tags:
+    - hx_common
+    - hx_packages
+
+- name: Set system timezone
+  timezone:
+    name: "{{ hx_common_timezone }}"
+  notify: restart cron
+  tags:
+    - hx_common
+    - hx_system
+
+- name: Set system locale
+  locale_gen:
+    name: "{{ hx_common_locale }}"
+    state: present
+  when: ansible_os_family == "Debian"
+  tags:
+    - hx_common
+    - hx_system
+
+- name: Create HX system users
+  user:
+    name: "{{ item.name }}"
+    groups: "{{ item.groups | default([]) }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    create_home: "{{ item.create_home | default(true) }}"
+    state: present
+  loop: "{{ hx_common_users }}"
+  when: hx_common_create_users
+  tags:
+    - hx_common
+    - hx_users
+
+- name: Configure SSH security settings
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: yes
+  loop:
+    - { regexp: '^#?Port', line: 'Port {{ hx_common_ssh_port }}' }
+    - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication {{ "yes" if hx_common_ssh_password_auth else "no" }}' }
+    - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin {{ "yes" if hx_common_ssh_root_login else "no" }}' }
+    - { regexp: '^#?PermitEmptyPasswords', line: 'PermitEmptyPasswords {{ "yes" if hx_common_ssh_permit_empty_passwords else "no" }}' }
+    - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries {{ hx_common_ssh_max_auth_tries }}' }
+  notify: restart sshd
+  tags:
+    - hx_common
+    - hx_security
+    - hx_ssh
+
+- name: Install and configure fail2ban
+  package:
+    name: fail2ban
+    state: present
+  when: hx_common_fail2ban_enabled
+  notify: restart fail2ban
+  tags:
+    - hx_common
+    - hx_security
+
+- name: Create HX backup directory
+  file:
+    path: "{{ hx_common_backup_directory }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: hx_common_backup_enabled
+  tags:
+    - hx_common
+    - hx_backup
+
+- name: Configure log rotation for HX services
+  template:
+    src: hx-logrotate.j2
+    dest: /etc/logrotate.d/hx-services
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - hx_common
+    - hx_logging
+
+- name: Disable unused services for security
+  systemd:
+    name: "{{ item }}"
+    enabled: no
+    state: stopped
+  loop:
+    - avahi-daemon
+    - cups
+    - bluetooth
+  when: hx_common_disable_unused_services
+  ignore_errors: yes
+  tags:
+    - hx_common
+    - hx_security
+
+- name: Apply kernel security hardening
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - { name: 'net.ipv4.ip_forward', value: '0' }
+    - { name: 'net.ipv4.conf.all.send_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.default.send_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.all.accept_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.default.accept_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.all.secure_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.default.secure_redirects', value: '0' }
+    - { name: 'net.ipv4.icmp_echo_ignore_broadcasts', value: '1' }
+    - { name: 'net.ipv4.icmp_ignore_bogus_error_responses', value: '1' }
+    - { name: 'net.ipv4.conf.all.log_martians', value: '1' }
+    - { name: 'net.ipv4.conf.default.log_martians', value: '1' }
+    - { name: 'kernel.dmesg_restrict', value: '1' }
+    - { name: 'kernel.kptr_restrict', value: '2' }
+  when: hx_common_kernel_hardening
+  tags:
+    - hx_common
+    - hx_security
+    - hx_kernel

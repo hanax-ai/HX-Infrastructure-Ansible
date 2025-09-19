@@ -1,0 +1,65 @@
+
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Verify basic packages are installed
+      package_facts:
+        manager: auto
+
+    - name: Assert curl is installed
+      assert:
+        that:
+          - "'curl' in ansible_facts.packages"
+        fail_msg: "curl package is not installed"
+        success_msg: "curl package is correctly installed"
+
+    - name: Assert git is installed
+      assert:
+        that:
+          - "'git' in ansible_facts.packages"
+        fail_msg: "git package is not installed"
+        success_msg: "git package is correctly installed"
+
+    - name: Verify test user exists
+      user:
+        name: testuser
+        state: present
+      check_mode: true
+      register: user_check
+      failed_when: user_check.changed
+
+    - name: Verify SSH service is running
+      service_facts:
+
+    - name: Assert SSH service is active
+      assert:
+        that:
+          - "ansible_facts.services['ssh.service'].state == 'running' or ansible_facts.services['sshd.service'].state == 'running'"
+        fail_msg: "SSH service is not running"
+        success_msg: "SSH service is running correctly"
+
+    - name: Verify idempotency marker exists
+      stat:
+        path: /tmp/molecule-test
+      register: marker_file
+
+    - name: Assert marker file exists
+      assert:
+        that:
+          - marker_file.stat.exists
+        fail_msg: "Molecule test marker file does not exist"
+        success_msg: "Molecule test marker file exists"
+
+    - name: Test connectivity
+      ping:
+      register: ping_result
+
+    - name: Assert connectivity works
+      assert:
+        that:
+          - ping_result is succeeded
+        fail_msg: "Connectivity test failed"
+        success_msg: "Connectivity test passed"
+

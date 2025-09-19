@@ -1,0 +1,45 @@
+
+---
+# Installation tasks for backup automation
+# Installs required packages and dependencies
+
+- name: Install backup utilities
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - rsync
+    - tar
+    - gzip
+    - openssl
+    - cron
+  tags: [backup, install, packages]
+
+- name: Create backup user
+  user:
+    name: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+    home: "{{ backup_home_dir | default('/home/backup') }}"
+    shell: /bin/bash
+    system: yes
+    create_home: yes
+  tags: [backup, install, user]
+
+- name: Create backup group
+  group:
+    name: "{{ backup_group | default('backup') }}"
+    system: yes
+  tags: [backup, install, group]
+
+- name: Install backup scripts
+  template:
+    src: "{{ item }}.j2"
+    dest: "/usr/local/bin/{{ item }}"
+    mode: '0755'
+    owner: root
+    group: root
+  loop:
+    - backup-system.sh
+    - backup-verify.sh
+    - backup-cleanup.sh
+  tags: [backup, install, scripts]

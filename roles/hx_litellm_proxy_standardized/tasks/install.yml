@@ -1,0 +1,139 @@
+---
+- name: "Hx | LiteLLM | Install via pip"
+  block:
+    - name: "Hx | LiteLLM | Upgrade pip in virtual environment"
+      pip:
+        name: pip
+        state: latest
+        virtualenv: "{{ hx_litellm_venv_path }}"
+      become_user: "{{ hx_litellm_user }}"
+
+    - name: "Hx | LiteLLM | Install Python packages"
+      pip:
+        requirements: "{{ hx_litellm_requirements_file }}"
+        virtualenv: "{{ hx_litellm_venv_path }}"
+        state: present
+      become_user: "{{ hx_litellm_user }}"
+
+    - name: "Hx | LiteLLM | Install LiteLLM package"
+      pip:
+        name: "litellm[proxy]"
+        version: "{{ hx_litellm_version if hx_litellm_version != 'latest' else omit }}"
+        virtualenv: "{{ hx_litellm_venv_path }}"
+        state: present
+      become_user: "{{ hx_litellm_user }}"
+
+  become: true
+  when: hx_litellm_install_method == "pip"
+  tags: ['install']
+
+- name: "Hx | LiteLLM | Install via Docker"
+  block:
+    - name: "Hx | LiteLLM | Create Docker container"
+      docker_container:
+        name: "{{ hx_litellm_docker_container_name }}"
+        image: "{{ hx_litellm_docker_image }}"
+        state: present
+        restart_policy: "{{ hx_litellm_restart_policy }}"
+        networks:
+          - name: "{{ hx_litellm_docker_network }}"
+        ports:
+          - "{{ hx_litellm_port }}:{{ hx_litellm_port }}"
+        volumes: "{{ hx_litellm_docker_volumes }}"
+        env_file: "{{ hx_litellm_config_dir }}/.env"
+        user: "{{ hx_litellm_user }}:{{ hx_litellm_group }}"
+
+  become: true
+  when: hx_litellm_install_method == "docker"
+  tags: ['install']
+
+- name: "Hx | LiteLLM | Create systemd service file"
+  template:
+    src: litellm.service.j2
+    dest: "/etc/systemd/system/litellm.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - reload systemd
+    - restart litellm
+  when: hx_litellm_install_method != "docker"
+  become: true
+  tags: ['install']
+
+- name: "Hx | LiteLLM | Create startup script"
+  template:
+    src: litellm-start.sh.j2
+    dest: "{{ hx_litellm_home }}/start.sh"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0755"
+  when: hx_litellm_install_method != "docker"
+  tags: ['install']
+
+- name: "Hx | LiteLLM | Create health check script"
+  template:
+    src: health-check.sh.j2
+    dest: "{{ hx_litellm_home }}/health-check.sh"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0755"
+  tags: ['install']
+
+- name: "Hx | LiteLLM | Create backup script"
+  template:
+    src: backup.sh.j2
+    dest: "{{ hx_litellm_home }}/backup.sh"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0755"
+  when: hx_litellm_backup_enabled | default(false) | bool
+  tags: ['install']
+
+- name: "Hx | LiteLLM | Setup backup cron job"
+  cron:
+    name: "LiteLLM Database Backup"
+    minute: "0"
+    hour: "2"
+    job: "{{ hx_litellm_home }}/backup.sh"
+    user: "{{ hx_litellm_user }}"
+  when: hx_litellm_backup_enabled | default(false) | bool
+  tags: ['install']
+
+- name: "Hx | LiteLLM | Configure logrotate"
+  template:
+    src: litellm-logrotate.j2
+    dest: "/etc/logrotate.d/litellm"
+    owner: root
+    group: root
+    mode: "0644"
+  tags: ['install']
+
+- name: "Hx | LiteLLM | Install monitoring tools"
+  pip:
+    name:
+      - prometheus-client
+      - psutil
+    virtualenv: "{{ hx_litellm_venv_path }}"
+    state: present
+  become_user: "{{ hx_litellm_user }}"
+  when: 
+    - hx_litellm_monitoring_enabled | default(false) | bool
+    - hx_litellm_install_method == "pip"
+  tags: ['install']
+
+- name: "Hx | LiteLLM | Enable and start service"
+  systemd:
+    name: litellm
+    enabled: "{{ hx_litellm_service_enabled }}"
+    state: "{{ hx_litellm_service_state }}"
+    daemon_reload: true
+  when: hx_litellm_install_method != "docker"
+  tags: ['install']
+
+- name: "Hx | LiteLLM | Start Docker container"
+  docker_container:
+    name: "{{ hx_litellm_docker_container_name }}"
+    state: started
+  when: hx_litellm_install_method == "docker"
+  tags: ['install']

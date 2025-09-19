@@ -1,0 +1,12 @@
+---
+# HX Infrastructure Main Playbook
+# This is the main entry point for infrastructure deployment
+
+- name: Common Infrastructure Setup
+  import_playbook: playbooks/common/common.yml
+
+- name: Security Hardening
+  import_playbook: playbooks/security/security.yml
+
+- name: Application Deployment
+  import_playbook: playbooks/deployment/deploy.yml

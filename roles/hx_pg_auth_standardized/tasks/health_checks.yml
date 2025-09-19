@@ -1,0 +1,284 @@
+
+---
+# Health Check Tasks for HX PostgreSQL Authentication
+
+- name: Check PostgreSQL service status
+  systemd:
+    name: "{{ hx_pg_service_name }}"
+  register: hx_pg_service_status
+  tags: [health_checks]
+
+- name: Verify PostgreSQL service is running
+  assert:
+    that:
+      - hx_pg_service_status.status.ActiveState == "active"
+    fail_msg: "PostgreSQL service is not running"
+    success_msg: "PostgreSQL service is running correctly"
+  tags: [health_checks]
+
+- name: Test PostgreSQL connectivity
+  shell: |
+    set -euo pipefail
+    sudo -u postgres psql -c "SELECT version();" -t
+  args:
+    executable: /bin/bash
+  register: hx_pg_connectivity_test
+  changed_when: false
+  tags: [health_checks]
+
+- name: Verify PostgreSQL version
+  assert:
+    that:
+      - hx_pg_connectivity_test.stdout is search("PostgreSQL " + hx_pg_cluster_version|string)
+    fail_msg: "PostgreSQL version mismatch"
+    success_msg: "PostgreSQL version is correct"
+  tags: [health_checks]
+
+- name: Test database existence
+  shell: |
+    set -euo pipefail
+    if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw "{{ hx_pg_db }}"; then
+      echo "Database {{ hx_pg_db }} exists"
+      exit 0
+    else
+      echo "Database {{ hx_pg_db }} does not exist"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_pg_database_check
+  changed_when: false
+  failed_when: false
+  tags: [health_checks]
+
+- name: Test application user authentication
+  shell: |
+    set -euo pipefail
+    export PGPASSWORD="{{ hx_pg_app_password }}"
+    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" \
+         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" \
+         -c "SELECT current_user, current_database(), version();" -t
+  args:
+    executable: /bin/bash
+  register: hx_pg_auth_test
+  when:
+    - hx_pg_connection_test_enabled | bool
+    - hx_pg_app_password | length > 0
+  changed_when: false
+  failed_when: false
+  no_log: true
+  tags: [health_checks]
+
+- name: Test SSL connection
+  shell: |
+    set -euo pipefail
+    export PGPASSWORD="{{ hx_pg_app_password }}"
+    psql "host={{ ansible_default_ipv4.address }} port={{ hx_pg_port }} \
+          dbname={{ hx_pg_db }} user={{ hx_pg_app_user }} \
+          sslmode=require" \
+      -c "SELECT current_setting('ssl_version'), current_setting('ssl_cipher');" -t
+  args:
+    executable: /bin/bash
+  register: hx_pg_ssl_test
+  when:
+    - hx_pg_ssl_test_enabled | bool
+    - hx_pg_ssl_enabled | bool
+    - hx_pg_app_password | length > 0
+  changed_when: false
+  failed_when: false
+  no_log: true
+  tags: [health_checks]
+
+- name: Check configuration file syntax
+  shell: |
+    set -euo pipefail
+    sudo -u postgres /usr/lib/postgresql/{{ hx_pg_cluster_version }}/bin/postgres \
+      --check-config -D "{{ hx_pg_data_dir }}"
+  args:
+    executable: /bin/bash
+  register: hx_pg_config_syntax_check
+  changed_when: false
+  tags: [health_checks]
+
+- name: Validate HBA configuration
+  shell: |
+    set -euo pipefail
+    error_count=$(sudo -u postgres psql -tAc "SELECT COUNT(*) FROM pg_hba_file_rules WHERE error IS NOT NULL;")
+    if [ "$error_count" -eq 0 ]; then
+      echo "HBA configuration is valid"
+      exit 0
+    else
+      echo "HBA configuration has $error_count errors"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_pg_hba_syntax_check
+  changed_when: false
+  failed_when: false
+  tags: [health_checks]
+
+- name: Check database performance metrics
+  shell: |
+    set -euo pipefail
+    sudo -u postgres psql -d "{{ hx_pg_db }}" -tAc "
+    SELECT
+      'active_connections', count(*)
+    FROM pg_stat_activity
+    WHERE state = 'active'
+    UNION ALL
+    SELECT
+      'database_size_mb',
+      round(pg_database_size('{{ hx_pg_db }}') / 1024.0 / 1024.0, 2)
+    UNION ALL
+    SELECT
+      'cache_hit_ratio',
+      round(
+        CASE
+          WHEN sum(blks_hit + blks_read) = 0 THEN 0
+          ELSE sum(blks_hit) * 100.0 / sum(blks_hit + blks_read)
+        END, 2
+      )
+    FROM pg_stat_database
+    WHERE datname = '{{ hx_pg_db }}';
+    "
+  args:
+    executable: /bin/bash
+  register: hx_pg_performance_metrics
+  changed_when: false
+  failed_when: false
+  tags: [health_checks]
+
+- name: Check SSL certificate expiry
+  shell: |
+    set -euo pipefail
+    cert_file="{{ hx_pg_ssl_cert_path }}"
+
+    if [ -f "$cert_file" ]; then
+      expiry_date=$(openssl x509 -in "$cert_file" -enddate -noout | cut -d= -f2)
+      expiry_epoch=$(date -d "$expiry_date" +%s)
+      current_epoch=$(date +%s)
+      days_until_expiry=$(( (expiry_epoch - current_epoch) / 86400 ))
+
+      if [ $days_until_expiry -lt 30 ]; then
+        echo "WARNING: SSL certificate expires in $days_until_expiry days"
+        exit 1
+      else
+        echo "SSL certificate valid for $days_until_expiry days"
+        exit 0
+      fi
+    else
+      echo "SSL certificate file not found"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_pg_ssl_cert_expiry
+  when: hx_pg_ssl_enabled | bool
+  changed_when: false
+  failed_when: false
+  tags: [health_checks]
+
+- name: Test backup directory accessibility
+  file:
+    path: "{{ hx_pg_backup_dir }}/health_check_test"
+    state: touch
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  register: hx_pg_backup_access_test
+  when: hx_pg_backup_enabled | bool
+  tags: [health_checks]
+
+- name: Clean up backup test file
+  file:
+    path: "{{ hx_pg_backup_dir }}/health_check_test"
+    state: absent
+  when:
+    - hx_pg_backup_enabled | bool
+    - hx_pg_backup_access_test is succeeded
+  tags: [health_checks]
+
+- name: Check log directory accessibility
+  file:
+    path: "{{ hx_pg_log_dir }}/health_check_test.log"
+    state: touch
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  register: hx_pg_log_access_test
+  when: hx_pg_log_enabled | bool
+  tags: [health_checks]
+
+- name: Clean up log test file
+  file:
+    path: "{{ hx_pg_log_dir }}/health_check_test.log"
+    state: absent
+  when:
+    - hx_pg_log_enabled | bool
+    - hx_pg_log_access_test is succeeded
+  tags: [health_checks]
+
+- name: Generate health check report
+  template:
+    src: health_report.j2
+    dest: "{{ hx_pg_log_dir }}/health_check_{{ hx_pg_backup_timestamp }}.txt"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  when: hx_pg_audit_logging_enabled | bool
+  tags: [health_checks]
+
+- name: Calculate health score
+  set_fact:
+    hx_pg_health_checks_passed: >-
+      {{
+        [
+          hx_pg_service_status.status.ActiveState == "active",
+          hx_pg_connectivity_test.rc == 0,
+          hx_pg_database_check.rc == 0,
+          (not hx_pg_connection_test_enabled) or (hx_pg_auth_test.rc == 0),
+          (not hx_pg_ssl_test_enabled) or (hx_pg_ssl_test.rc == 0),
+          hx_pg_config_syntax_check.rc == 0,
+          hx_pg_hba_syntax_check.rc == 0,
+          hx_pg_performance_metrics.rc == 0,
+          (not hx_pg_ssl_enabled) or (hx_pg_ssl_cert_expiry.rc == 0),
+          (not hx_pg_backup_enabled) or (hx_pg_backup_access_test is succeeded),
+          (not hx_pg_log_enabled) or (hx_pg_log_access_test is succeeded)
+        ] | select | list | length
+      }}
+    hx_pg_health_checks_total: >-
+      {{
+        [
+          true,
+          true,
+          true,
+          hx_pg_connection_test_enabled,
+          hx_pg_ssl_test_enabled and hx_pg_ssl_enabled,
+          true,
+          true,
+          true,
+          hx_pg_ssl_enabled,
+          hx_pg_backup_enabled,
+          hx_pg_log_enabled
+        ] | select | list | length
+      }}
+  tags: [health_checks]
+
+- name: Display health check results
+  debug:
+    msg:
+      - "PostgreSQL Health Check Results:"
+      - "Service Status: {{ hx_pg_service_status.status.ActiveState == 'active' | ternary('✓ Running', '✗ Stopped') }}"
+      - "Connectivity: {{ hx_pg_connectivity_test.rc == 0 | ternary('✓ Connected', '✗ Failed') }}"
+      - "Database Exists: {{ hx_pg_database_check.rc == 0 | ternary('✓ Found', '✗ Missing') }}"
+      - "Authentication: {{ (not hx_pg_connection_test_enabled) | ternary('Disabled', (hx_pg_auth_test.rc == 0) | ternary('✓ Working', '✗ Failed')) }}"
+      - "SSL Connection: {{ (not hx_pg_ssl_test_enabled or not hx_pg_ssl_enabled) | ternary('Disabled', (hx_pg_ssl_test.rc == 0) | ternary('✓ Working', '✗ Failed')) }}"
+      - "Config Syntax: {{ hx_pg_config_syntax_check.rc == 0 | ternary('✓ Valid', '✗ Invalid') }}"
+      - "HBA Syntax: {{ hx_pg_hba_syntax_check.rc == 0 | ternary('✓ Valid', '✗ Invalid') }}"
+      - "Performance Metrics: {{ hx_pg_performance_metrics.rc == 0 | ternary('✓ Available', '✗ Failed') }}"
+      - "SSL Certificate: {{ (not hx_pg_ssl_enabled) | ternary('Disabled', (hx_pg_ssl_cert_expiry.rc == 0) | ternary('✓ Valid', '✗ Expiring/Invalid')) }}"
+      - "Backup Access: {{ (not hx_pg_backup_enabled) | ternary('Disabled', (hx_pg_backup_access_test is succeeded) | ternary('✓ Accessible', '✗ Failed')) }}"
+      - "Log Access: {{ (not hx_pg_log_enabled) | ternary('Disabled', (hx_pg_log_access_test is succeeded) | ternary('✓ Accessible', '✗ Failed')) }}"
+      - "Overall Score: {{ hx_pg_health_checks_passed }}/{{ hx_pg_health_checks_total }} ({{ ((hx_pg_health_checks_passed | int / hx_pg_health_checks_total | int) * 100) | round(1) }}%)"
+  tags: [health_checks]

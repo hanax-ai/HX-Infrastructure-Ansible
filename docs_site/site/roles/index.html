@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="HX Infrastructure Team" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Roles - HX Infrastructure Ansible - Exemplary Automation</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Roles";
+        var mkdocs_page_input_path = "roles/index.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> HX Infrastructure Ansible - Exemplary Automation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Architecture</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../architecture/overview.md">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../architecture/diagrams/">Diagrams</a>
+                  </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">Roles</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#available-roles">Available Roles</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#backup">backup</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#common">common</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#common_templates">common_templates</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#config_validator">config_validator</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#database">database</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#dependency_validator">dependency_validator</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#hx_ca_trust_standardized">hx_ca_trust_standardized</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#hx_domain_join_standardized">hx_domain_join_standardized</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#hx_pg_auth_standardized">hx_pg_auth_standardized</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#load_balancer">load_balancer</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#logging">logging</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#monitoring">monitoring</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#networking">networking</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#operational_safety">operational_safety</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#reliability_monitor">reliability_monitor</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#security">security</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ssh_key_management">ssh_key_management</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#storage">storage</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#web_server">web_server</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../development/guidelines.md">Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../development/style-guide/">Style Guide</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">HX Infrastructure Ansible - Exemplary Automation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Roles</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="ansible-roles">Ansible Roles<a class="headerlink" href="#ansible-roles" title="Permanent link">&para;</a></h1>
+<p>This section documents all available Ansible roles in the HX Infrastructure automation.</p>
+<h2 id="available-roles">Available Roles<a class="headerlink" href="#available-roles" title="Permanent link">&para;</a></h2>
+<h3 id="backup"><a href="backup/">backup</a><a class="headerlink" href="#backup" title="Permanent link">&para;</a></h3>
+<p>Comprehensive backup automation role for HX Infrastructure</p>
+<p><strong>Author:</strong> HX Infrastructure Team<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="common"><a href="common/">common</a><a class="headerlink" href="#common" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="common_templates"><a href="common_templates/">common_templates</a><a class="headerlink" href="#common_templates" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="config_validator"><a href="config_validator/">config_validator</a><a class="headerlink" href="#config_validator" title="Permanent link">&para;</a></h3>
+<p>Comprehensive configuration validation and standardization framework</p>
+<p><strong>Author:</strong> HX Infrastructure Team<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="database"><a href="database/">database</a><a class="headerlink" href="#database" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="dependency_validator"><a href="dependency_validator/">dependency_validator</a><a class="headerlink" href="#dependency_validator" title="Permanent link">&para;</a></h3>
+<p>Comprehensive dependency validation framework for HX Infrastructure</p>
+<p><strong>Author:</strong> HX Infrastructure Team<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="hx_ca_trust_standardized"><a href="hx_ca_trust_standardized/">hx_ca_trust_standardized</a><a class="headerlink" href="#hx_ca_trust_standardized" title="Permanent link">&para;</a></h3>
+<p>Professional-grade Certificate Authority trust management for HX Infrastructure</p>
+<p><strong>Author:</strong> HX Infrastructure Team<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="hx_domain_join_standardized"><a href="hx_domain_join_standardized/">hx_domain_join_standardized</a><a class="headerlink" href="#hx_domain_join_standardized" title="Permanent link">&para;</a></h3>
+<p>Professional-grade Active Directory domain integration for HX Infrastructure</p>
+<p><strong>Author:</strong> HX Infrastructure Team<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="hx_pg_auth_standardized"><a href="hx_pg_auth_standardized/">hx_pg_auth_standardized</a><a class="headerlink" href="#hx_pg_auth_standardized" title="Permanent link">&para;</a></h3>
+<p>Professional-grade PostgreSQL authentication and security management for HX Infrastructure</p>
+<p><strong>Author:</strong> HX Infrastructure Team<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="load_balancer"><a href="load_balancer/">load_balancer</a><a class="headerlink" href="#load_balancer" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="logging"><a href="logging/">logging</a><a class="headerlink" href="#logging" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="monitoring"><a href="monitoring/">monitoring</a><a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="networking"><a href="networking/">networking</a><a class="headerlink" href="#networking" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="operational_safety"><a href="operational_safety/">operational_safety</a><a class="headerlink" href="#operational_safety" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="reliability_monitor"><a href="reliability_monitor/">reliability_monitor</a><a class="headerlink" href="#reliability_monitor" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="security"><a href="security/">security</a><a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="ssh_key_management"><a href="ssh_key_management/">ssh_key_management</a><a class="headerlink" href="#ssh_key_management" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="storage"><a href="storage/">storage</a><a class="headerlink" href="#storage" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h3 id="web_server"><a href="web_server/">web_server</a><a class="headerlink" href="#web_server" title="Permanent link">&para;</a></h3>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../architecture/diagrams/" class="btn btn-neutral float-left" title="Diagrams"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../development/style-guide/" class="btn btn-neutral float-right" title="Style Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../architecture/diagrams/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../development/style-guide/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

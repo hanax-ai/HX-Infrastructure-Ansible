@@ -1,0 +1,105 @@
+
+---
+# Health Check Tasks for HX CA Trust
+
+- name: Verify certificate file exists and is readable
+  stat:
+    path: "{{ hx_ca_cert_full_path }}"
+  register: hx_ca_cert_stat
+  tags: [health_checks]
+
+- name: Assert certificate file is present
+  assert:
+    that:
+      - hx_ca_cert_stat.stat.exists
+      - hx_ca_cert_stat.stat.isreg
+      - hx_ca_cert_stat.stat.readable
+    fail_msg: "Certificate file {{ hx_ca_cert_full_path }} is not accessible"
+    success_msg: "Certificate file is accessible"
+  tags: [health_checks]
+
+- name: Test certificate parsing
+  command: openssl x509 -in "{{ hx_ca_cert_full_path }}" -noout -subject
+  register: hx_ca_parse_test
+  changed_when: false
+  failed_when: hx_ca_parse_test.rc != 0
+  tags: [health_checks]
+
+- name: Verify certificate is in system trust store
+  shell: |
+    set -euo pipefail
+    cert_hash=$(openssl x509 -in "{{ hx_ca_cert_full_path }}" -hash -noout)
+    if [ -L "/etc/ssl/certs/${cert_hash}.0" ]; then
+      echo "Certificate is in system trust store"
+    else
+      echo "Certificate not found in system trust store"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_ca_trust_store_check
+  changed_when: false
+  retries: "{{ hx_ca_validation_retries }}"
+  delay: "{{ hx_ca_validation_delay }}"
+  until: hx_ca_trust_store_check.rc == 0
+  tags: [health_checks]
+
+- name: Test SSL connection to CA host (if reachable)
+  shell: |
+    set -euo pipefail
+    timeout 10 openssl s_client -connect "{{ hx_ca_host }}:443" -CAfile "{{ hx_ca_cert_full_path }}" -verify_return_error < /dev/null
+  args:
+    executable: /bin/bash
+  register: hx_ca_ssl_test
+  changed_when: false
+  failed_when: false
+  when: hx_ca_host != "localhost"
+  tags: [health_checks]
+
+- name: Test certificate validation against targets
+  shell: |
+    set -euo pipefail
+    echo | timeout 10 openssl s_client -connect "{{ item.address }}:{{ item.port | default(443) }}" -CAfile "{{ hx_ca_cert_full_path }}" -verify_return_error -servername "{{ item.servername | default(item.address) }}"
+  args:
+    executable: /bin/bash
+  register: hx_ca_target_validation
+  changed_when: false
+  failed_when: false
+  loop: "{{ hx_ca_san_check_targets }}"
+  when: hx_ca_san_check_targets | length > 0
+  tags: [health_checks]
+
+- name: Check certificate health endpoint (if health URLs provided)
+  uri:
+    url: "{{ item.health_url }}"
+    method: GET
+    status_code: 200
+    timeout: 10
+    validate_certs: yes
+    ca_path: "{{ hx_ca_cert_full_path }}"
+  register: hx_ca_health_endpoint_check
+  failed_when: false
+  loop: "{{ hx_ca_san_check_targets | selectattr('health_url', 'defined') | list }}"
+  when: hx_ca_san_check_targets | length > 0
+  tags: [health_checks]
+
+- name: Generate health check report
+  template:
+    src: health_report.j2
+    dest: "{{ hx_ca_log_dir }}/health_check_{{ hx_ca_backup_timestamp }}.txt"
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_ca_audit_logging_enabled | bool
+  tags: [health_checks]
+
+- name: Display health check results
+  debug:
+    msg:
+      - "Health Check Results:"
+      - "Certificate File: {{ hx_ca_cert_stat.stat.exists | ternary('✓ Present', '✗ Missing') }}"
+      - "Certificate Parsing: {{ hx_ca_parse_test.rc == 0 | ternary('✓ Valid', '✗ Invalid') }}"
+      - "System Trust Store: {{ hx_ca_trust_store_check.rc == 0 | ternary('✓ Integrated', '✗ Not Found') }}"
+      - "CA Host SSL: {{ (hx_ca_ssl_test.rc == 0) | ternary('✓ Connected', '✗ Failed') if hx_ca_ssl_test is defined else 'Skipped' }}"
+      - "Target Validation: {{ (hx_ca_target_validation.results | selectattr('rc', 'equalto', 0) | list | length) }}/{{ hx_ca_san_check_targets | length }} passed"
+  tags: [health_checks]

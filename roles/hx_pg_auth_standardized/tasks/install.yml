@@ -1,0 +1,168 @@
+
+---
+# Installation Tasks for HX PostgreSQL Authentication
+
+- name: Create required directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0755'
+  loop: "{{ hx_pg_required_directories }}"
+  tags: [install]
+
+- name: Ensure PostgreSQL service is running
+  systemd:
+    name: "{{ hx_pg_service_name }}"
+    state: started
+    enabled: true
+  register: hx_pg_service_start
+  tags: [install]
+
+- name: Wait for PostgreSQL to be ready
+  wait_for:
+    port: "{{ hx_pg_port }}"
+    host: "localhost"
+    timeout: "{{ hx_pg_connection_timeout }}"
+  tags: [install]
+
+- name: Check PostgreSQL cluster status
+  shell: |
+    set -euo pipefail
+    sudo -u postgres pg_lsclusters | grep "{{ hx_pg_cluster_version }}" | grep "{{ hx_pg_cluster_name }}"
+  args:
+    executable: /bin/bash
+  register: hx_pg_cluster_status
+  changed_when: false
+  failed_when: hx_pg_cluster_status.rc != 0
+  tags: [install]
+
+- name: Verify PostgreSQL version
+  shell: |
+    set -euo pipefail
+    version=$(sudo -u postgres psql -tAc "SELECT version();")
+    echo "$version" | grep -q "PostgreSQL {{ hx_pg_cluster_version }}"
+  args:
+    executable: /bin/bash
+  register: hx_pg_version_check
+  changed_when: false
+  tags: [install]
+
+- name: Install additional PostgreSQL extensions (if needed)
+  shell: |
+    set -euo pipefail
+    # Install commonly needed extensions
+    extensions=("uuid-ossp" "pgcrypto" "pg_stat_statements")
+
+    for ext in "${extensions[@]}"; do
+      if sudo -u postgres psql -tAc "SELECT 1 FROM pg_available_extensions WHERE name='$ext';" | grep -q 1; then
+        sudo -u postgres psql -c "CREATE EXTENSION IF NOT EXISTS $ext;" postgres
+        echo "Extension $ext installed/verified"
+      else
+        echo "Extension $ext not available"
+      fi
+    done
+  args:
+    executable: /bin/bash
+  register: hx_pg_extensions_install
+  changed_when: "'installed' in hx_pg_extensions_install.stdout"
+  tags: [install]
+
+- name: Create SSL certificate directory
+  file:
+    path: "{{ hx_pg_conf_dir }}/ssl"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0700'
+  when: hx_pg_ssl_enabled | bool
+  tags: [install]
+
+- name: Copy CA certificate to PostgreSQL directory
+  copy:
+    src: "{{ hx_pg_ca_path }}"
+    dest: "{{ hx_pg_ssl_ca_path }}"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+    remote_src: yes
+  when:
+    - hx_pg_ssl_enabled | bool
+    - hx_pg_ca_enabled | bool
+  notify: reload postgresql config
+  tags: [install]
+
+- name: Generate self-signed SSL certificate (if not provided)
+  shell: |
+    set -euo pipefail
+    cert_dir="{{ hx_pg_conf_dir }}"
+
+    if [ ! -f "$cert_dir/{{ hx_pg_ssl_cert_file }}" ] || [ ! -f "$cert_dir/{{ hx_pg_ssl_key_file }}" ]; then
+      # Generate private key
+      openssl genrsa -out "$cert_dir/{{ hx_pg_ssl_key_file }}" 2048
+
+      # Generate certificate
+      openssl req -new -x509 -key "$cert_dir/{{ hx_pg_ssl_key_file }}" \
+        -out "$cert_dir/{{ hx_pg_ssl_cert_file }}" -days 365 \
+        -subj "/C=US/ST=State/L=City/O=HX Infrastructure/CN={{ ansible_fqdn }}"
+
+      # Set proper permissions
+      chown postgres:postgres "$cert_dir/{{ hx_pg_ssl_cert_file }}" "$cert_dir/{{ hx_pg_ssl_key_file }}"
+      chmod 644 "$cert_dir/{{ hx_pg_ssl_cert_file }}"
+      chmod 600 "$cert_dir/{{ hx_pg_ssl_key_file }}"
+
+      echo "Self-signed SSL certificate generated"
+    else
+      echo "SSL certificate already exists"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_pg_ssl_cert_gen
+  when: hx_pg_ssl_enabled | bool
+  changed_when: "'generated' in hx_pg_ssl_cert_gen.stdout"
+  notify: reload postgresql config
+  tags: [install]
+
+- name: Set up Kerberos keytab (if GSS authentication enabled)
+  shell: |
+    set -euo pipefail
+    keytab_path="{{ hx_pg_keytab_computed_path }}"
+
+    if [ -n "{{ hx_pg_gss_user }}" ] && [ ! -f "$keytab_path" ]; then
+      # Create placeholder keytab file with proper permissions
+      touch "$keytab_path"
+      chown postgres:postgres "$keytab_path"
+      chmod 600 "$keytab_path"
+      echo "Keytab file created at $keytab_path (manual configuration required)"
+    else
+      echo "Keytab setup skipped"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_pg_keytab_setup
+  when: hx_pg_gss_user | length > 0
+  changed_when: "'created' in hx_pg_keytab_setup.stdout"
+  tags: [install]
+
+- name: Log installation completion
+  lineinfile:
+    path: "{{ hx_pg_log_dir }}/installation.log"
+    line: "{{ ansible_date_time.iso8601 }} - PostgreSQL authentication installation completed"
+    create: yes
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  when: hx_pg_audit_logging_enabled | bool
+  tags: [install]
+
+- name: Display installation summary
+  debug:
+    msg:
+      - "PostgreSQL authentication installation completed"
+      - "Service Status: {{ hx_pg_service_start.status.ActiveState | default('Unknown') }}"
+      - "Cluster: {{ hx_pg_cluster_version }}/{{ hx_pg_cluster_name }}"
+      - "SSL Certificate: {{ hx_pg_ssl_enabled | ternary('Generated/Configured', 'Disabled') }}"
+      - "Extensions: {{ 'Installed' if 'installed' in hx_pg_extensions_install.stdout else 'Verified' }}"
+      - "Keytab: {{ hx_pg_keytab_setup.stdout if hx_pg_gss_user | length > 0 else 'Not configured' }}"
+  tags: [install]

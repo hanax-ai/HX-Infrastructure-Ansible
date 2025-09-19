@@ -1,0 +1,182 @@
+
+---
+# Configuration Tasks for HX PostgreSQL Authentication
+
+- name: Configure PostgreSQL main configuration
+  template:
+    src: postgresql.conf.j2
+    dest: "{{ hx_pg_conf_path }}"
+    owner: postgres
+    group: postgres
+    mode: '0644'
+    backup: yes
+  notify: reload postgresql config
+  tags: [configure]
+
+- name: Configure PostgreSQL HBA (Host-Based Authentication)
+  template:
+    src: pg_hba.conf.j2
+    dest: "{{ hx_pg_hba_path }}"
+    owner: postgres
+    group: postgres
+    mode: '0640'
+    backup: yes
+  notify: reload postgresql config
+  tags: [configure]
+
+- name: Configure PostgreSQL identity mapping (if needed)
+  template:
+    src: pg_ident.conf.j2
+    dest: "{{ hx_pg_ident_path }}"
+    owner: postgres
+    group: postgres
+    mode: '0640'
+    backup: yes
+  when: hx_pg_gss_user | length > 0
+  notify: reload postgresql config
+  tags: [configure]
+
+- name: Flush handlers to apply configuration changes
+  meta: flush_handlers
+  tags: [configure]
+
+- name: Wait for PostgreSQL to reload configuration
+  pause:
+    seconds: 5
+  tags: [configure]
+
+- name: Validate PostgreSQL configuration syntax
+  shell: |
+    set -euo pipefail
+    sudo -u postgres /usr/lib/postgresql/{{ hx_pg_cluster_version }}/bin/postgres --check-config -D "{{ hx_pg_data_dir }}"
+  args:
+    executable: /bin/bash
+  register: hx_pg_config_validation
+  changed_when: false
+  tags: [configure]
+
+- name: Validate HBA configuration
+  shell: |
+    set -euo pipefail
+    error_count=$(sudo -u postgres psql -tAc "SELECT COUNT(*) FROM pg_hba_file_rules WHERE error IS NOT NULL;")
+    if [ "$error_count" -ne 0 ]; then
+      echo "HBA configuration has $error_count errors"
+      sudo -u postgres psql -c "SELECT line_number, error FROM pg_hba_file_rules WHERE error IS NOT NULL;"
+      exit 1
+    else
+      echo "HBA configuration is valid"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_pg_hba_validation
+  changed_when: false
+  tags: [configure]
+
+- name: Configure PostgreSQL logging
+  lineinfile:
+    path: "{{ hx_pg_conf_path }}"
+    regexp: "^#?{{ item.key }}"
+    line: "{{ item.key }} = {{ item.value }}"
+    backup: yes
+  loop:
+    - { key: "log_destination", value: "'stderr'" }
+    - { key: "logging_collector", value: "on" }
+    - { key: "log_directory", value: "'{{ hx_pg_log_dir }}'" }
+    - { key: "log_filename", value: "'postgresql-%Y-%m-%d_%H%M%S.log'" }
+    - { key: "log_rotation_age", value: "1d" }
+    - { key: "log_rotation_size", value: "100MB" }
+    - { key: "log_min_messages", value: "{{ hx_pg_log_level }}" }
+    - { key: "log_statement", value: "'{{ hx_pg_log_statement }}'" }
+    - { key: "log_duration", value: "{{ hx_pg_log_duration | ternary('on', 'off') }}" }
+    - { key: "log_line_prefix", value: "'{{ hx_pg_log_line_prefix }}'" }
+    - { key: "log_connections", value: "{{ hx_pg_log_connections | ternary('on', 'off') }}" }
+    - { key: "log_disconnections", value: "{{ hx_pg_log_disconnections | ternary('on', 'off') }}" }
+  when: hx_pg_log_enabled | bool
+  notify: reload postgresql config
+  tags: [configure]
+
+- name: Configure SSL/TLS settings
+  lineinfile:
+    path: "{{ hx_pg_conf_path }}"
+    regexp: "^#?{{ item.key }}"
+    line: "{{ item.key }} = {{ item.value }}"
+    backup: yes
+  loop:
+    - { key: "ssl", value: "{{ hx_pg_ssl_enabled | ternary('on', 'off') }}" }
+    - { key: "ssl_cert_file", value: "'{{ hx_pg_ssl_cert_file }}'" }
+    - { key: "ssl_key_file", value: "'{{ hx_pg_ssl_key_file }}'" }
+    - { key: "ssl_ca_file", value: "'{{ hx_pg_ssl_ca_file }}'" }
+    - { key: "ssl_min_protocol_version", value: "'{{ hx_pg_ssl_min_protocol_version }}'" }
+    - { key: "ssl_ciphers", value: "'{{ hx_pg_ssl_ciphers }}'" }
+    - { key: "ssl_prefer_server_ciphers", value: "{{ hx_pg_ssl_prefer_server_ciphers | ternary('on', 'off') }}" }
+  when: hx_pg_ssl_enabled | bool
+  notify: reload postgresql config
+  tags: [configure]
+
+- name: Configure performance settings
+  lineinfile:
+    path: "{{ hx_pg_conf_path }}"
+    regexp: "^#?{{ item.key }}"
+    line: "{{ item.key }} = {{ item.value }}"
+    backup: yes
+  loop:
+    - { key: "max_connections", value: "{{ hx_pg_max_connections }}" }
+    - { key: "shared_buffers", value: "'{{ hx_pg_shared_buffers }}'" }
+    - { key: "effective_cache_size", value: "'{{ hx_pg_effective_cache_size }}'" }
+    - { key: "maintenance_work_mem", value: "'{{ hx_pg_maintenance_work_mem }}'" }
+    - { key: "checkpoint_completion_target", value: "{{ hx_pg_checkpoint_completion_target }}" }
+    - { key: "wal_buffers", value: "'{{ hx_pg_wal_buffers }}'" }
+    - { key: "default_statistics_target", value: "{{ hx_pg_default_statistics_target }}" }
+  when: hx_pg_performance_tuning_enabled | bool
+  notify: reload postgresql config
+  tags: [configure]
+
+- name: Create PostgreSQL log directory
+  file:
+    path: "{{ hx_pg_log_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0755'
+  when: hx_pg_log_enabled | bool
+  tags: [configure]
+
+- name: Configure log rotation
+  template:
+    src: postgresql_logrotate.j2
+    dest: /etc/logrotate.d/postgresql-hx
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_pg_log_enabled | bool
+  tags: [configure]
+
+- name: Final configuration reload
+  systemd:
+    name: "{{ hx_pg_service_name }}"
+    state: reloaded
+  tags: [configure]
+
+- name: Log configuration completion
+  lineinfile:
+    path: "{{ hx_pg_log_dir }}/configuration.log"
+    line: "{{ ansible_date_time.iso8601 }} - PostgreSQL authentication configuration completed"
+    create: yes
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  when: hx_pg_audit_logging_enabled | bool
+  tags: [configure]
+
+- name: Display configuration summary
+  debug:
+    msg:
+      - "PostgreSQL configuration completed"
+      - "Main config: {{ hx_pg_conf_path }}"
+      - "HBA config: {{ hx_pg_hba_path }}"
+      - "SSL/TLS: {{ hx_pg_ssl_enabled | ternary('Enabled', 'Disabled') }}"
+      - "Logging: {{ hx_pg_log_enabled | ternary('Enabled', 'Disabled') }}"
+      - "Performance tuning: {{ hx_pg_performance_tuning_enabled | ternary('Applied', 'Default') }}"
+      - "Configuration validation: {{ hx_pg_config_validation.rc == 0 | ternary('Passed', 'Failed') }}"
+      - "HBA validation: {{ hx_pg_hba_validation.rc == 0 | ternary('Passed', 'Failed') }}"
+  tags: [configure]

@@ -1,0 +1,176 @@
+
+# {{ ansible_managed }}
+# PostgreSQL Configuration for HX Infrastructure
+# Version: {{ hx_pg_cluster_version }}
+
+#------------------------------------------------------------------------------
+# CONNECTIONS AND AUTHENTICATION
+#------------------------------------------------------------------------------
+
+# Connection settings
+listen_addresses = '{{ hx_pg_listen_addresses }}'
+port = {{ hx_pg_port }}
+max_connections = {{ hx_pg_max_connections }}
+
+# Authentication
+password_encryption = {{ hx_pg_password_encryption }}
+
+#------------------------------------------------------------------------------
+# SSL/TLS CONFIGURATION
+#------------------------------------------------------------------------------
+
+{% if hx_pg_ssl_enabled %}
+# SSL settings
+ssl = on
+ssl_cert_file = '{{ hx_pg_ssl_cert_file }}'
+ssl_key_file = '{{ hx_pg_ssl_key_file }}'
+{% if hx_pg_ca_enabled %}
+ssl_ca_file = '{{ hx_pg_ssl_ca_file }}'
+{% endif %}
+{% if hx_pg_ssl_min_protocol_version %}
+ssl_min_protocol_version = '{{ hx_pg_ssl_min_protocol_version }}'
+{% endif %}
+{% if hx_pg_ssl_max_protocol_version %}
+ssl_max_protocol_version = '{{ hx_pg_ssl_max_protocol_version }}'
+{% endif %}
+ssl_ciphers = '{{ hx_pg_ssl_ciphers }}'
+ssl_prefer_server_ciphers = {{ hx_pg_ssl_prefer_server_ciphers | ternary('on', 'off') }}
+{% else %}
+# SSL disabled
+ssl = off
+{% endif %}
+
+#------------------------------------------------------------------------------
+# RESOURCE USAGE (except WAL)
+#------------------------------------------------------------------------------
+
+{% if hx_pg_performance_tuning_enabled %}
+# Memory settings
+shared_buffers = {{ hx_pg_shared_buffers }}
+effective_cache_size = {{ hx_pg_effective_cache_size }}
+maintenance_work_mem = {{ hx_pg_maintenance_work_mem }}
+
+# WAL settings
+wal_buffers = {{ hx_pg_wal_buffers }}
+checkpoint_completion_target = {{ hx_pg_checkpoint_completion_target }}
+
+# Query planner settings
+default_statistics_target = {{ hx_pg_default_statistics_target }}
+{% endif %}
+
+#------------------------------------------------------------------------------
+# WRITE AHEAD LOG
+#------------------------------------------------------------------------------
+
+# WAL settings for reliability
+wal_level = replica
+max_wal_senders = 3
+wal_keep_segments = 32
+
+#------------------------------------------------------------------------------
+# QUERY TUNING
+#------------------------------------------------------------------------------
+
+# Enable query planning improvements
+enable_partitionwise_join = on
+enable_partitionwise_aggregate = on
+
+#------------------------------------------------------------------------------
+# ERROR REPORTING AND LOGGING
+#------------------------------------------------------------------------------
+
+{% if hx_pg_log_enabled %}
+# Logging configuration
+log_destination = 'stderr'
+logging_collector = on
+log_directory = '{{ hx_pg_log_dir }}'
+log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+log_rotation_age = 1d
+log_rotation_size = 100MB
+log_truncate_on_rotation = on
+
+# Log level and content
+log_min_messages = {{ hx_pg_log_level }}
+log_min_error_statement = error
+log_min_duration_statement = 1000
+
+# Log format
+log_line_prefix = '{{ hx_pg_log_line_prefix }}'
+log_statement = '{{ hx_pg_log_statement }}'
+log_duration = {{ hx_pg_log_duration | ternary('on', 'off') }}
+
+# Connection logging
+log_connections = {{ hx_pg_log_connections | ternary('on', 'off') }}
+log_disconnections = {{ hx_pg_log_disconnections | ternary('on', 'off') }}
+
+# Security logging
+{% if hx_pg_log_failed_connections %}
+log_hostname = on
+{% endif %}
+{% endif %}
+
+#------------------------------------------------------------------------------
+# RUNTIME STATISTICS
+#------------------------------------------------------------------------------
+
+# Statistics collection
+track_activities = on
+track_counts = on
+track_io_timing = on
+track_functions = all
+stats_temp_directory = 'pg_stat_tmp'
+
+#------------------------------------------------------------------------------
+# AUTOVACUUM PARAMETERS
+#------------------------------------------------------------------------------
+
+# Autovacuum settings
+autovacuum = on
+autovacuum_max_workers = 3
+autovacuum_naptime = 1min
+autovacuum_vacuum_threshold = 50
+autovacuum_analyze_threshold = 50
+
+#------------------------------------------------------------------------------
+# CLIENT CONNECTION DEFAULTS
+#------------------------------------------------------------------------------
+
+# Locale and formatting
+datestyle = 'iso, mdy'
+timezone = 'UTC'
+lc_messages = 'en_US.UTF-8'
+lc_monetary = 'en_US.UTF-8'
+lc_numeric = 'en_US.UTF-8'
+lc_time = 'en_US.UTF-8'
+default_text_search_config = 'pg_catalog.english'
+
+#------------------------------------------------------------------------------
+# SECURITY AND AUTHENTICATION
+#------------------------------------------------------------------------------
+
+# Security settings
+{% if hx_pg_gss_user | length > 0 %}
+krb_server_keyfile = '{{ hx_pg_keytab_computed_path }}'
+{% endif %}
+
+# Shared preload libraries
+shared_preload_libraries = 'pg_stat_statements'
+
+#------------------------------------------------------------------------------
+# CUSTOM SETTINGS
+#------------------------------------------------------------------------------
+
+# HX Infrastructure specific settings
+cluster_name = '{{ hx_pg_cluster_version }}/{{ hx_pg_cluster_name }}'
+
+# Performance monitoring
+pg_stat_statements.max = 10000
+pg_stat_statements.track = all
+pg_stat_statements.save = on
+
+#------------------------------------------------------------------------------
+# INCLUDE FILES
+#------------------------------------------------------------------------------
+
+# Include additional configuration files if they exist
+# include_if_exists = 'postgresql.auto.conf'

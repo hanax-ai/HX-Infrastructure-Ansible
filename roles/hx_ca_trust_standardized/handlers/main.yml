@@ -1,0 +1,42 @@
+
+---
+# HX CA Trust Handlers
+# Service management and system update handlers
+
+- name: update ca trust store
+  command: update-ca-certificates
+  register: ca_update_result
+  changed_when: "'added' in ca_update_result.stdout or 'updated' in ca_update_result.stdout"
+  failed_when: ca_update_result.rc != 0
+  listen: "update ca trust store"
+
+- name: reload ca certificates
+  command: update-ca-certificates --fresh
+  register: ca_reload_result
+  changed_when: true
+  failed_when: ca_reload_result.rc != 0
+  listen: "reload ca certificates"
+
+- name: backup ca certificates
+  shell: |
+    set -euo pipefail
+    backup_file="{{ hx_ca_backup_dir }}/ca-certificates-{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}.tar.gz"
+    tar -czf "$backup_file" -C /usr/local/share/ca-certificates .
+    echo "Backup created: $backup_file"
+  args:
+    executable: /bin/bash
+  register: ca_backup_result
+  changed_when: true
+  when: hx_ca_backup_enabled | bool
+  listen: "backup ca certificates"
+
+- name: log ca trust update
+  lineinfile:
+    path: "{{ hx_ca_log_dir }}/updates.log"
+    line: "{{ ansible_date_time.iso8601 }} - CA trust store updated: {{ ca_update_result.stdout | default('No output') }}"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_ca_audit_logging_enabled | bool
+  listen: "log ca trust update"

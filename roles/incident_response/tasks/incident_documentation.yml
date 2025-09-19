@@ -1,0 +1,149 @@
+
+---
+# Incident Documentation and Reporting
+- name: Create incident documentation directory
+  file:
+    path: "/var/log/hx-infrastructure/incidents/{{ ansible_date_time.date }}"
+    state: directory
+    mode: '0755'
+
+- name: Generate incident ID
+  set_fact:
+    incident_id: "INC-{{ ansible_date_time.epoch }}-{{ inventory_hostname | upper }}"
+
+- name: Collect all incident data
+  set_fact:
+    comprehensive_incident_data:
+      incident_metadata:
+        incident_id: "{{ incident_id }}"
+        created_at: "{{ ansible_date_time.iso8601 }}"
+        hostname: "{{ inventory_hostname }}"
+        environment: "{{ target_environment | default('production') }}"
+        incident_type: "automated_detection"
+        status: "{{ 'resolved' if remediation_successful | default(false) else 'active' }}"
+      detection:
+        timestamp: "{{ ansible_date_time.iso8601 }}"
+        detected_incidents: "{{ detected_incidents | default({}) }}"
+        detection_method: "automated_monitoring"
+      classification:
+        timestamp: "{{ classification_timestamp | default('unknown') }}"
+        classified: "{{ incidents_classified | default(false) }}"
+        classification_data: "{{ incident_classification | default({}) }}"
+      remediation:
+        attempted: "{{ auto_remediation_completed | default(false) }}"
+        timestamp: "{{ remediation_timestamp | default('unknown') }}"
+        successful: "{{ remediation_successful | default(false) }}"
+        remediation_data: "{{ remediation_report | default({}) }}"
+      escalation:
+        escalated: "{{ incidents_escalated | default(false) }}"
+        timestamp: "{{ escalation_timestamp | default('unknown') }}"
+        escalation_data: "{{ escalation_summary | default({}) }}"
+      system_state:
+        cpu_usage: "{{ (system_health_status | from_json).cpu_usage if system_health_status is defined else 'unknown' }}"
+        memory_usage: "{{ (system_health_status | from_json).memory_usage if system_health_status is defined else 'unknown' }}"
+        disk_usage: "{{ (system_health_status | from_json).disk_usage if system_health_status is defined else 'unknown' }}"
+        system_load: "{{ (system_health_status | from_json).system_load if system_health_status is defined else 'unknown' }}"
+
+- name: Create detailed incident report
+  template:
+    src: incident_report.md.j2
+    dest: "/var/log/hx-infrastructure/incidents/{{ ansible_date_time.date }}/{{ incident_id }}.md"
+    mode: '0644'
+  vars:
+    incident_data: "{{ comprehensive_incident_data }}"
+
+- name: Create JSON incident record
+  copy:
+    content: "{{ comprehensive_incident_data | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/incidents/{{ ansible_date_time.date }}/{{ incident_id }}.json"
+
+- name: Update incident database
+  shell: |
+    incident_db="/var/log/hx-infrastructure/incident_database.json"
+    if [ ! -f "$incident_db" ]; then
+      echo '{"incidents": [], "statistics": {"total": 0, "resolved": 0, "escalated": 0}}' > "$incident_db"
+    fi
+    
+    # Add incident to database
+    jq --argjson incident '{{ comprehensive_incident_data | to_json }}' '
+      .incidents += [$incident] |
+      .statistics.total += 1 |
+      .statistics.resolved += (if $incident.remediation.successful then 1 else 0 end) |
+      .statistics.escalated += (if $incident.escalation.escalated then 1 else 0 end) |
+      .last_updated = "{{ ansible_date_time.iso8601 }}"
+    ' "$incident_db" > "${incident_db}.tmp" && mv "${incident_db}.tmp" "$incident_db"
+
+- name: Generate incident timeline
+  shell: |
+    timeline_file="/var/log/hx-infrastructure/incidents/{{ ansible_date_time.date }}/{{ incident_id }}_timeline.txt"
+    echo "Incident Timeline: {{ incident_id }}" > "$timeline_file"
+    echo "=================================" >> "$timeline_file"
+    echo "" >> "$timeline_file"
+    echo "{{ ansible_date_time.iso8601 }} - Incident detected" >> "$timeline_file"
+    {% if incidents_classified | default(false) %}
+    echo "{{ classification_timestamp | default('unknown') }} - Incidents classified" >> "$timeline_file"
+    {% endif %}
+    {% if auto_remediation_completed | default(false) %}
+    echo "{{ remediation_timestamp | default('unknown') }} - Auto-remediation attempted" >> "$timeline_file"
+    {% endif %}
+    {% if incidents_escalated | default(false) %}
+    echo "{{ escalation_timestamp | default('unknown') }} - Incident escalated" >> "$timeline_file"
+    {% endif %}
+    echo "{{ ansible_date_time.iso8601 }} - Documentation completed" >> "$timeline_file"
+
+- name: Create incident summary for dashboard
+  set_fact:
+    incident_summary:
+      incident_id: "{{ incident_id }}"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      hostname: "{{ inventory_hostname }}"
+      status: "{{ 'resolved' if remediation_successful | default(false) else 'active' }}"
+      severity: "{{ 'critical' if incidents_escalated | default(false) else 'high' }}"
+      total_incidents: "{{ detected_incidents.total_incidents if detected_incidents is defined else 0 }}"
+      remediation_attempted: "{{ auto_remediation_completed | default(false) }}"
+      escalated: "{{ incidents_escalated | default(false) }}"
+
+- name: Update incident dashboard data
+  shell: |
+    dashboard_data="/var/www/html/incident_dashboard.json"
+    if [ ! -f "$dashboard_data" ]; then
+      echo '{"active_incidents": [], "recent_incidents": [], "statistics": {}}' > "$dashboard_data"
+    fi
+    
+    jq --argjson summary '{{ incident_summary | to_json }}' '
+      if $summary.status == "active" then
+        .active_incidents += [$summary]
+      else
+        .active_incidents = [.active_incidents[] | select(.incident_id != $summary.incident_id)]
+      end |
+      .recent_incidents = ([$summary] + .recent_incidents)[:10] |
+      .last_updated = "{{ ansible_date_time.iso8601 }}"
+    ' "$dashboard_data" > "${dashboard_data}.tmp" && mv "${dashboard_data}.tmp" "$dashboard_data"
+
+- name: Send incident documentation notification
+  include_role:
+    name: health_monitoring
+    tasks_from: trigger_alert
+  vars:
+    alert_type: "incident_documented"
+    alert_message: "Incident {{ incident_id }} has been documented and {{ 'resolved' if remediation_successful | default(false) else 'requires attention' }}"
+    alert_data: "{{ incident_summary }}"
+    alert_severity: "info"
+  when: send_documentation_notifications | default(true)
+
+- name: Schedule post-incident analysis
+  cron:
+    name: "post_incident_analysis_{{ incident_id }}"
+    minute: "0"
+    hour: "{{ (ansible_date_time.hour | int + 24) % 24 }}"
+    job: "/opt/hx-infrastructure/scripts/post_incident_analysis.sh {{ incident_id }}"
+    state: present
+  when: 
+    - post_incident_analysis | default(true)
+    - comprehensive_incident_data.incident_metadata.status == 'resolved'
+
+- name: Set documentation status
+  set_fact:
+    incident_documented: true
+    incident_id_generated: "{{ incident_id }}"
+    documentation_timestamp: "{{ ansible_date_time.iso8601 }}"

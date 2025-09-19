@@ -1,0 +1,44 @@
+
+---
+# System backup tasks
+# Handles system-level backup operations
+
+- name: Create system configuration backup
+  archive:
+    path: "{{ item }}"
+    dest: "{{ backup_base_dir | default('/opt/backups') }}/daily/system-config-{{ ansible_date_time.date }}.tar.gz"
+    format: gz
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+    mode: '0640'
+  loop:
+    - /etc
+    - /var/log
+    - /home
+  tags: [backup, system, configuration]
+
+- name: Create package list backup
+  shell: |
+    dpkg --get-selections > {{ backup_base_dir | default('/opt/backups') }}/daily/packages-{{ ansible_date_time.date }}.list
+  when: ansible_os_family == "Debian"
+  tags: [backup, system, packages]
+
+- name: Create RPM package list backup
+  shell: |
+    rpm -qa > {{ backup_base_dir | default('/opt/backups') }}/daily/packages-{{ ansible_date_time.date }}.list
+  when: ansible_os_family == "RedHat"
+  tags: [backup, system, packages]
+
+- name: Create system information backup
+  shell: |
+    {
+      echo "=== System Information ==="
+      uname -a
+      echo "=== Disk Usage ==="
+      df -h
+      echo "=== Memory Usage ==="
+      free -h
+      echo "=== Network Configuration ==="
+      ip addr show
+    } > {{ backup_base_dir | default('/opt/backups') }}/daily/sysinfo-{{ ansible_date_time.date }}.txt
+  tags: [backup, system, information]

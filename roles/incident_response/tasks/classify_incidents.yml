@@ -1,0 +1,73 @@
+
+---
+# Incident Classification and Prioritization
+- name: Initialize incident classification
+  set_fact:
+    classified_incidents: []
+    incident_priorities: []
+
+- name: Classify service failure incidents
+  set_fact:
+    classified_incidents: "{{ classified_incidents + [incident_item] }}"
+  vars:
+    incident_item:
+      type: "service_failure"
+      service: "{{ item }}"
+      severity: "{{ 'critical' if item in critical_services else 'high' }}"
+      priority: "{{ 1 if item in critical_services else 2 }}"
+      auto_remediation: "{{ item in auto_remediable_services | default([]) }}"
+      escalation_required: "{{ item in critical_services }}"
+  loop: "{{ failed_services | default([]) }}"
+
+- name: Classify resource incidents
+  set_fact:
+    classified_incidents: "{{ classified_incidents + [incident_item] }}"
+  vars:
+    incident_item:
+      type: "resource_exhaustion"
+      resource: "{{ item }}"
+      severity: "{{ 'critical' if item == 'high_disk_usage' else 'high' }}"
+      priority: "{{ 1 if item == 'high_disk_usage' else 2 }}"
+      auto_remediation: "{{ item in ['high_cpu_usage', 'high_memory_usage'] }}"
+      escalation_required: "{{ item == 'high_disk_usage' }}"
+  loop: "{{ resource_incidents | default([]) }}"
+
+- name: Classify endpoint failure incidents
+  set_fact:
+    classified_incidents: "{{ classified_incidents + [incident_item] }}"
+  vars:
+    incident_item:
+      type: "endpoint_failure"
+      endpoint: "{{ item }}"
+      severity: "high"
+      priority: 2
+      auto_remediation: true
+      escalation_required: false
+  loop: "{{ failed_endpoints | default([]) }}"
+
+- name: Sort incidents by priority
+  set_fact:
+    prioritized_incidents: "{{ classified_incidents | sort(attribute='priority') }}"
+
+- name: Create incident classification summary
+  set_fact:
+    incident_classification:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      hostname: "{{ inventory_hostname }}"
+      total_incidents: "{{ classified_incidents | length }}"
+      critical_incidents: "{{ classified_incidents | selectattr('severity', 'equalto', 'critical') | list | length }}"
+      high_priority_incidents: "{{ classified_incidents | selectattr('severity', 'equalto', 'high') | list | length }}"
+      auto_remediable: "{{ classified_incidents | selectattr('auto_remediation', 'equalto', true) | list | length }}"
+      escalation_required: "{{ classified_incidents | selectattr('escalation_required', 'equalto', true) | list | length }}"
+      incidents: "{{ prioritized_incidents }}"
+
+- name: Log incident classification
+  copy:
+    content: "{{ incident_classification | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/incidents/classified-{{ ansible_date_time.epoch }}.json"
+  when: incident_classification.total_incidents > 0
+
+- name: Set classification status
+  set_fact:
+    incidents_classified: true
+    classification_timestamp: "{{ ansible_date_time.iso8601 }}"

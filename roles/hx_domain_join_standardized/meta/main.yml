@@ -1,0 +1,44 @@
+
+---
+galaxy_info:
+  role_name: hx_domain_join_standardized
+  author: HX Infrastructure Team
+  description: Professional-grade Active Directory domain integration for HX Infrastructure
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: CentOS
+      versions:
+        - 7
+        - 8
+    - name: RedHat
+      versions:
+        - 7
+        - 8
+        - 9
+  galaxy_tags:
+    - infrastructure
+    - security
+    - active-directory
+    - domain
+    - authentication
+    - sssd
+    - kerberos
+    - ldap
+
+dependencies:
+  - role: hx_ca_trust_standardized
+    when: hx_domain_verify_certificates | bool
+
+collections:
+  - community.general
+  - ansible.posix

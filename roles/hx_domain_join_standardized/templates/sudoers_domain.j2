@@ -1,0 +1,16 @@
+
+# {{ ansible_managed }}
+# Sudo Configuration for Domain Users
+
+# Domain groups with sudo access
+{% for group in hx_sudo_groups %}
+%{{ group }}@{{ hx_ad_domain_lower }} ALL=(ALL:ALL) ALL
+{% endfor %}
+
+# Individual domain users with sudo access
+{% for user in hx_sudo_users %}
+{{ user }}@{{ hx_ad_domain_lower }} ALL=(ALL:ALL) ALL
+{% endfor %}
+
+# Default domain admin access
+%domain\ admins@{{ hx_ad_domain_lower }} ALL=(ALL:ALL) ALL

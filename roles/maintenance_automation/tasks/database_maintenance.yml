@@ -1,0 +1,70 @@
+
+---
+# Database maintenance automation
+- name: Check database connection
+  postgresql_ping:
+    db: "{{ database_name | default('hx_infrastructure') }}"
+    login_host: "{{ database_host | default('localhost') }}"
+    login_user: "{{ database_user | default('postgres') }}"
+    login_password: "{{ database_password }}"
+  register: db_connection
+
+- name: Update database statistics
+  postgresql_query:
+    db: "{{ database_name | default('hx_infrastructure') }}"
+    login_host: "{{ database_host | default('localhost') }}"
+    login_user: "{{ database_user | default('postgres') }}"
+    login_password: "{{ database_password }}"
+    query: "ANALYZE;"
+  when: db_connection is succeeded
+
+- name: Reindex database tables
+  postgresql_query:
+    db: "{{ database_name | default('hx_infrastructure') }}"
+    login_host: "{{ database_host | default('localhost') }}"
+    login_user: "{{ database_user | default('postgres') }}"
+    login_password: "{{ database_password }}"
+    query: "REINDEX DATABASE {{ database_name | default('hx_infrastructure') }};"
+  when: 
+    - db_connection is succeeded
+    - perform_reindex | default(true)
+
+- name: Clean up old log entries
+  postgresql_query:
+    db: "{{ database_name | default('hx_infrastructure') }}"
+    login_host: "{{ database_host | default('localhost') }}"
+    login_user: "{{ database_user | default('postgres') }}"
+    login_password: "{{ database_password }}"
+    query: |
+      DELETE FROM application_logs 
+      WHERE created_at < NOW() - INTERVAL '{{ log_retention_days | default(30) }} days';
+  when: 
+    - db_connection is succeeded
+    - cleanup_old_logs | default(true)
+
+- name: Vacuum database
+  postgresql_query:
+    db: "{{ database_name | default('hx_infrastructure') }}"
+    login_host: "{{ database_host | default('localhost') }}"
+    login_user: "{{ database_user | default('postgres') }}"
+    login_password: "{{ database_password }}"
+    query: "VACUUM ANALYZE;"
+  when: 
+    - db_connection is succeeded
+    - perform_vacuum | default(true)
+
+- name: Check database size after maintenance
+  postgresql_query:
+    db: "{{ database_name | default('hx_infrastructure') }}"
+    login_host: "{{ database_host | default('localhost') }}"
+    login_user: "{{ database_user | default('postgres') }}"
+    login_password: "{{ database_password }}"
+    query: |
+      SELECT pg_size_pretty(pg_database_size('{{ database_name | default('hx_infrastructure') }}')) as size;
+  register: db_size_after
+  when: db_connection is succeeded
+
+- name: Set database maintenance status
+  set_fact:
+    database_maintenance_completed: true
+    database_size_after_maintenance: "{{ db_size_after.query_result[0].size if db_size_after is defined else 'unknown' }}"

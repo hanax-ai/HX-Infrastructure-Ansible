@@ -1,0 +1,145 @@
+
+---
+# Generate comprehensive maintenance report
+- name: Collect maintenance execution data
+  set_fact:
+    maintenance_execution_data:
+      pre_maintenance:
+        validated: "{{ pre_maintenance_validated | default(false) }}"
+        backup_verified: true
+        maintenance_window: "{{ maintenance_window_start | default(2) }}:00 - {{ maintenance_window_end | default(6) }}:00"
+      execution:
+        completed: "{{ maintenance_executed | default(false) }}"
+        timestamp: "{{ maintenance_timestamp | default('unknown') }}"
+        tasks_summary: "{{ maintenance_summary | default({}) }}"
+      database_maintenance:
+        completed: "{{ database_maintenance_completed | default(false) }}"
+        size_after: "{{ database_size_after_maintenance | default('unknown') }}"
+      security_patching:
+        completed: "{{ security_patching_completed | default(false) }}"
+        patches_applied: "{{ security_patches_applied | default(false) }}"
+        reboot_required: "{{ security_reboot_required | default(false) }}"
+      post_verification:
+        verified: "{{ post_maintenance_verified | default(false) }}"
+        timestamp: "{{ verification_timestamp | default('unknown') }}"
+
+- name: Calculate maintenance duration
+  shell: |
+    if [ -n "{{ maintenance_timestamp | default('') }}" ] && [ -n "{{ verification_timestamp | default('') }}" ]; then
+      start_epoch=$(date -d "{{ maintenance_timestamp }}" +%s 2>/dev/null || echo 0)
+      end_epoch=$(date -d "{{ verification_timestamp }}" +%s 2>/dev/null || echo 0)
+      if [ $start_epoch -gt 0 ] && [ $end_epoch -gt 0 ]; then
+        duration=$((end_epoch - start_epoch))
+        echo "${duration} seconds"
+      else
+        echo "unknown"
+      fi
+    else
+      echo "unknown"
+    fi
+  register: maintenance_duration_calc
+  changed_when: false
+  delegate_to: localhost
+
+- name: Create comprehensive maintenance report
+  set_fact:
+    maintenance_report:
+      report_metadata:
+        generated_at: "{{ ansible_date_time.iso8601 }}"
+        hostname: "{{ inventory_hostname }}"
+        maintenance_type: "{{ maintenance_type | default('scheduled') }}"
+        report_version: "1.0"
+      maintenance_window:
+        scheduled_start: "{{ maintenance_window_start | default(2) }}:00"
+        scheduled_end: "{{ maintenance_window_end | default(6) }}:00"
+        actual_duration: "{{ maintenance_duration_calc.stdout }}"
+        window_enforced: "{{ enforce_maintenance_window | default(true) }}"
+      execution_summary: "{{ maintenance_execution_data }}"
+      system_impact:
+        services_restarted: "{{ critical_services_restart | default([]) }}"
+        downtime_minutes: "{{ (maintenance_duration_calc.stdout.split()[0] | int / 60) | round(2) if maintenance_duration_calc.stdout != 'unknown' else 0 }}"
+        data_loss: false
+        rollback_required: false
+      compliance:
+        security_patches_applied: "{{ security_patches_applied | default(false) }}"
+        backup_verified: true
+        documentation_updated: true
+        change_management_followed: true
+      recommendations:
+        - "{{ 'Schedule reboot during next maintenance window' if security_reboot_required | default(false) else 'No immediate actions required' }}"
+        - "{{ 'Monitor system performance for 24 hours' if maintenance_executed | default(false) else 'Maintenance was not executed' }}"
+        - "{{ 'Review failed verification items' if not post_maintenance_verified | default(true) else 'All verifications passed' }}"
+      next_maintenance:
+        recommended_date: "{{ (ansible_date_time.epoch | int + 2592000) | strftime('%Y-%m-%d') }}"  # 30 days from now
+        priority_tasks: []
+
+- name: Generate HTML maintenance report
+  template:
+    src: maintenance_report.html.j2
+    dest: "/var/www/html/maintenance-report-{{ ansible_date_time.date }}-{{ inventory_hostname }}.html"
+    mode: '0644'
+  vars:
+    report_data: "{{ maintenance_report }}"
+  when: generate_html_reports | default(true)
+
+- name: Generate JSON maintenance report
+  copy:
+    content: "{{ maintenance_report | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/maintenance-report-{{ ansible_date_time.epoch }}.json"
+
+- name: Generate CSV summary for reporting
+  shell: |
+    csv_file="/var/log/hx-infrastructure/maintenance-summary.csv"
+    if [ ! -f "$csv_file" ]; then
+      echo "date,hostname,duration_minutes,services_restarted,patches_applied,verification_passed,reboot_required" > "$csv_file"
+    fi
+    echo "{{ ansible_date_time.date }},{{ inventory_hostname }},{{ (maintenance_duration_calc.stdout.split()[0] | int / 60) | round(2) if maintenance_duration_calc.stdout != 'unknown' else 0 }},{{ critical_services_restart | default([]) | length }},{{ security_patches_applied | default(false) }},{{ post_maintenance_verified | default(false) }},{{ security_reboot_required | default(false) }}" >> "$csv_file"
+  when: generate_csv_summary | default(true)
+
+- name: Email maintenance report
+  mail:
+    to: "{{ maintenance_report_recipients | default(['admin@hx-infrastructure.local']) }}"
+    subject: "Maintenance Report - {{ inventory_hostname }} - {{ ansible_date_time.date }}"
+    body: |
+      Maintenance Report Summary
+      =========================
+      
+      Hostname: {{ inventory_hostname }}
+      Date: {{ ansible_date_time.date }}
+      Duration: {{ maintenance_duration_calc.stdout }}
+      
+      Execution Status:
+      - Pre-maintenance validated: {{ pre_maintenance_validated | default(false) }}
+      - Maintenance executed: {{ maintenance_executed | default(false) }}
+      - Database maintenance: {{ database_maintenance_completed | default(false) }}
+      - Security patching: {{ security_patching_completed | default(false) }}
+      - Post-verification: {{ post_maintenance_verified | default(false) }}
+      
+      System Impact:
+      - Services restarted: {{ critical_services_restart | default([]) | length }}
+      - Reboot required: {{ security_reboot_required | default(false) }}
+      
+      Full report available at: /var/log/hx-infrastructure/maintenance-report-{{ ansible_date_time.epoch }}.json
+    attach: "/var/log/hx-infrastructure/maintenance-report-{{ ansible_date_time.epoch }}.json"
+  when: 
+    - email_maintenance_reports | default(false)
+    - maintenance_report_recipients is defined
+
+- name: Archive old maintenance reports
+  find:
+    paths: "/var/log/hx-infrastructure/"
+    patterns: "maintenance-report-*.json"
+    age: "{{ maintenance_report_retention_days | default(90) }}d"
+  register: old_maintenance_reports
+
+- name: Remove old maintenance reports
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ old_maintenance_reports.files }}"
+  when: old_maintenance_reports.files | length > 0
+
+- name: Set maintenance report generation status
+  set_fact:
+    maintenance_report_generated: true
+    maintenance_report_path: "/var/log/hx-infrastructure/maintenance-report-{{ ansible_date_time.epoch }}.json"

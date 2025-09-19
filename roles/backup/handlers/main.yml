@@ -1,0 +1,33 @@
+
+---
+# Handlers for backup role
+# Following Ansible handler best practices
+
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+  listen: "reload systemd"
+
+- name: restart backup service
+  systemd:
+    name: backup.service
+    state: restarted
+  listen: "restart backup service"
+
+- name: restart backup timer
+  systemd:
+    name: backup.timer
+    state: restarted
+  listen: "restart backup timer"
+
+- name: restart backup monitoring
+  systemd:
+    name: backup-monitor.service
+    state: restarted
+  listen: "restart backup monitoring"
+
+- name: reload cron
+  systemd:
+    name: cron
+    state: reloaded
+  listen: "reload cron"

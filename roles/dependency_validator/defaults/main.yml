@@ -1,0 +1,142 @@
+
+---
+# Dependency Validator Role Defaults - Phase 3 Day 1
+# Comprehensive prerequisite checking system
+
+# Core dependency validation settings
+dependency_validation_enabled: true
+dependency_validation_version: "3.0.0"
+dependency_validation_strict_mode: true
+dependency_validation_fail_fast: false
+
+# System requirement validation
+system_requirements:
+  min_memory_gb: 2
+  min_disk_gb: 10
+  min_cpu_cores: 1
+  supported_architectures:
+    - x86_64
+    - aarch64
+  supported_os_families:
+    - RedHat
+    - Debian
+    - Ubuntu
+  supported_os_versions:
+    RedHat:
+      - "8"
+      - "9"
+    Debian:
+      - "10"
+      - "11"
+      - "12"
+    Ubuntu:
+      - "20.04"
+      - "22.04"
+      - "24.04"
+
+# Package dependency validation
+package_dependencies:
+  essential_packages:
+    - python3
+    - curl
+    - wget
+    - openssl
+    - ca-certificates
+  role_specific_packages: {}  # Override per role
+  version_constraints: {}     # Override per package
+
+# Service dependency validation
+service_dependencies:
+  required_services: []
+  forbidden_services: []
+  service_states:
+    required_running: []
+    required_stopped: []
+
+# Network dependency validation
+network_dependencies:
+  connectivity_checks:
+    - host: "8.8.8.8"
+      port: 53
+      protocol: udp
+      timeout: 5
+    - host: "1.1.1.1"
+      port: 53
+      protocol: udp
+      timeout: 5
+  dns_resolution_checks:
+    - "google.com"
+    - "github.com"
+  required_ports_open: []
+  required_ports_closed: []
+
+# Certificate and SSL validation
+certificate_dependencies:
+  validate_ca_bundle: true
+  required_ca_certificates: []
+  ssl_endpoints_check: []
+  certificate_expiry_days: 30
+
+# External dependency validation
+external_dependencies:
+  api_endpoints: []
+  database_connections: []
+  message_queues: []
+  storage_backends: []
+
+# Dependency caching settings
+dependency_cache:
+  enabled: true
+  cache_dir: "/tmp/ansible-dependency-cache"
+  cache_ttl_seconds: 3600
+  offline_mode: false
+
+# Validation timeouts and retries
+validation_timeouts:
+  network_timeout: 10
+  service_timeout: 30
+  package_timeout: 300
+  overall_timeout: 600
+
+validation_retries:
+  network_retries: 3
+  service_retries: 2
+  package_retries: 1
+  retry_delay: 5
+
+# Reporting and logging
+dependency_reporting:
+  generate_report: true
+  report_format: "json"
+  report_path: "/tmp/dependency-validation-report.json"
+  detailed_logging: true
+  log_level: "INFO"
+
+# Environment-specific overrides
+environment_overrides:
+  development:
+    dependency_validation_strict_mode: false
+    validation_timeouts:
+      overall_timeout: 300
+  testing:
+    dependency_validation_strict_mode: true
+    dependency_cache:
+      cache_ttl_seconds: 1800
+  production:
+    dependency_validation_strict_mode: true
+    dependency_validation_fail_fast: true
+    validation_retries:
+      network_retries: 5
+      service_retries: 3
+
+# Feature flags
+features:
+  validate_system_requirements: true
+  validate_packages: true
+  validate_services: true
+  validate_network: true
+  validate_certificates: true
+  validate_external_deps: true
+  generate_dependency_matrix: true
+  offline_validation: false
+

@@ -1,0 +1,83 @@
+---
+- name: "Hx | Web UI | Validate required variables"
+  assert:
+    that:
+      - hx_webui_server_type is defined
+      - hx_webui_server_type in ['nginx', 'apache', 'custom']
+      - hx_webui_server_name is defined
+      - hx_webui_server_name | length > 0
+      - hx_webui_listen_port is defined
+      - hx_webui_listen_port is number
+      - hx_webui_listen_port > 0
+      - hx_webui_listen_port < 65536
+    fail_msg: "Required Web UI variables are missing or invalid"
+    success_msg: "Web UI variables validated successfully"
+  tags: ['validate']
+
+- name: "Hx | Web UI | Validate SSL configuration"
+  assert:
+    that:
+      - hx_webui_ssl_cert_file is defined
+      - hx_webui_ssl_key_file is defined
+      - hx_webui_ssl_port is defined
+      - hx_webui_ssl_port is number
+      - hx_webui_ssl_port > 0
+      - hx_webui_ssl_port < 65536
+    fail_msg: "SSL configuration is invalid when SSL is enabled"
+    success_msg: "SSL configuration validated successfully"
+  when: hx_webui_ssl_enabled | default(false) | bool
+  tags: ['validate']
+
+- name: "Hx | Web UI | Validate server name format"
+  assert:
+    that:
+      - hx_webui_server_name | regex_search('^[a-zA-Z0-9.-]+$')
+    fail_msg: "Server name contains invalid characters"
+    success_msg: "Server name format is valid"
+  tags: ['validate']
+
+- name: "Hx | Web UI | Check system requirements"
+  assert:
+    that:
+      - ansible_memtotal_mb >= 1024
+      - ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first > 5000000000
+    fail_msg: "System does not meet minimum requirements (1GB RAM, 5GB disk)"
+    success_msg: "System requirements validated"
+  tags: ['validate']
+
+- name: "Hx | Web UI | Validate user and group"
+  assert:
+    that:
+      - hx_webui_app_user is defined
+      - hx_webui_app_group is defined
+      - hx_webui_app_user | length > 0
+      - hx_webui_app_group | length > 0
+    fail_msg: "Application user and group must be defined"
+    success_msg: "User and group configuration validated"
+  tags: ['validate']
+
+- name: "Hx | Web UI | Check for conflicting services"
+  service_facts:
+  tags: ['validate']
+
+- name: "Hx | Web UI | Validate port availability"
+  wait_for:
+    port: "{{ item }}"
+    host: "{{ ansible_default_ipv4.address | default('127.0.0.1') }}"
+    timeout: 1
+    state: stopped
+  loop:
+    - "{{ hx_webui_listen_port }}"
+    - "{{ hx_webui_ssl_port if hx_webui_ssl_enabled else omit }}"
+  failed_when: false
+  register: hx_webui_port_check
+  tags: ['validate']
+
+- name: "Hx | Web UI | Warn about port conflicts"
+  debug:
+    msg: "Warning: Port {{ item.item }} appears to be in use"
+  loop: "{{ hx_webui_port_check.results }}"
+  when: 
+    - item.failed is defined
+    - not item.failed
+  tags: ['validate']

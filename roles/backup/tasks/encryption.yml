@@ -1,0 +1,40 @@
+
+---
+# Encryption setup tasks for backup automation
+# Configures backup encryption with proper security
+
+- name: Generate backup encryption key
+  command: openssl rand -base64 32
+  register: backup_encryption_key
+  when: backup_encryption_key is not defined
+  no_log: true
+  tags: [backup, encryption, security]
+
+- name: Store encryption key securely
+  copy:
+    content: "{{ backup_encryption_key.stdout | default(backup_encryption_key) }}"
+    dest: "{{ backup_key_file | default('/etc/backup/encryption.key') }}"
+    mode: '0600'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  when: backup_encryption_key is defined
+  no_log: true
+  tags: [backup, encryption, security]
+
+- name: Create encryption key directory
+  file:
+    path: "{{ backup_key_file | default('/etc/backup/encryption.key') | dirname }}"
+    state: directory
+    mode: '0700'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  tags: [backup, encryption, security]
+
+- name: Configure encryption parameters
+  template:
+    src: encryption.conf.j2
+    dest: "{{ backup_config_dir | default('/etc/backup') }}/encryption.conf"
+    mode: '0600'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  tags: [backup, encryption, configuration]

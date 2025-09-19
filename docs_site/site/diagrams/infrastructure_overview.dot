@@ -1,0 +1,69 @@
+digraph InfrastructureOverview {
+    rankdir=TB;
+    node [shape=box, style=filled];
+    edge [color=darkblue];
+    
+    // Infrastructure layers
+    subgraph cluster_control {
+        label="Control Layer";
+        style=filled;
+        fillcolor=lightblue;
+        
+        ansible [label="Ansible Controller", fillcolor=lightgreen];
+        inventory [label="Dynamic Inventory", fillcolor=lightyellow];
+        playbooks [label="Playbooks & Roles", fillcolor=lightcoral];
+    }
+    
+    subgraph cluster_security {
+        label="Security Layer";
+        style=filled;
+        fillcolor=lightcoral;
+        
+        ca_trust [label="CA Trust Management"];
+        domain_join [label="Domain Integration"];
+        ssh_keys [label="SSH Key Management"];
+        vault [label="Ansible Vault"];
+    }
+    
+    subgraph cluster_services {
+        label="Service Layer";
+        style=filled;
+        fillcolor=lightgreen;
+        
+        postgresql [label="PostgreSQL Auth"];
+        backup [label="Backup Services"];
+        monitoring [label="Monitoring"];
+        logging [label="Logging"];
+    }
+    
+    subgraph cluster_infrastructure {
+        label="Infrastructure Layer";
+        style=filled;
+        fillcolor=lightyellow;
+        
+        web_servers [label="Web Servers"];
+        db_servers [label="Database Servers"];
+        load_balancers [label="Load Balancers"];
+        storage [label="Storage Systems"];
+    }
+    
+    // Connections
+    ansible -> inventory;
+    ansible -> playbooks;
+    playbooks -> ca_trust;
+    playbooks -> domain_join;
+    playbooks -> ssh_keys;
+    playbooks -> postgresql;
+    playbooks -> backup;
+    playbooks -> monitoring;
+    
+    ca_trust -> web_servers;
+    domain_join -> db_servers;
+    postgresql -> db_servers;
+    backup -> storage;
+    monitoring -> web_servers;
+    monitoring -> db_servers;
+    
+    web_servers -> load_balancers;
+    db_servers -> storage;
+}

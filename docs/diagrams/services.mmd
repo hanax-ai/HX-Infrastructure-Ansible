@@ -1,0 +1,377 @@
+
+
+# HX Infrastructure Service Architecture
+
+## Complete Service Relationship Diagram
+
+```mermaid
+graph TB
+    subgraph "Infrastructure Services"
+        AD[Active Directory]
+        CA[Certificate Authority]
+        DNS[DNS Server]
+        LB[Load Balancer]
+        VPN[VPN Gateway]
+    end
+    
+    subgraph "AI/ML Services"
+        Ollama[Ollama LLM Server]
+        LiteLLM[LiteLLM Proxy]
+        ModelStore[Model Storage]
+        GPUCluster[GPU Cluster]
+    end
+    
+    subgraph "Operations Services"
+        PostgreSQL[PostgreSQL Database]
+        Redis[Redis Cache]
+        Elasticsearch[Elasticsearch]
+        Prometheus[Prometheus Monitoring]
+        Grafana[Grafana Dashboard]
+        MkDocs[MkDocs Documentation]
+    end
+    
+    subgraph "UI Services"
+        WebUI[Web UI Application]
+        Nginx[Nginx Reverse Proxy]
+        SSL[SSL/TLS Termination]
+    end
+    
+    subgraph "External Services"
+        GitHub[GitHub Repository]
+        GitHubPages[GitHub Pages]
+        GitHubActions[GitHub Actions]
+        Analytics[Google Analytics]
+    end
+    
+    %% Infrastructure Dependencies
+    AD --> DNS
+    CA --> SSL
+    DNS --> LB
+    LB --> Nginx
+    
+    %% AI/ML Dependencies
+    Ollama --> ModelStore
+    LiteLLM --> Ollama
+    Ollama --> GPUCluster
+    
+    %% Operations Dependencies
+    Prometheus --> PostgreSQL
+    Prometheus --> Redis
+    Prometheus --> Elasticsearch
+    Prometheus --> MkDocs
+    Grafana --> Prometheus
+    WebUI --> PostgreSQL
+    WebUI --> Redis
+    LiteLLM --> Redis
+    
+    %% UI Dependencies
+    WebUI --> LiteLLM
+    Nginx --> WebUI
+    Nginx --> SSL
+    SSL --> CA
+    
+    %% Documentation Dependencies
+    MkDocs --> GitHub
+    GitHub --> GitHubActions
+    GitHubActions --> GitHubPages
+    MkDocs --> Analytics
+    
+    %% Monitoring Integration
+    Prometheus --> Ollama
+    Prometheus --> LiteLLM
+    Prometheus --> WebUI
+    Prometheus --> Nginx
+    
+    %% Backup Dependencies
+    PostgreSQL --> ModelStore
+    Redis --> ModelStore
+    MkDocs --> ModelStore
+    
+    %% Security Dependencies
+    AD --> WebUI
+    AD --> Grafana
+    CA --> Prometheus
+    CA --> MkDocs
+```
+
+## Service Layer Architecture
+
+```mermaid
+graph LR
+    subgraph "Layer 1: Infrastructure"
+        L1A[Active Directory]
+        L1B[Certificate Authority]
+        L1C[DNS]
+        L1D[Load Balancer]
+    end
+    
+    subgraph "Layer 2: Operations"
+        L2A[PostgreSQL]
+        L2B[Redis]
+        L2C[Elasticsearch]
+        L2D[Prometheus]
+        L2E[MkDocs]
+    end
+    
+    subgraph "Layer 3: AI/ML"
+        L3A[Ollama]
+        L3B[LiteLLM]
+        L3C[Model Storage]
+    end
+    
+    subgraph "Layer 4: UI"
+        L4A[Web UI]
+        L4B[Nginx]
+        L4C[Grafana]
+    end
+    
+    L1A --> L2A
+    L1B --> L4B
+    L1C --> L1D
+    L1D --> L4B
+    
+    L2A --> L3B
+    L2B --> L3B
+    L2A --> L4A
+    L2B --> L4A
+    L2D --> L4C
+    
+    L3A --> L3B
+    L3B --> L4A
+    
+    L4B --> L4A
+    L4B --> L4C
+```
+
+## MkDocs Integration Flow
+
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant Git as Git Repository
+    participant Actions as GitHub Actions
+    participant MkDocs as MkDocs Service
+    participant Pages as GitHub Pages
+    participant Monitor as Monitoring
+    
+    Dev->>Git: Push documentation changes
+    Git->>Actions: Trigger workflow
+    Actions->>MkDocs: Build documentation
+    MkDocs->>MkDocs: Validate content
+    MkDocs->>MkDocs: Generate static site
+    MkDocs->>Pages: Deploy to GitHub Pages
+    Pages->>Monitor: Health check endpoint
+    Monitor->>MkDocs: Collect metrics
+    Monitor->>Dev: Alert on issues
+```
+
+## Data Flow Architecture
+
+```mermaid
+flowchart TD
+    subgraph "Data Sources"
+        Users[Users]
+        APIs[External APIs]
+        Docs[Documentation]
+        Config[Configuration]
+    end
+    
+    subgraph "Processing Layer"
+        WebUI[Web UI]
+        LiteLLM[LiteLLM Proxy]
+        MkDocs[MkDocs Generator]
+    end
+    
+    subgraph "Storage Layer"
+        PostgreSQL[PostgreSQL]
+        Redis[Redis Cache]
+        Files[File Storage]
+    end
+    
+    subgraph "AI/ML Layer"
+        Ollama[Ollama LLM]
+        Models[Model Storage]
+    end
+    
+    subgraph "Presentation Layer"
+        WebInterface[Web Interface]
+        Documentation[Documentation Site]
+        Dashboards[Monitoring Dashboards]
+    end
+    
+    Users --> WebUI
+    APIs --> LiteLLM
+    Docs --> MkDocs
+    Config --> MkDocs
+    
+    WebUI --> PostgreSQL
+    WebUI --> Redis
+    LiteLLM --> Redis
+    MkDocs --> Files
+    
+    LiteLLM --> Ollama
+    Ollama --> Models
+    
+    WebUI --> WebInterface
+    MkDocs --> Documentation
+    PostgreSQL --> Dashboards
+    Redis --> Dashboards
+```
+
+## Network Architecture
+
+```mermaid
+graph TB
+    subgraph "External Network"
+        Internet[Internet]
+        GitHub[GitHub Services]
+    end
+    
+    subgraph "DMZ"
+        LB[Load Balancer]
+        Nginx[Nginx Proxy]
+    end
+    
+    subgraph "Application Network"
+        WebUI[Web UI]
+        LiteLLM[LiteLLM]
+        MkDocs[MkDocs]
+    end
+    
+    subgraph "Data Network"
+        PostgreSQL[PostgreSQL]
+        Redis[Redis]
+        Elasticsearch[Elasticsearch]
+    end
+    
+    subgraph "AI/ML Network"
+        Ollama[Ollama]
+        GPUNodes[GPU Nodes]
+    end
+    
+    subgraph "Management Network"
+        Prometheus[Prometheus]
+        Grafana[Grafana]
+        AD[Active Directory]
+    end
+    
+    Internet --> LB
+    GitHub --> MkDocs
+    LB --> Nginx
+    Nginx --> WebUI
+    Nginx --> Grafana
+    
+    WebUI --> PostgreSQL
+    WebUI --> Redis
+    WebUI --> LiteLLM
+    LiteLLM --> Ollama
+    LiteLLM --> Redis
+    
+    Ollama --> GPUNodes
+    MkDocs --> GitHub
+    
+    Prometheus --> WebUI
+    Prometheus --> PostgreSQL
+    Prometheus --> Redis
+    Prometheus --> Ollama
+    Prometheus --> MkDocs
+    
+    Grafana --> Prometheus
+    AD --> WebUI
+    AD --> Grafana
+```
+
+## Deployment Architecture
+
+```mermaid
+graph TB
+    subgraph "Development Environment"
+        DevMkDocs[MkDocs Dev Server]
+        DevDB[PostgreSQL Dev]
+        DevRedis[Redis Dev]
+    end
+    
+    subgraph "Test Environment"
+        TestMkDocs[MkDocs Test]
+        TestDB[PostgreSQL Test]
+        TestRedis[Redis Test]
+        TestActions[GitHub Actions Test]
+    end
+    
+    subgraph "Production Environment"
+        ProdMkDocs[MkDocs Production]
+        ProdDB[PostgreSQL Production]
+        ProdRedis[Redis Production]
+        ProdActions[GitHub Actions Prod]
+        ProdPages[GitHub Pages]
+        ProdMonitoring[Production Monitoring]
+    end
+    
+    DevMkDocs --> TestMkDocs
+    TestMkDocs --> TestActions
+    TestActions --> ProdMkDocs
+    ProdMkDocs --> ProdActions
+    ProdActions --> ProdPages
+    
+    DevDB --> TestDB
+    TestDB --> ProdDB
+    DevRedis --> TestRedis
+    TestRedis --> ProdRedis
+    
+    ProdMonitoring --> ProdMkDocs
+    ProdMonitoring --> ProdDB
+    ProdMonitoring --> ProdRedis
+```
+
+## Security Architecture
+
+```mermaid
+graph TB
+    subgraph "Authentication Layer"
+        AD[Active Directory]
+        OAuth[OAuth Provider]
+        JWT[JWT Tokens]
+    end
+    
+    subgraph "Authorization Layer"
+        RBAC[Role-Based Access Control]
+        Policies[Security Policies]
+    end
+    
+    subgraph "Transport Security"
+        SSL[SSL/TLS Certificates]
+        CA[Certificate Authority]
+        VPN[VPN Gateway]
+    end
+    
+    subgraph "Application Security"
+        WebUI[Web UI Security]
+        API[API Security]
+        MkDocs[Documentation Security]
+    end
+    
+    subgraph "Data Security"
+        Encryption[Data Encryption]
+        Vault[Secrets Management]
+        Backup[Secure Backups]
+    end
+    
+    AD --> RBAC
+    OAuth --> JWT
+    JWT --> WebUI
+    JWT --> API
+    
+    RBAC --> Policies
+    Policies --> WebUI
+    Policies --> MkDocs
+    
+    CA --> SSL
+    SSL --> WebUI
+    SSL --> API
+    SSL --> MkDocs
+    
+    Vault --> Encryption
+    Encryption --> Backup
+    Vault --> MkDocs
+```
+

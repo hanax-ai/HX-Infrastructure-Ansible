@@ -1,0 +1,314 @@
+
+---
+# Preparation tasks for hx_domain_join_standardized role
+# System preparation and dependency installation for domain join
+
+- name: Create backup directory
+  ansible.builtin.file:
+    path: "{{ hx_domain_join_backup_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  become: true
+  when: hx_domain_join_backup_enabled | default(false)
+
+- name: Create audit log directory
+  ansible.builtin.file:
+    path: "{{ hx_domain_join_audit_log_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+  when: hx_domain_join_audit_enabled | default(false)
+
+- name: Initialize audit log file
+  ansible.builtin.file:
+    path: "{{ hx_domain_join_audit_log_path }}"
+    state: touch
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  when: hx_domain_join_audit_enabled | default(false)
+
+- name: Backup existing configuration files
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ hx_domain_join_backup_dir }}/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0600'
+    remote_src: true
+  loop:
+    - src: /etc/sssd/sssd.conf
+      dest: "sssd.conf.backup.{{ ansible_date_time.epoch }}"
+    - src: /etc/krb5.conf
+      dest: "krb5.conf.backup.{{ ansible_date_time.epoch }}"
+    - src: /etc/nsswitch.conf
+      dest: "nsswitch.conf.backup.{{ ansible_date_time.epoch }}"
+    - src: /etc/pam.d/common-session
+      dest: "common-session.backup.{{ ansible_date_time.epoch }}"
+  become: true
+  failed_when: false
+  when: hx_domain_join_backup_enabled | default(false)
+
+- name: Install required packages (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name: "{{ hx_domain_join_packages_debian }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+  when: ansible_os_family == "Debian"
+
+- name: Install required packages (RedHat/CentOS)
+  ansible.builtin.yum:
+    name: "{{ hx_domain_join_packages_redhat }}"
+    state: present
+  become: true
+  when: ansible_os_family == "RedHat"
+
+- name: Configure DNS settings
+  block:
+    - name: Backup existing resolv.conf
+      ansible.builtin.copy:
+        src: /etc/resolv.conf
+        dest: "{{ hx_domain_join_backup_dir }}/resolv.conf.backup.{{ ansible_date_time.epoch }}"
+        remote_src: true
+      become: true
+      when: hx_domain_join_backup_enabled | default(false)
+
+    - name: Configure DNS servers
+      ansible.builtin.template:
+        src: resolv.conf.j2
+        dest: /etc/resolv.conf
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+      become: true
+
+    - name: Configure systemd-resolved (if present)
+      ansible.builtin.template:
+        src: resolved.conf.j2
+        dest: /etc/systemd/resolved.conf
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+      notify: restart systemd-resolved
+      when: ansible_service_mgr == "systemd"
+  when: hx_domain_join_configure_dns | default(true)
+
+- name: Configure NTP synchronization
+  block:
+    - name: Install and configure chrony (Debian/Ubuntu)
+      ansible.builtin.template:
+        src: chrony.conf.j2
+        dest: /etc/chrony/chrony.conf
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+      become: true
+      notify: restart chrony
+      when: ansible_os_family == "Debian"
+
+    - name: Install and configure chrony (RedHat/CentOS)
+      ansible.builtin.template:
+        src: chrony.conf.j2
+        dest: /etc/chrony.conf
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+      become: true
+      notify: restart chronyd
+      when: ansible_os_family == "RedHat"
+
+    - name: Enable and start NTP service
+      ansible.builtin.systemd:
+        name: "{{ 'chrony' if ansible_os_family == 'Debian' else 'chronyd' }}"
+        state: started
+        enabled: true
+      become: true
+  when: hx_domain_join_configure_ntp | default(true)
+
+- name: Set hostname if needed
+  ansible.builtin.hostname:
+    name: "{{ hx_domain_join_computer_name | lower }}"
+  become: true
+  when: ansible_hostname != (hx_domain_join_computer_name | lower)
+
+- name: Update /etc/hosts file
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1'
+    line: "127.0.1.1 {{ hx_domain_join_computer_name | lower }}.{{ hx_domain_join_domain_name }} {{ hx_domain_join_computer_name | lower }}"
+    backup: true
+  become: true
+
+- name: Configure Kerberos client
+  ansible.builtin.template:
+    src: krb5.conf.j2
+    dest: /etc/krb5.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: true
+  become: true
+
+- name: Create SSSD configuration directory
+  ansible.builtin.file:
+    path: /etc/sssd
+    state: directory
+    owner: root
+    group: root
+    mode: '0711'
+  become: true
+
+- name: Pre-configure SSSD
+  ansible.builtin.template:
+    src: sssd.conf.j2
+    dest: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: '0600'
+    backup: true
+  become: true
+  when: hx_domain_join_use_sssd | default(true)
+
+- name: Configure PAM for home directory creation
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/common-session
+    line: "session required pam_mkhomedir.so skel=/etc/skel umask=077"
+    backup: true
+  become: true
+  when: ansible_os_family == "Debian"
+
+- name: Configure PAM for home directory creation (RedHat)
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/system-auth
+    line: "session required pam_mkhomedir.so skel=/etc/skel umask=077"
+    backup: true
+  become: true
+  when: ansible_os_family == "RedHat"
+
+- name: Enable oddjobd service for home directory creation
+  ansible.builtin.systemd:
+    name: oddjobd
+    state: started
+    enabled: true
+  become: true
+
+- name: Configure SMB client
+  block:
+    - name: Create SMB configuration
+      ansible.builtin.template:
+        src: smb.conf.j2
+        dest: /etc/samba/smb.conf
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+      become: true
+
+    - name: Enable and start SMB services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - smbd
+        - nmbd
+      become: true
+      failed_when: false
+  when: hx_domain_join_configure_smb | default(false)
+
+- name: Create temporary working directory
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: hx_domain_join
+  register: temp_work_dir
+  become: true
+
+- name: Set working directory fact
+  ansible.builtin.set_fact:
+    hx_domain_join_work_dir: "{{ temp_work_dir.path }}"
+
+- name: Test domain controller connectivity
+  ansible.builtin.wait_for:
+    host: "{{ item }}"
+    port: "{{ port }}"
+    timeout: "{{ hx_domain_join_connectivity_timeout }}"
+  loop: "{{ hx_domain_join_domain_controllers }}"
+  vars:
+    port: 389  # LDAP port
+  register: dc_connectivity_test
+
+- name: Verify Kerberos configuration
+  ansible.builtin.command:
+    cmd: "kinit -V {{ hx_domain_join_admin_user }}@{{ hx_domain_join_realm }}"
+  environment:
+    KRB5_TRACE: /dev/stderr
+  register: kerberos_test
+  become: true
+  changed_when: false
+  failed_when: false
+  no_log: true
+  when: not hx_domain_already_joined | default(false)
+
+- name: Configure firewall for domain services
+  block:
+    - name: Allow Kerberos (UFW)
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: "{{ proto }}"
+        comment: "Domain Services"
+      loop:
+        - "88"    # Kerberos
+        - "389"   # LDAP
+        - "636"   # LDAPS
+        - "464"   # Kerberos password change
+      vars:
+        proto: "{{ 'tcp' if item in ['389', '636'] else 'udp' }}"
+      become: true
+      when: ansible_os_family == "Debian"
+
+    - name: Allow domain services (firewalld)
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        permanent: true
+        state: enabled
+        immediate: true
+      loop:
+        - kerberos
+        - ldap
+        - ldaps
+      become: true
+      when: ansible_os_family == "RedHat"
+  when: hx_domain_join_configure_firewall | default(true)
+
+- name: Log preparation completion
+  ansible.builtin.lineinfile:
+    path: "{{ hx_domain_join_audit_log_path }}"
+    line: "{{ ansible_date_time.iso8601 }} - Domain join preparation completed on {{ inventory_hostname }}"
+    create: true
+  become: true
+  when: hx_domain_join_audit_enabled | default(false)
+
+- name: Display preparation summary
+  ansible.builtin.debug:
+    msg:
+      - "Domain join preparation completed successfully"
+      - "Domain: {{ hx_domain_join_domain_name }}"
+      - "Computer Name: {{ hx_domain_join_computer_name }}"
+      - "DNS Configured: {{ hx_domain_join_configure_dns }}"
+      - "NTP Configured: {{ hx_domain_join_configure_ntp }}"
+      - "SSSD Enabled: {{ hx_domain_join_use_sssd }}"
+      - "Working Directory: {{ hx_domain_join_work_dir }}"
+      - "Backup Directory: {{ hx_domain_join_backup_dir if hx_domain_join_backup_enabled else 'Disabled' }}"
+  when: hx_domain_join_enable_logging | default(true)

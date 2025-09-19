@@ -1,0 +1,50 @@
+
+---
+# Pre-maintenance validation checks
+- name: Check system status before maintenance
+  include_role:
+    name: health_monitoring
+    tasks_from: system_health_check
+
+- name: Verify backup status
+  shell: |
+    find /opt/hx-infrastructure/backups -name "*.tar.gz" -mtime -1 | wc -l
+  register: recent_backups
+  changed_when: false
+
+- name: Ensure recent backup exists
+  assert:
+    that:
+      - recent_backups.stdout | int > 0
+    fail_msg: "No recent backups found. Maintenance cannot proceed."
+    success_msg: "Recent backup verified."
+
+- name: Check maintenance window
+  shell: |
+    current_hour=$(date +%H)
+    if [ $current_hour -ge {{ maintenance_window_start | default(2) }} ] && 
+       [ $current_hour -le {{ maintenance_window_end | default(6) }} ]; then
+      echo "in_window"
+    else
+      echo "outside_window"
+    fi
+  register: maintenance_window_check
+  changed_when: false
+
+- name: Validate maintenance window
+  assert:
+    that:
+      - maintenance_window_check.stdout == "in_window"
+    fail_msg: "Current time is outside maintenance window"
+    success_msg: "Maintenance window validated"
+  when: enforce_maintenance_window | default(true)
+
+- name: Create maintenance lock file
+  file:
+    path: /var/lock/hx-maintenance.lock
+    state: touch
+    mode: '0644'
+
+- name: Set pre-maintenance validation status
+  set_fact:
+    pre_maintenance_validated: true

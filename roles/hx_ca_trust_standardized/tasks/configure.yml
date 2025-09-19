@@ -1,0 +1,88 @@
+
+---
+# Configuration Tasks for HX CA Trust
+
+- name: Ensure CA trust store is updated
+  command: "{{ hx_ca_update_command }}"
+  register: hx_ca_update_result
+  changed_when: "'added' in hx_ca_update_result.stdout or 'updated' in hx_ca_update_result.stdout"
+  failed_when: hx_ca_update_result.rc != 0
+  timeout: "{{ hx_ca_update_timeout }}"
+  tags: [configure]
+
+- name: Verify certificate is in system trust store
+  shell: |
+    set -euo pipefail
+    if [ -f "{{ hx_ca_cert_full_path }}" ]; then
+      openssl x509 -in "{{ hx_ca_cert_full_path }}" -subject -issuer -noout
+    else
+      echo "Certificate file not found"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_ca_cert_info
+  changed_when: false
+  tags: [configure]
+
+- name: Extract certificate fingerprint
+  shell: |
+    set -euo pipefail
+    openssl x509 -in "{{ hx_ca_cert_full_path }}" -fingerprint -sha256 -noout | cut -d= -f2
+  args:
+    executable: /bin/bash
+  register: hx_ca_actual_fingerprint
+  changed_when: false
+  tags: [configure]
+
+- name: Validate certificate fingerprint (if expected fingerprint provided)
+  assert:
+    that:
+      - hx_ca_expected_sha256.replace('SHA256:', '') == hx_ca_actual_fingerprint.stdout
+    fail_msg: "Certificate fingerprint mismatch. Expected: {{ hx_ca_expected_sha256 }}, Actual: {{ hx_ca_actual_fingerprint.stdout }}"
+    success_msg: "Certificate fingerprint validation passed"
+  when:
+    - hx_ca_expected_sha256 | length > 0
+    - hx_ca_security_enabled | bool
+  tags: [configure]
+
+- name: Configure certificate monitoring (if monitoring enabled)
+  template:
+    src: ca_monitor.sh.j2
+    dest: /usr/local/bin/hx-ca-monitor
+    owner: root
+    group: root
+    mode: '0755'
+  when: hx_ca_monitoring_enabled | bool
+  tags: [configure]
+
+- name: Create certificate monitoring cron job (if monitoring enabled)
+  cron:
+    name: "HX CA Certificate Monitoring"
+    minute: "0"
+    hour: "*/6"
+    job: "/usr/local/bin/hx-ca-monitor >> {{ hx_ca_log_dir }}/monitor.log 2>&1"
+    user: root
+  when: hx_ca_monitoring_enabled | bool
+  tags: [configure]
+
+- name: Log configuration completion
+  lineinfile:
+    path: "{{ hx_ca_log_dir }}/deployment.log"
+    line: "{{ ansible_date_time.iso8601 }} - Certificate configuration completed. Fingerprint: {{ hx_ca_actual_fingerprint.stdout }}"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_ca_audit_logging_enabled | bool
+  tags: [configure]
+
+- name: Display configuration summary
+  debug:
+    msg:
+      - "Certificate configuration completed"
+      - "Subject: {{ hx_ca_cert_info.stdout_lines[0] | default('Unknown') }}"
+      - "Issuer: {{ hx_ca_cert_info.stdout_lines[1] | default('Unknown') }}"
+      - "SHA256 Fingerprint: {{ hx_ca_actual_fingerprint.stdout }}"
+      - "Trust Store: Updated"
+  tags: [configure]

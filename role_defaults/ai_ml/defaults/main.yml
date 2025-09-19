@@ -1,0 +1,331 @@
+
+---
+# AI/ML Services Role Defaults
+# LiteLLM, Ollama, and Model Storage Services
+
+# Common AI/ML Configuration
+ai_ml_common:
+  base_path: "{{ ai_ml_base_path | default('/opt/ai-ml') }}"
+  data_path: "{{ ai_ml_data_path | default('/data/ai-ml') }}"
+  models_path: "{{ ai_ml_models_path | default('/data/models') }}"
+  cache_path: "{{ ai_ml_cache_path | default('/data/cache') }}"
+  logs_path: "{{ ai_ml_logs_path | default('/var/log/ai-ml') }}"
+  user: "{{ ai_ml_user | default('aiml') }}"
+  group: "{{ ai_ml_group | default('aiml') }}"
+  uid: "{{ ai_ml_uid | default(2000) }}"
+  gid: "{{ ai_ml_gid | default(2000) }}"
+
+# Python Environment Configuration
+python:
+  version: "{{ python_version | default('3.11') }}"
+  venv_path: "{{ python_venv_path | default('/opt/ai-ml/venv') }}"
+  pip_requirements_default:
+    - "torch>={{ torch_version | default('2.0.0') }}"
+    - "transformers>={{ transformers_version | default('4.30.0') }}"
+    - "accelerate>={{ accelerate_version | default('0.20.0') }}"
+    - "bitsandbytes>={{ bitsandbytes_version | default('0.39.0') }}"
+    - "scipy>={{ scipy_version | default('1.10.0') }}"
+    - "numpy>={{ numpy_version | default('1.24.0') }}"
+    - "requests>={{ requests_version | default('2.31.0') }}"
+    - "fastapi>={{ fastapi_version | default('0.100.0') }}"
+    - "uvicorn>={{ uvicorn_version | default('0.22.0') }}"
+    - "pydantic>={{ pydantic_version | default('2.0.0') }}"
+    - "aiohttp>={{ aiohttp_version | default('3.8.0') }}"
+    - "redis>={{ redis_python_version | default('4.5.0') }}"
+    - "psycopg2-binary>={{ psycopg2_version | default('2.9.0') }}"
+
+  pip_requirements: "{{ ai_ml_pip_requirements | default(pip_requirements_default) }}"
+
+# CUDA Configuration
+cuda:
+  version: "{{ cuda_version | default('12.1') }}"
+  driver_version: "{{ cuda_driver_version | default('530') }}"
+  toolkit_path: "{{ cuda_toolkit_path | default('/usr/local/cuda') }}"
+  library_path: "{{ cuda_library_path | default('/usr/local/cuda/lib64') }}"
+  runtime_path: "{{ cuda_runtime_path | default('/usr/local/cuda/bin') }}"
+
+# LiteLLM Configuration
+litellm:
+  version: "{{ litellm_version | default('latest') }}"
+  port: "{{ litellm_port | default(4000) }}"
+  host: "{{ litellm_host | default('0.0.0.0') }}"
+  workers: "{{ litellm_workers | default(4) }}"
+  timeout: "{{ litellm_timeout | default(300) }}"
+  max_tokens: "{{ litellm_max_tokens | default(4096) }}"
+  temperature: "{{ litellm_temperature | default(0.7) }}"
+  
+  # API Configuration
+  api:
+    rate_limit: "{{ litellm_rate_limit | default('1000/minute') }}"
+    max_concurrent_requests: "{{ litellm_max_concurrent_requests | default(100) }}"
+    request_timeout: "{{ litellm_request_timeout | default(300) }}"
+    response_timeout: "{{ litellm_response_timeout | default(300) }}"
+    
+  # Model Configuration Template
+  models_template:
+    - model_name: "gpt-4"
+      litellm_params:
+        model: "{{ litellm_gpt4_model | default('ollama/llama3.2:latest') }}"
+        api_base: "{{ litellm_gpt4_api_base | default('http://' + groups['llm_services'][0] + ':11434') }}"
+    - model_name: "gpt-3.5-turbo"
+      litellm_params:
+        model: "{{ litellm_gpt35_model | default('ollama/llama3.2:1b') }}"
+        api_base: "{{ litellm_gpt35_api_base | default('http://' + groups['llm_services'][0] + ':11434') }}"
+    - model_name: "claude-3"
+      litellm_params:
+        model: "{{ litellm_claude3_model | default('ollama/phi3:mini') }}"
+        api_base: "{{ litellm_claude3_api_base | default('http://' + groups['llm_services'][0] + ':11434') }}"
+
+  models: "{{ litellm_models | default(models_template) }}"
+  
+  # Caching Configuration
+  cache:
+    type: "{{ litellm_cache_type | default('redis') }}"
+    host: "{{ litellm_cache_host | default(groups['cache_services'][0]) }}"
+    port: "{{ litellm_cache_port | default(6379) }}"
+    db: "{{ litellm_cache_db | default(1) }}"
+    ttl: "{{ litellm_cache_ttl | default(3600) }}"
+    
+  # Logging Configuration
+  logging:
+    level: "{{ litellm_log_level | default('INFO') }}"
+    format: "{{ litellm_log_format | default('json') }}"
+    file: "{{ litellm_log_file | default('/var/log/ai-ml/litellm.log') }}"
+    max_size: "{{ litellm_log_max_size | default('100MB') }}"
+    backup_count: "{{ litellm_log_backup_count | default(5) }}"
+    
+  # Health Check Configuration
+  health_check:
+    endpoint: "{{ litellm_health_endpoint | default('/health') }}"
+    interval: "{{ litellm_health_interval | default(30) }}"
+    timeout: "{{ litellm_health_timeout | default(10) }}"
+    retries: "{{ litellm_health_retries | default(3) }}"
+
+# Ollama Configuration
+ollama:
+  version: "{{ ollama_version | default('latest') }}"
+  port: "{{ ollama_port | default(11434) }}"
+  host: "{{ ollama_host | default('0.0.0.0') }}"
+  data_dir: "{{ ollama_data_dir | default('/data/ollama') }}"
+  models_dir: "{{ ollama_models_dir | default('/data/ollama/models') }}"
+  
+  # Server Configuration
+  server:
+    max_loaded_models: "{{ ollama_max_loaded_models | default(3) }}"
+    max_queue_size: "{{ ollama_max_queue_size | default(100) }}"
+    num_parallel: "{{ ollama_num_parallel | default(4) }}"
+    flash_attention: "{{ ollama_flash_attention | default(true) }}"
+    
+  # GPU Configuration
+  gpu:
+    enabled: "{{ gpu_enabled | default(false) }}"
+    memory_fraction: "{{ ollama_gpu_memory_fraction | default(0.9) }}"
+    layers: "{{ ollama_gpu_layers | default(-1) }}"
+    
+  # Models to Install Template
+  models_template:
+    - name: "{{ ollama_primary_model | default('llama3.2:latest') }}"
+      size: "{{ ollama_primary_model_size | default('7B') }}"
+      quantization: "{{ ollama_primary_model_quantization | default('Q4_K_M') }}"
+      priority: 1
+    - name: "{{ ollama_secondary_model | default('llama3.2:1b') }}"
+      size: "{{ ollama_secondary_model_size | default('1B') }}"
+      quantization: "{{ ollama_secondary_model_quantization | default('Q4_K_M') }}"
+      priority: 2
+    - name: "{{ ollama_tertiary_model | default('phi3:mini') }}"
+      size: "{{ ollama_tertiary_model_size | default('3.8B') }}"
+      quantization: "{{ ollama_tertiary_model_quantization | default('Q4_K_M') }}"
+      priority: 3
+    - name: "{{ ollama_code_model | default('codellama:7b') }}"
+      size: "{{ ollama_code_model_size | default('7B') }}"
+      quantization: "{{ ollama_code_model_quantization | default('Q4_K_M') }}"
+      priority: 4
+    - name: "{{ ollama_instruct_model | default('mistral:7b') }}"
+      size: "{{ ollama_instruct_model_size | default('7B') }}"
+      quantization: "{{ ollama_instruct_model_quantization | default('Q4_K_M') }}"
+      priority: 5
+
+  models: "{{ ollama_models | default(models_template) }}"
+      
+  # Performance Configuration
+  performance:
+    context_length: "{{ ollama_context_length | default(4096) }}"
+    batch_size: "{{ ollama_batch_size | default(512) }}"
+    threads: "{{ ollama_threads | default(ansible_processor_vcpus) }}"
+    use_mmap: "{{ ollama_use_mmap | default(true) }}"
+    use_mlock: "{{ ollama_use_mlock | default(true) }}"
+    
+  # Logging Configuration
+  logging:
+    level: "{{ ollama_log_level | default('INFO') }}"
+    file: "{{ ollama_log_file | default('/var/log/ai-ml/ollama.log') }}"
+    max_size: "{{ ollama_log_max_size | default('100MB') }}"
+    backup_count: "{{ ollama_log_backup_count | default(5) }}"
+    
+  # Health Check Configuration
+  health_check:
+    endpoint: "{{ ollama_health_endpoint | default('/api/tags') }}"
+    interval: "{{ ollama_health_interval | default(30) }}"
+    timeout: "{{ ollama_health_timeout | default(10) }}"
+    retries: "{{ ollama_health_retries | default(3) }}"
+
+# Model Storage Configuration
+model_storage:
+  base_path: "{{ model_storage_base_path | default('/data/models') }}"
+  cache_path: "{{ model_storage_cache_path | default('/data/model-cache') }}"
+  registry_path: "{{ model_storage_registry_path | default('/data/model-registry') }}"
+  
+  # Storage Configuration
+  storage:
+    type: "{{ model_storage_type | default('filesystem') }}"
+    compression: "{{ model_storage_compression | default(true) }}"
+    encryption: "{{ model_storage_encryption | default(false) }}"
+    deduplication: "{{ model_storage_deduplication | default(true) }}"
+    
+  # Model Registry
+  registry:
+    enabled: "{{ model_registry_enabled | default(true) }}"
+    database_url: "{{ model_registry_database_url | default('postgresql://' + vault_model_registry_user + ':' + vault_model_registry_password + '@' + groups['databases'][0] + ':5432/model_registry') }}"
+    
+  # Model Categories Template
+  categories_template:
+    - name: "language-models"
+      path: "language-models"
+      max_size: "{{ model_storage_language_models_max_size | default('50GB') }}"
+    - name: "embedding-models"
+      path: "embedding-models"
+      max_size: "{{ model_storage_embedding_models_max_size | default('10GB') }}"
+    - name: "fine-tuned-models"
+      path: "fine-tuned-models"
+      max_size: "{{ model_storage_fine_tuned_models_max_size | default('100GB') }}"
+    - name: "archived-models"
+      path: "archived-models"
+      max_size: "{{ model_storage_archived_models_max_size | default('200GB') }}"
+
+  categories: "{{ model_storage_categories | default(categories_template) }}"
+      
+  # Cleanup Configuration
+  cleanup:
+    enabled: "{{ model_storage_cleanup_enabled | default(true) }}"
+    schedule: "{{ model_storage_cleanup_schedule | default('0 3 * * 0') }}"
+    retention_days: "{{ model_storage_cleanup_retention_days | default(90) }}"
+    min_free_space_gb: "{{ model_storage_cleanup_min_free_space_gb | default(100) }}"
+
+# Monitoring Configuration
+monitoring:
+  metrics:
+    enabled: "{{ ai_ml_metrics_enabled | default(true) }}"
+    port: "{{ ai_ml_metrics_port | default(9090) }}"
+    path: "{{ ai_ml_metrics_path | default('/metrics') }}"
+    
+  # Custom Metrics Template
+  custom_metrics_template:
+    - name: "model_inference_duration"
+      type: "histogram"
+      description: "Time taken for model inference"
+    - name: "model_memory_usage"
+      type: "gauge"
+      description: "Memory usage by loaded models"
+    - name: "active_model_count"
+      type: "gauge"
+      description: "Number of currently loaded models"
+    - name: "request_queue_size"
+      type: "gauge"
+      description: "Number of requests in queue"
+
+  custom_metrics: "{{ ai_ml_custom_metrics | default(custom_metrics_template) }}"
+      
+  # Health Checks Template
+  health_checks_template:
+    - name: "model_availability"
+      endpoint: "{{ ai_ml_health_model_availability_endpoint | default('/api/tags') }}"
+      interval: "{{ ai_ml_health_model_availability_interval | default(60) }}"
+    - name: "gpu_status"
+      command: "{{ ai_ml_health_gpu_status_command | default('nvidia-smi') }}"
+      interval: "{{ ai_ml_health_gpu_status_interval | default(30) }}"
+    - name: "disk_space"
+      path: "{{ ai_ml_health_disk_space_path | default('/data') }}"
+      threshold: "{{ ai_ml_health_disk_space_threshold | default('10GB') }}"
+      interval: "{{ ai_ml_health_disk_space_interval | default(300) }}"
+
+  health_checks: "{{ ai_ml_health_checks | default(health_checks_template) }}"
+
+# Security Configuration
+security:
+  api_keys:
+    enabled: "{{ ai_ml_api_keys_enabled | default(true) }}"
+    storage: "{{ ai_ml_api_keys_storage | default('redis') }}"
+    expiry: "{{ ai_ml_api_keys_expiry | default(86400) }}"
+    
+  rate_limiting:
+    enabled: "{{ ai_ml_rate_limiting_enabled | default(true) }}"
+    requests_per_minute: "{{ ai_ml_rate_limiting_requests_per_minute | default(1000) }}"
+    burst_size: "{{ ai_ml_rate_limiting_burst_size | default(100) }}"
+    
+  cors:
+    enabled: "{{ ai_ml_cors_enabled | default(true) }}"
+    allowed_origins: "{{ ai_ml_cors_allowed_origins | default(['https://' + domain_name, 'https://www.' + domain_name]) }}"
+    allowed_methods: "{{ ai_ml_cors_allowed_methods | default(['GET', 'POST', 'OPTIONS']) }}"
+    allowed_headers: "{{ ai_ml_cors_allowed_headers | default(['Content-Type', 'Authorization', 'X-API-Key']) }}"
+
+# Backup Configuration
+backup:
+  models:
+    enabled: "{{ ai_ml_backup_models_enabled | default(true) }}"
+    schedule: "{{ ai_ml_backup_models_schedule | default('0 2 * * 0') }}"
+    retention_weeks: "{{ ai_ml_backup_models_retention_weeks | default(4) }}"
+    compression: "{{ ai_ml_backup_models_compression | default(true) }}"
+    
+  configurations:
+    enabled: "{{ ai_ml_backup_configurations_enabled | default(true) }}"
+    schedule: "{{ ai_ml_backup_configurations_schedule | default('0 1 * * *') }}"
+    retention_days: "{{ ai_ml_backup_configurations_retention_days | default(30) }}"
+    
+  registry:
+    enabled: "{{ ai_ml_backup_registry_enabled | default(true) }}"
+    schedule: "{{ ai_ml_backup_registry_schedule | default('0 0 * * *') }}"
+    retention_days: "{{ ai_ml_backup_registry_retention_days | default(90) }}"
+
+# Performance Tuning
+performance:
+  # System-level optimizations
+  system:
+    swappiness: "{{ ai_ml_performance_swappiness | default(1) }}"
+    vm_dirty_ratio: "{{ ai_ml_performance_vm_dirty_ratio | default(5) }}"
+    vm_dirty_background_ratio: "{{ ai_ml_performance_vm_dirty_background_ratio | default(2) }}"
+    transparent_hugepages: "{{ ai_ml_performance_transparent_hugepages | default('madvise') }}"
+    
+  # Network optimizations
+  network:
+    tcp_window_scaling: "{{ ai_ml_performance_tcp_window_scaling | default(1) }}"
+    tcp_congestion_control: "{{ ai_ml_performance_tcp_congestion_control | default('bbr') }}"
+    net_core_rmem_max: "{{ ai_ml_performance_net_core_rmem_max | default(134217728) }}"
+    net_core_wmem_max: "{{ ai_ml_performance_net_core_wmem_max | default(134217728) }}"
+    
+  # File system optimizations
+  filesystem:
+    noatime: "{{ ai_ml_performance_filesystem_noatime | default(true) }}"
+    nodiratime: "{{ ai_ml_performance_filesystem_nodiratime | default(true) }}"
+    barrier: "{{ ai_ml_performance_filesystem_barrier | default(0) }}"
+
+# Environment-specific Configuration Overrides
+ai_ml_environment_config:
+  development:
+    debug_mode: "{{ ai_ml_debug_mode | default(true) }}"
+    log_level: "{{ ai_ml_dev_log_level | default('DEBUG') }}"
+    model_validation: "{{ ai_ml_dev_model_validation | default(false) }}"
+    auto_download_models: "{{ ai_ml_dev_auto_download_models | default(true) }}"
+    
+  test:
+    debug_mode: "{{ ai_ml_debug_mode | default(true) }}"
+    log_level: "{{ ai_ml_test_log_level | default('DEBUG') }}"
+    model_validation: "{{ ai_ml_test_model_validation | default(true) }}"
+    auto_download_models: "{{ ai_ml_test_auto_download_models | default(false) }}"
+    test_models_only: "{{ ai_ml_test_models_only | default(true) }}"
+    
+  production:
+    debug_mode: "{{ ai_ml_debug_mode | default(false) }}"
+    log_level: "{{ ai_ml_prod_log_level | default('INFO') }}"
+    model_validation: "{{ ai_ml_prod_model_validation | default(true) }}"
+    auto_download_models: "{{ ai_ml_prod_auto_download_models | default(false) }}"
+    performance_monitoring: "{{ ai_ml_prod_performance_monitoring | default(true) }}"

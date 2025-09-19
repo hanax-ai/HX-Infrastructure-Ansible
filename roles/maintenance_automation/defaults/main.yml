@@ -1,0 +1,35 @@
+
+---
+# Maintenance Automation Role Defaults
+maintenance_automation_enabled: true
+generate_reports: true
+
+# Maintenance Window Configuration
+maintenance_window_start: 2
+maintenance_window_end: 6
+enforce_maintenance_window: true
+maintenance_duration: 120
+
+# Database Maintenance
+database_name: "hx_infrastructure"
+database_host: "localhost"
+database_user: "postgres"
+perform_reindex: true
+cleanup_old_logs: true
+perform_vacuum: true
+log_retention_days: 30
+
+# System Updates
+update_strategy: "staged"
+security_updates_only: false
+reboot_required_check: true
+auto_reboot: false
+
+# Backup Verification
+backup_verification_enabled: true
+backup_retention_days: 30
+
+# Reporting
+report_format: "json"
+report_destination: "/var/log/hx-infrastructure/maintenance-reports/"
+email_reports: false

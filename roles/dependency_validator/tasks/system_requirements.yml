@@ -1,0 +1,74 @@
+
+---
+# System Requirements Validation Tasks - Phase 3 Day 1
+
+- name: "System Requirements | Gather system facts"
+  setup:
+    gather_subset:
+      - hardware
+      - network
+      - virtual
+
+- name: "System Requirements | Validate CPU architecture"
+  assert:
+    that:
+      - ansible_architecture in system_requirements.supported_architectures
+    fail_msg: "Unsupported CPU architecture: {{ ansible_architecture }}. Supported: {{ system_requirements.supported_architectures | join(', ') }}"
+    success_msg: "CPU architecture {{ ansible_architecture }} is supported"
+
+- name: "System Requirements | Validate OS family"
+  assert:
+    that:
+      - ansible_os_family in system_requirements.supported_os_families
+    fail_msg: "Unsupported OS family: {{ ansible_os_family }}. Supported: {{ system_requirements.supported_os_families | join(', ') }}"
+    success_msg: "OS family {{ ansible_os_family }} is supported"
+
+- name: "System Requirements | Validate OS version"
+  assert:
+    that:
+      - ansible_distribution_major_version in system_requirements.supported_os_versions[ansible_os_family] | default([])
+    fail_msg: "Unsupported OS version: {{ ansible_distribution }} {{ ansible_distribution_version }}. Supported versions for {{ ansible_os_family }}: {{ system_requirements.supported_os_versions[ansible_os_family] | default([]) | join(', ') }}"
+    success_msg: "OS version {{ ansible_distribution }} {{ ansible_distribution_version }} is supported"
+  when: ansible_os_family in system_requirements.supported_os_versions
+
+- name: "System Requirements | Validate memory requirements"
+  assert:
+    that:
+      - (ansible_memtotal_mb / 1024) >= system_requirements.min_memory_gb
+    fail_msg: "Insufficient memory: {{ (ansible_memtotal_mb / 1024) | round(1) }}GB available, {{ system_requirements.min_memory_gb }}GB required"
+    success_msg: "Memory requirement satisfied: {{ (ansible_memtotal_mb / 1024) | round(1) }}GB available"
+
+- name: "System Requirements | Get disk space information"
+  shell: df -BG / | awk 'NR==2 {print $4}' | sed 's/G//'
+  register: available_disk_space
+  changed_when: false
+
+- name: "System Requirements | Validate disk space requirements"
+  assert:
+    that:
+      - available_disk_space.stdout | int >= system_requirements.min_disk_gb
+    fail_msg: "Insufficient disk space: {{ available_disk_space.stdout }}GB available, {{ system_requirements.min_disk_gb }}GB required"
+    success_msg: "Disk space requirement satisfied: {{ available_disk_space.stdout }}GB available"
+
+- name: "System Requirements | Validate CPU core requirements"
+  assert:
+    that:
+      - ansible_processor_vcpus >= system_requirements.min_cpu_cores
+    fail_msg: "Insufficient CPU cores: {{ ansible_processor_vcpus }} available, {{ system_requirements.min_cpu_cores }} required"
+    success_msg: "CPU core requirement satisfied: {{ ansible_processor_vcpus }} cores available"
+
+- name: "System Requirements | Check virtualization type"
+  debug:
+    msg: "Virtualization type: {{ ansible_virtualization_type | default('physical') }}"
+
+- name: "System Requirements | System validation summary"
+  debug:
+    msg:
+      - "System Requirements Validation Summary:"
+      - "  Architecture: {{ ansible_architecture }} ✓"
+      - "  OS: {{ ansible_distribution }} {{ ansible_distribution_version }} ✓"
+      - "  Memory: {{ (ansible_memtotal_mb / 1024) | round(1) }}GB ✓"
+      - "  Disk: {{ available_disk_space.stdout }}GB ✓"
+      - "  CPU Cores: {{ ansible_processor_vcpus }} ✓"
+      - "  Virtualization: {{ ansible_virtualization_type | default('physical') }}"
+

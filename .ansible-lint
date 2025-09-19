@@ -1,0 +1,67 @@
+
+# Ansible Lint Configuration for HX Infrastructure Ansible
+# Enforces Ansible best practices and security standards
+
+# Profile for production-ready code
+profile: production
+
+# Exclude paths that don't need linting
+exclude_paths:
+  - .git/
+  - venv/
+  - tmp/
+  - __pycache__/
+  - .pytest_cache/
+  - molecule/*/
+  - tests/unit/
+  - backup/
+  - logs/
+
+# Enable additional rules for security and best practices
+enable_list:
+  - no-log-password
+  - no-jinja-when
+  - no-tabs
+  - yaml[line-length]
+  - yaml[indentation]
+  - yaml[trailing-spaces]
+  - name[casing]
+  - name[template]
+  - risky-file-permissions
+  - risky-shell-pipe
+  - command-instead-of-module
+  - command-instead-of-shell
+  - deprecated-bare-vars
+  - literal-compare
+  - no-changed-when
+  - no-handler
+  - package-latest
+  - role-name
+  - var-naming
+
+# Warn on these rules instead of failing
+warn_list:
+  - experimental
+  - ignore-errors
+  - no-changed-when
+  - command-instead-of-shell
+  - risky-file-permissions
+
+# Skip certain rules for specific scenarios
+skip_list:
+  - yaml[line-length]  # Some long lines are acceptable in templates
+
+# Use rich output format for better readability
+format: rich
+
+# Minimum Ansible version
+min_ansible_version: "2.12"
+
+# Mock modules and roles for testing
+mock_modules:
+  - community.general.timezone
+  - community.crypto.x509_certificate
+
+mock_roles:
+  - common
+  - backup

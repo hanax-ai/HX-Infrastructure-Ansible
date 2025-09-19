@@ -1,0 +1,248 @@
+
+---
+# Health Check Tasks for HX Domain Join
+
+- name: Check domain membership status
+  command: "{{ hx_realm_list_cmd }}"
+  register: hx_domain_membership_check
+  changed_when: false
+  failed_when: false
+  tags: [health_checks]
+
+- name: Verify domain is joined
+  assert:
+    that:
+      - hx_ad_domain in hx_domain_membership_check.stdout
+    fail_msg: "Server is not joined to domain {{ hx_ad_domain }}"
+    success_msg: "Server is successfully joined to domain {{ hx_ad_domain }}"
+  tags: [health_checks]
+
+- name: Check SSSD service status
+  systemd:
+    name: "{{ hx_sssd_service }}"
+  register: hx_sssd_service_status
+  when: hx_sssd_enabled | bool
+  tags: [health_checks]
+
+- name: Verify SSSD service is running
+  assert:
+    that:
+      - hx_sssd_service_status.status.ActiveState == "active"
+    fail_msg: "SSSD service is not running"
+    success_msg: "SSSD service is running correctly"
+  when: hx_sssd_enabled | bool
+  tags: [health_checks]
+
+- name: Test DNS resolution for domain
+  command: nslookup {{ hx_ad_domain }}
+  register: hx_dns_resolution_test
+  changed_when: false
+  failed_when: hx_dns_resolution_test.rc != 0
+  tags: [health_checks]
+
+- name: Test domain controller connectivity
+  shell: |
+    set -euo pipefail
+    # Test various AD ports
+    ports=(53 88 389 636 3268)
+    failed_ports=()
+
+    for port in "${ports[@]}"; do
+      if ! timeout 5 bash -c "</dev/tcp/{{ hx_ad_domain }}/$port" 2>/dev/null; then
+        failed_ports+=($port)
+      fi
+    done
+
+    if [ ${#failed_ports[@]} -eq 0 ]; then
+      echo "All domain controller ports are accessible"
+      exit 0
+    else
+      echo "Failed to connect to ports: ${failed_ports[*]}"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_dc_connectivity_test
+  changed_when: false
+  failed_when: false
+  tags: [health_checks]
+
+- name: Test user lookup functionality
+  shell: |
+    set -euo pipefail
+    # Test if we can lookup domain users
+    if getent passwd {{ hx_ad_admin_user }}@{{ hx_ad_domain_lower }} >/dev/null 2>&1; then
+      echo "User lookup successful for {{ hx_ad_admin_user }}@{{ hx_ad_domain_lower }}"
+      exit 0
+    elif getent passwd {{ hx_ad_admin_user }} >/dev/null 2>&1; then
+      echo "User lookup successful for {{ hx_ad_admin_user }}"
+      exit 0
+    else
+      echo "User lookup failed for domain users"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_user_lookup_test
+  changed_when: false
+  failed_when: false
+  tags: [health_checks]
+
+- name: Test group lookup functionality
+  shell: |
+    set -euo pipefail
+    # Test if we can lookup domain groups
+    if getent group "Domain Users" >/dev/null 2>&1; then
+      echo "Group lookup successful for Domain Users"
+      exit 0
+    elif getent group "domain users" >/dev/null 2>&1; then
+      echo "Group lookup successful for domain users"
+      exit 0
+    else
+      echo "Group lookup failed for domain groups"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_group_lookup_test
+  changed_when: false
+  failed_when: false
+  tags: [health_checks]
+
+- name: Test Kerberos ticket acquisition
+  shell: |
+    set -euo pipefail
+    # Clean any existing tickets
+    kdestroy >/dev/null 2>&1 || true
+
+    # Test kinit with admin credentials
+    echo "{{ hx_ad_admin_password }}" | kinit {{ hx_ad_admin_user }}@{{ hx_ad_realm_upper }}
+
+    # Verify ticket was acquired
+    if klist | grep -q "{{ hx_ad_realm_upper }}"; then
+      echo "Kerberos ticket acquisition successful"
+      kdestroy
+      exit 0
+    else
+      echo "Kerberos ticket acquisition failed"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_kerberos_ticket_test
+  when: hx_krb5_enabled | bool
+  changed_when: false
+  failed_when: false
+  no_log: true
+  tags: [health_checks]
+
+- name: Check SSSD cache status
+  shell: |
+    set -euo pipefail
+    if [ -d "/var/lib/sss/db" ]; then
+      cache_files=$(find /var/lib/sss/db -name "*.ldb" | wc -l)
+      echo "SSSD cache contains $cache_files database files"
+
+      if [ $cache_files -gt 0 ]; then
+        echo "SSSD cache is populated"
+        exit 0
+      else
+        echo "SSSD cache is empty"
+        exit 1
+      fi
+    else
+      echo "SSSD cache directory not found"
+      exit 1
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_sssd_cache_check
+  when: hx_sssd_enabled | bool
+  changed_when: false
+  failed_when: false
+  tags: [health_checks]
+
+- name: Test home directory creation (if enabled)
+  shell: |
+    set -euo pipefail
+    test_user="{{ hx_ad_admin_user }}"
+
+    # Check if home directory would be created
+    if [ "{{ hx_home_dir_enabled }}" = "true" ]; then
+      expected_home="{{ hx_home_dir_base }}/$test_user"
+      if [ -d "$expected_home" ] || [ "{{ hx_home_dir_create }}" = "true" ]; then
+        echo "Home directory configuration is correct"
+        exit 0
+      else
+        echo "Home directory configuration issue detected"
+        exit 1
+      fi
+    else
+      echo "Home directory creation is disabled"
+      exit 0
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_home_dir_test
+  when: hx_home_dir_enabled | bool
+  changed_when: false
+  failed_when: false
+  tags: [health_checks]
+
+- name: Generate health check report
+  template:
+    src: health_report.j2
+    dest: "{{ hx_domain_log_dir }}/health_check_{{ hx_domain_backup_timestamp }}.txt"
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_domain_audit_logging_enabled | bool
+  tags: [health_checks]
+
+- name: Calculate health check score
+  set_fact:
+    hx_health_checks_passed: >-
+      {{
+        [
+          hx_domain_membership_check.rc == 0 and hx_ad_domain in hx_domain_membership_check.stdout,
+          (not hx_sssd_enabled) or (hx_sssd_service_status.status.ActiveState == "active"),
+          hx_dns_resolution_test.rc == 0,
+          hx_dc_connectivity_test.rc == 0,
+          hx_user_lookup_test.rc == 0,
+          hx_group_lookup_test.rc == 0,
+          (not hx_krb5_enabled) or (hx_kerberos_ticket_test.rc == 0),
+          (not hx_sssd_enabled) or (hx_sssd_cache_check.rc == 0),
+          (not hx_home_dir_enabled) or (hx_home_dir_test.rc == 0)
+        ] | select | list | length
+      }}
+    hx_health_checks_total: >-
+      {{
+        [
+          true,
+          hx_sssd_enabled,
+          true,
+          true,
+          true,
+          true,
+          hx_krb5_enabled,
+          hx_sssd_enabled,
+          hx_home_dir_enabled
+        ] | select | list | length
+      }}
+  tags: [health_checks]
+
+- name: Display health check results
+  debug:
+    msg:
+      - "Health Check Results Summary:"
+      - "Domain Membership: {{ (hx_domain_membership_check.rc == 0 and hx_ad_domain in hx_domain_membership_check.stdout) | ternary('✓ Joined', '✗ Not Joined') }}"
+      - "SSSD Service: {{ (not hx_sssd_enabled) | ternary('Disabled', (hx_sssd_service_status.status.ActiveState == 'active') | ternary('✓ Running', '✗ Stopped')) }}"
+      - "DNS Resolution: {{ hx_dns_resolution_test.rc == 0 | ternary('✓ Working', '✗ Failed') }}"
+      - "DC Connectivity: {{ hx_dc_connectivity_test.rc == 0 | ternary('✓ Connected', '✗ Failed') }}"
+      - "User Lookup: {{ hx_user_lookup_test.rc == 0 | ternary('✓ Working', '✗ Failed') }}"
+      - "Group Lookup: {{ hx_group_lookup_test.rc == 0 | ternary('✓ Working', '✗ Failed') }}"
+      - "Kerberos: {{ (not hx_krb5_enabled) | ternary('Disabled', (hx_kerberos_ticket_test.rc == 0) | ternary('✓ Working', '✗ Failed')) }}"
+      - "SSSD Cache: {{ (not hx_sssd_enabled) | ternary('Disabled', (hx_sssd_cache_check.rc == 0) | ternary('✓ Populated', '✗ Empty')) }}"
+      - "Home Directories: {{ (not hx_home_dir_enabled) | ternary('Disabled', (hx_home_dir_test.rc == 0) | ternary('✓ Configured', '✗ Issues')) }}"
+      - "Overall Score: {{ hx_health_checks_passed }}/{{ hx_health_checks_total }} ({{ ((hx_health_checks_passed | int / hx_health_checks_total | int) * 100) | round(1) }}%)"
+  tags: [health_checks]

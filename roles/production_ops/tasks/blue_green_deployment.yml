@@ -1,0 +1,40 @@
+
+---
+# Blue-Green Deployment Implementation
+- name: Create blue environment backup
+  shell: |
+    docker-compose -f /opt/hx-infrastructure/docker-compose.yml \
+    -p hx-blue stop
+    docker commit hx-blue-app hx-blue-backup:{{ ansible_date_time.epoch }}
+  register: blue_backup
+  when: deployment_strategy == "blue_green"
+
+- name: Deploy to green environment
+  shell: |
+    docker-compose -f /opt/hx-infrastructure/docker-compose.yml \
+    -p hx-green up -d
+  register: green_deployment
+  environment:
+    COMPOSE_PROJECT_NAME: hx-green
+    APP_VERSION: "{{ app_version | default('latest') }}"
+
+- name: Wait for green environment to be ready
+  uri:
+    url: "https://{{ ansible_default_ipv4.address }}:{{ green_port | default(8081) }}/health"
+    method: GET
+    timeout: 30
+  register: green_health_check
+  until: green_health_check.status == 200
+  retries: 10
+  delay: 30
+
+- name: Perform comprehensive health checks on green
+  include_tasks: ../health_monitoring/tasks/comprehensive_health_check.yml
+  vars:
+    target_environment: green
+    health_check_port: "{{ green_port | default(8081) }}"
+
+- name: Set deployment status
+  set_fact:
+    green_deployment_successful: "{{ green_health_check.status == 200 }}"
+    deployment_timestamp: "{{ ansible_date_time.iso8601 }}"
