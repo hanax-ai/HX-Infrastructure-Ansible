@@ -1,12 +1,12 @@
----
+
 - name: "SPRINT 4: Final Production Deployment & Optimization"
   hosts: all
   become: yes
   gather_facts: yes
   vars:
     sprint_version: "4.0.0"
-    deployment_timestamp: "{{ ansible_date_time.epoch }}"
-    
+    deployment_timestamp: "{{ ansible_date_time.epoch}}"
+
   pre_tasks:
     - name: Display Sprint 4 banner
       debug:
@@ -35,10 +35,10 @@
         content: |
           Sprint 4 Deployment Log
           ======================
-          Start Time: {{ ansible_date_time.iso8601 }}
-          Version: {{ sprint_version }}
-          Host: {{ inventory_hostname }}
-          Environment: {{ environment | default('production') }}
+          Start Time: {{ ansible_date_time.iso8601}}
+          Version: {{ sprint_version}}
+          Host: {{ inventory_hostname}}
+          Environment: {{ environment | default('production')}}
         dest: /var/log/sprint4-deployment.log
         mode: '0644'
 
@@ -77,7 +77,7 @@
 
     - name: Validate all services are running
       systemd:
-        name: "{{ item }}"
+        name: "{{ item}}"
         state: started
       loop:
         - hx-ai-orchestrator
@@ -92,25 +92,25 @@
 
     - name: Perform health checks
       uri:
-        url: "http://localhost:{{ item.port }}/health"
+        url: "http://localhost:{{ item.port}}/health"
         method: GET
         timeout: 10
       register: health_checks
       loop:
-        - { service: "ai-orchestrator", port: 8080 }
-        - { service: "anomaly-detector", port: 8081 }
-        - { service: "predictive-scaler", port: 8082 }
-        - { service: "cost-optimizer", port: 8083 }
-        - { service: "monitoring-dashboard", port: 8084 }
-        - { service: "self-healing", port: 8085 }
-        - { service: "multi-cloud-orchestrator", port: 8086 }
-        - { service: "continuous-improvement", port: 8087 }
+        - {"service": "ai-orchestrator", "port": 8080}
+        - {"service": "anomaly-detector", "port": 8081}
+        - {"service": "predictive-scaler", "port": 8082}
+        - {"service": "cost-optimizer", "port": 8083}
+        - {"service": "monitoring-dashboard", "port": 8084}
+        - {"service": "self-healing", "port": 8085}
+        - {"service": "multi-cloud-orchestrator", "port": 8086}
+        - {"service": "continuous-improvement", "port": 8087}
       tags: ['validation']
 
     - name: Generate Sprint 4 completion report
       template:
         src: sprint4_completion_report.md.j2
-        dest: /opt/hx/reports/sprint4-completion-{{ ansible_date_time.date }}.md
+        dest: /opt/hx/reports/sprint4-completion-{{ ansible_date_time.date}}.md
         mode: '0644'
       tags: ['reporting']
 
@@ -118,7 +118,7 @@
       lineinfile:
         path: /var/log/sprint4-deployment.log
         line: |
-          End Time: {{ ansible_date_time.iso8601 }}
+          End Time: {{ ansible_date_time.iso8601}}
           Status: SUCCESS
           Services Deployed: 8
           AI Models Trained: 5
