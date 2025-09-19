@@ -1,0 +1,27 @@
+---
+# Common Infrastructure Playbook
+- name: Common Infrastructure Tasks
+  hosts: all
+  become: yes
+  gather_facts: yes
+  
+  tasks:
+    - name: Update system packages
+      package:
+        name: "*"
+        state: latest
+      when: ansible_os_family in ["RedHat", "Debian"]
+      
+    - name: Ensure common packages are installed
+      package:
+        name:
+          - curl
+          - wget
+          - vim
+          - htop
+          - git
+        state: present
+        
+    - name: Configure timezone
+      timezone:
+        name: "{{ timezone | default('UTC') }}"

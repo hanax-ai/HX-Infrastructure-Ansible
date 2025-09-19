@@ -1,0 +1,291 @@
+
+---
+- name: Staging Environment Smoke Tests
+  hosts: staging
+  gather_facts: true
+  vars:
+    target_slot: "{{ target_slot | default('blue') }}"
+    
+  tasks:
+    - name: Test basic connectivity
+      ping:
+      register: ping_result
+      
+    - name: Verify system is responsive
+      assert:
+        that:
+          - ping_result is succeeded
+        fail_msg: "System is not responsive"
+        success_msg: "System connectivity verified"
+
+    - name: Check critical services are running
+      systemd:
+        name: "{{ item }}"
+      register: service_status
+      loop:
+        - nginx
+        - mysql
+        - redis-server
+      failed_when: service_status.status.ActiveState != "active"
+
+    - name: Verify web server is responding
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}/health"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: web_health_check
+
+    - name: Check database connectivity
+      mysql_db:
+        name: "{{ app_database_name | default('staging_db') }}"
+        state: present
+        login_user: "{{ mysql_user | default('root') }}"
+        login_password: "{{ mysql_password }}"
+      register: db_check
+
+    - name: Verify Redis is accessible
+      redis:
+        command: ping
+        login_host: localhost
+        login_port: 6379
+      register: redis_check
+
+    - name: Test application endpoints
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}/api/{{ item }}"
+        method: GET
+        status_code: 200
+        timeout: 15
+      loop:
+        - status
+        - version
+        - metrics
+      register: api_checks
+
+    - name: Verify SSL certificate (if HTTPS enabled)
+      uri:
+        url: "https://{{ ansible_default_ipv4.address }}/health"
+        method: GET
+        status_code: 200
+        validate_certs: true
+        timeout: 10
+      when: ssl_enabled | default(false)
+      register: ssl_check
+
+    - name: Check disk space
+      shell: df -h / | awk 'NR==2 {print $5}' | sed 's/%//'
+      register: disk_usage
+      
+    - name: Verify sufficient disk space
+      assert:
+        that:
+          - disk_usage.stdout | int < 90
+        fail_msg: "Disk usage is {{ disk_usage.stdout }}% - critically high"
+        success_msg: "Disk usage is {{ disk_usage.stdout }}% - acceptable"
+
+    - name: Check memory usage
+      shell: free | awk 'NR==2{printf "%.2f", $3*100/$2}'
+      register: memory_usage
+      
+    - name: Verify memory usage is reasonable
+      assert:
+        that:
+          - memory_usage.stdout | float < 90.0
+        fail_msg: "Memory usage is {{ memory_usage.stdout }}% - critically high"
+        success_msg: "Memory usage is {{ memory_usage.stdout }}% - acceptable"
+
+    - name: Check CPU load
+      shell: uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//'
+      register: cpu_load
+      
+    - name: Verify CPU load is reasonable
+      assert:
+        that:
+          - cpu_load.stdout | float < ansible_processor_vcpus | int * 2
+        fail_msg: "CPU load is {{ cpu_load.stdout }} - too high for {{ ansible_processor_vcpus }} cores"
+        success_msg: "CPU load is {{ cpu_load.stdout }} - acceptable"
+
+    - name: Test database read/write operations
+      block:
+        - name: Create test table
+          mysql_query:
+            login_user: "{{ mysql_user | default('root') }}"
+            login_password: "{{ mysql_password }}"
+            login_db: "{{ app_database_name | default('staging_db') }}"
+            query: |
+              CREATE TABLE IF NOT EXISTS smoke_test (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                test_data VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+              )
+              
+        - name: Insert test data
+          mysql_query:
+            login_user: "{{ mysql_user | default('root') }}"
+            login_password: "{{ mysql_password }}"
+            login_db: "{{ app_database_name | default('staging_db') }}"
+            query: "INSERT INTO smoke_test (test_data) VALUES ('staging_smoke_test_{{ ansible_date_time.epoch }}')"
+            
+        - name: Read test data
+          mysql_query:
+            login_user: "{{ mysql_user | default('root') }}"
+            login_password: "{{ mysql_password }}"
+            login_db: "{{ app_database_name | default('staging_db') }}"
+            query: "SELECT COUNT(*) as count FROM smoke_test WHERE test_data LIKE 'staging_smoke_test_%'"
+          register: test_data_count
+          
+        - name: Verify test data was inserted
+          assert:
+            that:
+              - test_data_count.query_result[0][0] | int > 0
+            fail_msg: "Database write/read test failed"
+            success_msg: "Database write/read test passed"
+            
+        - name: Clean up test data
+          mysql_query:
+            login_user: "{{ mysql_user | default('root') }}"
+            login_password: "{{ mysql_password }}"
+            login_db: "{{ app_database_name | default('staging_db') }}"
+            query: "DELETE FROM smoke_test WHERE test_data LIKE 'staging_smoke_test_%'"
+
+    - name: Test Redis operations
+      block:
+        - name: Set test value in Redis
+          redis:
+            command: set
+            key: "smoke_test_{{ ansible_date_time.epoch }}"
+            value: "staging_test_value"
+            login_host: localhost
+            login_port: 6379
+            
+        - name: Get test value from Redis
+          redis:
+            command: get
+            key: "smoke_test_{{ ansible_date_time.epoch }}"
+            login_host: localhost
+            login_port: 6379
+          register: redis_test_value
+          
+        - name: Verify Redis operations
+          assert:
+            that:
+              - redis_test_value.value == "staging_test_value"
+            fail_msg: "Redis read/write test failed"
+            success_msg: "Redis read/write test passed"
+            
+        - name: Clean up Redis test data
+          redis:
+            command: delete
+            key: "smoke_test_{{ ansible_date_time.epoch }}"
+            login_host: localhost
+            login_port: 6379
+
+    - name: Check log files for errors
+      shell: |
+        find /var/log -name "*.log" -type f -exec grep -l "ERROR\|CRITICAL\|FATAL" {} \; | head -5
+      register: error_logs
+      
+    - name: Report error logs (if any)
+      debug:
+        msg: "Error logs found: {{ error_logs.stdout_lines }}"
+      when: error_logs.stdout_lines | length > 0
+
+    - name: Verify application configuration
+      stat:
+        path: "{{ item }}"
+      register: config_files
+      loop:
+        - /etc/nginx/nginx.conf
+        - /etc/mysql/mysql.conf.d/mysqld.cnf
+        - /etc/redis/redis.conf
+        - "{{ app_config_path | default('/opt/app/config.yml') }}"
+      failed_when: not config_files.stat.exists
+
+    - name: Test network connectivity to external services
+      uri:
+        url: "{{ item }}"
+        method: GET
+        status_code: 200
+        timeout: 10
+      loop:
+        - "https://api.github.com"
+        - "https://registry.npmjs.org"
+        - "https://pypi.org/simple/"
+      register: external_connectivity
+      ignore_errors: true
+
+    - name: Report external connectivity issues
+      debug:
+        msg: "External connectivity issue with {{ item.item }}: {{ item.msg }}"
+      loop: "{{ external_connectivity.results }}"
+      when: item.failed | default(false)
+
+    - name: Check security configurations
+      block:
+        - name: Verify firewall is active
+          shell: ufw status
+          register: firewall_status
+          
+        - name: Check SSH configuration
+          shell: sshd -T | grep -E "PermitRootLogin|PasswordAuthentication|Port"
+          register: ssh_config
+          
+        - name: Verify SSL/TLS configuration
+          shell: |
+            if [ -f /etc/nginx/nginx.conf ]; then
+              grep -E "ssl_protocols|ssl_ciphers" /etc/nginx/nginx.conf || echo "SSL not configured"
+            else
+              echo "Nginx config not found"
+            fi
+          register: ssl_config
+
+    - name: Performance baseline check
+      block:
+        - name: Measure response time
+          uri:
+            url: "http://{{ ansible_default_ipv4.address }}/health"
+            method: GET
+            status_code: 200
+          register: response_time_check
+          
+        - name: Verify response time is acceptable
+          assert:
+            that:
+              - response_time_check.elapsed < 2.0
+            fail_msg: "Response time {{ response_time_check.elapsed }}s is too slow"
+            success_msg: "Response time {{ response_time_check.elapsed }}s is acceptable"
+
+    - name: Generate smoke test report
+      template:
+        src: smoke_test_report.j2
+        dest: "/tmp/staging_smoke_test_report_{{ ansible_date_time.epoch }}.txt"
+        mode: '0644'
+      vars:
+        test_timestamp: "{{ ansible_date_time.iso8601 }}"
+        test_environment: "staging"
+        test_slot: "{{ target_slot }}"
+        test_results:
+          connectivity: "{{ ping_result is succeeded }}"
+          services: "{{ service_status is succeeded }}"
+          web_health: "{{ web_health_check is succeeded }}"
+          database: "{{ db_check is succeeded }}"
+          redis: "{{ redis_check is succeeded }}"
+          disk_usage: "{{ disk_usage.stdout }}%"
+          memory_usage: "{{ memory_usage.stdout }}%"
+          cpu_load: "{{ cpu_load.stdout }}"
+          response_time: "{{ response_time_check.elapsed }}s"
+
+  handlers:
+    - name: Restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+      become: true
+      
+    - name: Restart mysql
+      systemd:
+        name: mysql
+        state: restarted
+      become: true
+

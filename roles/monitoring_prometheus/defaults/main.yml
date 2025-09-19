@@ -1,0 +1,35 @@
+
+---
+# Prometheus version
+prometheus_version: "2.47.2"
+
+# Prometheus configuration
+prometheus_port: 9090
+prometheus_scrape_interval: "15s"
+prometheus_evaluation_interval: "15s"
+prometheus_retention_time: "15d"
+prometheus_retention_size: "10GB"
+prometheus_cluster_name: "default"
+
+# Alertmanager configuration
+prometheus_alertmanagers: []
+
+# Additional scrape jobs
+prometheus_additional_jobs: []
+
+# Ansible Automation Platform monitoring
+prometheus_aap_hosts: []
+prometheus_aap_token: ""
+prometheus_aap_skip_tls_verify: false
+
+# Blackbox exporter configuration
+prometheus_blackbox_exporter: "localhost:9115"
+prometheus_blackbox_targets: []
+
+# Firewall configuration
+configure_firewall: true
+
+# Storage configuration
+prometheus_data_dir: "/var/lib/prometheus/data"
+prometheus_config_dir: "/etc/prometheus"
+

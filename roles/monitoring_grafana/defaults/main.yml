@@ -1,0 +1,63 @@
+
+---
+# Grafana configuration
+grafana_port: 3000
+grafana_protocol: "http"
+grafana_http_addr: "0.0.0.0"
+grafana_domain: "localhost"
+grafana_instance_name: "grafana"
+
+# Admin configuration
+grafana_admin_user: "admin"
+grafana_admin_password: "admin"
+grafana_secret_key: "SW2YcwTIb9zpOOhoPsMm"
+
+# Database configuration
+grafana_database_type: "sqlite3"
+grafana_database_path: "/var/lib/grafana/grafana.db"
+
+# Security settings
+grafana_disable_gravatar: false
+grafana_cookie_secure: false
+grafana_cookie_samesite: "lax"
+
+# User settings
+grafana_allow_sign_up: false
+grafana_allow_org_create: false
+grafana_auto_assign_org: true
+grafana_auto_assign_org_id: 1
+grafana_auto_assign_org_role: "Viewer"
+grafana_default_theme: "dark"
+
+# Authentication
+grafana_disable_login_form: false
+grafana_auth_anonymous_enabled: false
+
+# Logging
+grafana_log_mode: "console file"
+grafana_log_level: "info"
+
+# Alerting
+grafana_alerting_enabled: true
+grafana_alerting_execute_alerts: true
+
+# Metrics
+grafana_metrics_enabled: true
+grafana_metrics_interval_seconds: 10
+
+# Prometheus datasource
+prometheus_host: "localhost"
+prometheus_port: 9090
+
+# Additional datasources
+grafana_additional_datasources: []
+
+# Dashboard providers
+grafana_additional_dashboard_providers: []
+
+# API key creation
+grafana_create_api_key: false
+
+# Firewall configuration
+configure_firewall: true
+
