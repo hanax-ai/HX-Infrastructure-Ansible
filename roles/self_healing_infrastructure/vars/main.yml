@@ -1,0 +1,189 @@
+---
+# Self-Healing Infrastructure Configuration
+self_healing:
+  enabled: true
+  
+  incident_detection:
+    enabled: true
+    sources:
+      - prometheus_alerts
+      - log_analysis
+      - health_checks
+      - anomaly_detection
+    
+    severity_levels:
+      critical:
+        auto_remediate: true
+        escalation_time: 300  # 5 minutes
+      high:
+        auto_remediate: true
+        escalation_time: 600  # 10 minutes
+      medium:
+        auto_remediate: false
+        escalation_time: 1800  # 30 minutes
+      low:
+        auto_remediate: false
+        escalation_time: 3600  # 1 hour
+
+  remediation_actions:
+    service_restart:
+      enabled: true
+      max_attempts: 3
+      backoff_multiplier: 2
+      services:
+        - nginx
+        - postgresql
+        - redis
+        - application
+    
+    resource_scaling:
+      enabled: true
+      cpu_threshold: 90
+      memory_threshold: 85
+      scale_up_factor: 1.5
+      scale_down_factor: 0.7
+    
+    failover:
+      enabled: true
+      health_check_interval: 30
+      failover_timeout: 120
+      rollback_timeout: 300
+    
+    log_rotation:
+      enabled: true
+      disk_threshold: 85
+      retention_days: 30
+      compress: true
+
+  predictive_maintenance:
+    enabled: true
+    models:
+      - name: "disk_failure_predictor"
+        type: "classification"
+        features: ["disk_io", "disk_errors", "temperature"]
+        prediction_horizon: 86400  # 24 hours
+      - name: "memory_leak_detector"
+        type: "regression"
+        features: ["memory_usage", "gc_frequency", "heap_size"]
+        prediction_horizon: 3600  # 1 hour
+    
+    maintenance_windows:
+      - day: "sunday"
+        start_time: "02:00"
+        end_time: "04:00"
+        timezone: "UTC"
+
+  root_cause_analysis:
+    enabled: true
+    correlation_window: 300  # 5 minutes
+    confidence_threshold: 0.8
+    
+    analysis_methods:
+      - correlation_analysis
+      - pattern_matching
+      - dependency_graph
+      - ml_classification
+
+  notification_channels:
+    slack:
+      enabled: true
+      webhook_url: "{{ slack_webhook_url | default('') }}"
+      channels:
+        critical: "#ops-critical"
+        high: "#ops-alerts"
+        medium: "#ops-monitoring"
+    
+    email:
+      enabled: true
+      smtp_server: "{{ smtp_server | default('localhost') }}"
+      recipients:
+        critical: ["ops-team@hanax.ai", "on-call@hanax.ai"]
+        high: ["ops-team@hanax.ai"]
+        medium: ["ops-team@hanax.ai"]
+    
+    pagerduty:
+      enabled: false
+      integration_key: "{{ pagerduty_key | default('') }}"
+
+# Automation Rules
+automation_rules:
+  - name: "high_cpu_remediation"
+    trigger:
+      metric: "cpu_utilization"
+      operator: ">"
+      threshold: 90
+      duration: 300
+    actions:
+      - type: "scale_up"
+        parameters:
+          factor: 1.5
+          max_instances: 10
+      - type: "alert"
+        parameters:
+          severity: "high"
+          message: "High CPU detected, scaling up"
+  
+  - name: "service_down_remediation"
+    trigger:
+      metric: "service_health"
+      operator: "=="
+      threshold: 0
+      duration: 60
+    actions:
+      - type: "restart_service"
+        parameters:
+          max_attempts: 3
+      - type: "failover"
+        parameters:
+          target: "backup_instance"
+      - type: "alert"
+        parameters:
+          severity: "critical"
+          message: "Service down, attempting remediation"
+
+  - name: "disk_space_cleanup"
+    trigger:
+      metric: "disk_usage"
+      operator: ">"
+      threshold: 85
+      duration: 0
+    actions:
+      - type: "log_rotation"
+        parameters:
+          retention_days: 7
+      - type: "temp_cleanup"
+        parameters:
+          directories: ["/tmp", "/var/tmp"]
+      - type: "alert"
+        parameters:
+          severity: "medium"
+          message: "Disk space cleanup performed"
+
+# Machine Learning Configuration
+ml_config:
+  models_path: "/opt/hx/ai-models/self-healing"
+  training_data_retention: 90  # days
+  retraining_frequency: "weekly"
+  
+  incident_classifier:
+    algorithm: "random_forest"
+    features:
+      - error_rate
+      - response_time
+      - cpu_utilization
+      - memory_utilization
+      - disk_io
+      - network_io
+    classes:
+      - service_failure
+      - resource_exhaustion
+      - network_issue
+      - disk_failure
+      - memory_leak
+
+# Performance Settings
+performance:
+  check_interval: 30  # seconds
+  batch_processing: true
+  max_concurrent_remediations: 5
+  remediation_timeout: 600  # 10 minutes

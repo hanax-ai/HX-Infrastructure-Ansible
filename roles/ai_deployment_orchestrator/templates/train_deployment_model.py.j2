@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+"""
+AI Model Training for Deployment Decision Making
+Trains ML models based on historical deployment data and system metrics
+"""
+
+import json
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+import pickle
+import logging
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report, accuracy_score
+import requests
+
+class DeploymentModelTrainer:
+    def __init__(self):
+        self.logger = self._setup_logging()
+        self.model = RandomForestClassifier(
+            n_estimators=100,
+            max_depth=10,
+            random_state=42
+        )
+        self.scaler = StandardScaler()
+        
+    def _setup_logging(self):
+        """Setup logging configuration"""
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler('/var/log/hx-orchestrator/model_training.log'),
+                logging.StreamHandler()
+            ]
+        )
+        return logging.getLogger(__name__)
+    
+    def collect_training_data(self):
+        """Collect historical data for training"""
+        try:
+            # Load deployment logs
+            deployment_data = []
+            decisions_file = '/var/log/hx-orchestrator/decisions.log'
+            deployments_file = '/var/log/hx-orchestrator/deployments.log'
+            
+            # Read decision logs
+            if os.path.exists(decisions_file):
+                with open(decisions_file, 'r') as f:
+                    for line in f:
+                        try:
+                            data = json.loads(line)
+                            deployment_data.append(data)
+                        except:
+                            continue
+            
+            # If not enough historical data, generate synthetic data for initial training
+            if len(deployment_data) < 100:
+                self.logger.info("Insufficient historical data, generating synthetic training data")
+                deployment_data = self._generate_synthetic_data()
+            
+            return deployment_data
+            
+        except Exception as e:
+            self.logger.error(f"Error collecting training data: {e}")
+            return self._generate_synthetic_data()
+    
+    def _generate_synthetic_data(self):
+        """Generate synthetic training data for initial model"""
+        synthetic_data = []
+        
+        # Generate 1000 synthetic deployment scenarios
+        for i in range(1000):
+            # Random system metrics
+            cpu_util = np.random.normal(60, 20)
+            mem_util = np.random.normal(70, 15)
+            error_rate = np.random.exponential(0.5)
+            traffic_load = np.random.lognormal(5, 1)
+            
+            # Time-based features
+            hour = np.random.randint(0, 24)
+            day_of_week = np.random.randint(0, 7)
+            is_maintenance = 1 if 2 <= hour <= 4 else 0
+            recent_deployments = np.random.poisson(2)
+            
+            # Rule-based strategy selection for training
+            if error_rate > 1.0 or cpu_util > 90 or mem_util > 90:
+                strategy = 'blue_green'  # Safe strategy for high risk
+            elif traffic_load > 1000 and not is_maintenance:
+                strategy = 'canary'  # Gradual rollout for high traffic
+            elif is_maintenance:
+                strategy = 'rolling'  # Efficient for maintenance windows
+            else:
+                # Random selection weighted by typical usage
+                strategy = np.random.choice(
+                    ['blue_green', 'canary', 'rolling'],
+                    p=[0.5, 0.3, 0.2]
+                )
+            
+            # Calculate success rate based on strategy and conditions
+            if strategy == 'blue_green':
+                success_rate = 0.95 - (error_rate * 0.1) - (cpu_util > 80) * 0.1
+            elif strategy == 'canary':
+                success_rate = 0.90 - (traffic_load > 1000) * 0.1
+            else:  # rolling
+                success_rate = 0.85 - (not is_maintenance) * 0.1
+            
+            success_rate = max(0.5, min(0.99, success_rate))
+            
+            synthetic_data.append({
+                'timestamp': (datetime.now() - timedelta(days=np.random.randint(1, 365))).isoformat(),
+                'metrics': {
+                    'cpu_utilization': cpu_util,
+                    'memory_utilization': mem_util,
+                    'error_rate': error_rate,
+                    'traffic_load': traffic_load,
+                    'hour_of_day': hour,
+                    'day_of_week': day_of_week,
+                    'is_maintenance_window': is_maintenance,
+                    'recent_deployments': recent_deployments
+                },
+                'strategy': strategy,
+                'success_rate': success_rate
+            })
+        
+        return synthetic_data
+    
+    def prepare_features(self, data):
+        """Prepare features and labels for training"""
+        features = []
+        labels = []
+        
+        strategy_map = {'blue_green': 0, 'canary': 1, 'rolling': 2}
+        
+        for record in data:
+            if 'metrics' in record and 'strategy' in record:
+                metrics = record['metrics']
+                feature_vector = [
+                    metrics.get('cpu_utilization', 50),
+                    metrics.get('memory_utilization', 60),
+                    metrics.get('error_rate', 0.1),
+                    metrics.get('traffic_load', 100),
+                    metrics.get('hour_of_day', 12),
+                    metrics.get('day_of_week', 1),
+                    int(metrics.get('is_maintenance_window', False)),
+                    metrics.get('recent_deployments', 1)
+                ]
+                
+                features.append(feature_vector)
+                labels.append(strategy_map.get(record['strategy'], 0))
+        
+        return np.array(features), np.array(labels)
+    
+    def train_model(self):
+        """Train the deployment decision model"""
+        try:
+            self.logger.info("Starting model training...")
+            
+            # Collect training data
+            training_data = self.collect_training_data()
+            self.logger.info(f"Collected {len(training_data)} training samples")
+            
+            # Prepare features and labels
+            X, y = self.prepare_features(training_data)
+            
+            if len(X) == 0:
+                raise ValueError("No valid training data available")
+            
+            # Split data
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42, stratify=y
+            )
+            
+            # Scale features
+            X_train_scaled = self.scaler.fit_transform(X_train)
+            X_test_scaled = self.scaler.transform(X_test)
+            
+            # Train model
+            self.model.fit(X_train_scaled, y_train)
+            
+            # Evaluate model
+            train_score = self.model.score(X_train_scaled, y_train)
+            test_score = self.model.score(X_test_scaled, y_test)
+            
+            # Cross-validation
+            cv_scores = cross_val_score(self.model, X_train_scaled, y_train, cv=5)
+            
+            self.logger.info(f"Training accuracy: {train_score:.3f}")
+            self.logger.info(f"Test accuracy: {test_score:.3f}")
+            self.logger.info(f"CV accuracy: {cv_scores.mean():.3f} (+/- {cv_scores.std() * 2:.3f})")
+            
+            # Feature importance
+            feature_names = [
+                'cpu_utilization', 'memory_utilization', 'error_rate', 'traffic_load',
+                'hour_of_day', 'day_of_week', 'is_maintenance_window', 'recent_deployments'
+            ]
+            
+            importance_df = pd.DataFrame({
+                'feature': feature_names,
+                'importance': self.model.feature_importances_
+            }).sort_values('importance', ascending=False)
+            
+            self.logger.info("Feature importance:")
+            for _, row in importance_df.iterrows():
+                self.logger.info(f"  {row['feature']}: {row['importance']:.3f}")
+            
+            # Save model and scaler
+            model_path = '/opt/hx/ai-models/deployment-decision.pkl'
+            scaler_path = '/opt/hx/ai-models/feature-scaler.pkl'
+            
+            os.makedirs('/opt/hx/ai-models', exist_ok=True)
+            
+            with open(model_path, 'wb') as f:
+                pickle.dump(self.model, f)
+            
+            with open(scaler_path, 'wb') as f:
+                pickle.dump(self.scaler, f)
+            
+            self.logger.info(f"Model saved to {model_path}")
+            self.logger.info(f"Scaler saved to {scaler_path}")
+            
+            # Save training metadata
+            metadata = {
+                'training_date': datetime.now().isoformat(),
+                'training_samples': len(X),
+                'test_accuracy': test_score,
+                'cv_accuracy_mean': cv_scores.mean(),
+                'cv_accuracy_std': cv_scores.std(),
+                'feature_importance': importance_df.to_dict('records')
+            }
+            
+            with open('/opt/hx/ai-models/training-metadata.json', 'w') as f:
+                json.dump(metadata, f, indent=2)
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Model training failed: {e}")
+            return False
+
+if __name__ == '__main__':
+    trainer = DeploymentModelTrainer()
+    success = trainer.train_model()
+    exit(0 if success else 1)
