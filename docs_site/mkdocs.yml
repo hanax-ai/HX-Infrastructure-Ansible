@@ -1,0 +1,22 @@
+site_name: HX Infrastructure Ansible - Exemplary Automation
+site_description: Enterprise-grade Ansible infrastructure automation
+site_author: HX Infrastructure Team
+
+theme:
+  name: readthedocs
+
+nav:
+  - Home: index.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Diagrams: architecture/diagrams.md
+  - Roles: roles/index.md
+  - Development:
+    - Guidelines: development/guidelines.md
+    - Style Guide: development/style-guide.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true

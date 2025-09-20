@@ -1,0 +1,152 @@
+
+---
+# Variable Validation Tasks for HX PostgreSQL Authentication
+
+- name: Load validation rules
+  set_fact:
+    hx_pg_validation_rules: "{{ lookup('file', role_path + '/vars/validation.yml') | from_yaml }}"
+  tags: [validation]
+
+- name: Validate boolean variables
+  assert:
+    that:
+      - item.value is boolean
+    fail_msg: "Variable {{ item.key }} must be a boolean value"
+    success_msg: "Variable {{ item.key }} validation passed"
+  loop:
+    - { key: "hx_pg_auth_enabled", value: "{{ hx_pg_auth_enabled }}" }
+    - { key: "hx_pg_ssl_enabled", value: "{{ hx_pg_ssl_enabled }}" }
+    - { key: "hx_pg_security_enabled", value: "{{ hx_pg_security_enabled }}" }
+    - { key: "hx_pg_hardening_enabled", value: "{{ hx_pg_hardening_enabled }}" }
+    - { key: "hx_pg_create_app_user", value: "{{ hx_pg_create_app_user }}" }
+    - { key: "hx_pg_create_app_database", value: "{{ hx_pg_create_app_database }}" }
+  tags: [validation]
+
+- name: Validate required string variables
+  assert:
+    that:
+      - item is defined
+      - item | length > 0
+    fail_msg: "Required variable {{ item }} is not defined or empty"
+    success_msg: "Required variable validation passed"
+  loop:
+    - "{{ hx_pg_cluster_name }}"
+    - "{{ hx_pg_db }}"
+    - "{{ hx_pg_app_user }}"
+    - "{{ hx_pg_subnet }}"
+    - "{{ hx_pg_password_encryption }}"
+  tags: [validation]
+
+- name: Validate PostgreSQL version
+  assert:
+    that:
+      - hx_pg_cluster_version | int >= 12
+      - hx_pg_cluster_version | int <= 17
+    fail_msg: "PostgreSQL version {{ hx_pg_cluster_version }} is not supported (12-17)"
+    success_msg: "PostgreSQL version validation passed"
+  tags: [validation]
+
+- name: Validate port number
+  assert:
+    that:
+      - hx_pg_port | int >= 1024
+      - hx_pg_port | int <= 65535
+    fail_msg: "Port {{ hx_pg_port }} must be between 1024 and 65535"
+    success_msg: "Port validation passed"
+  tags: [validation]
+
+- name: Validate subnet format
+  assert:
+    that:
+      - hx_pg_subnet | regex_search('^([0-9]{1,3}\.){3}[0-9]{1,3}/[0-9]{1,2}$')
+    fail_msg: "Subnet '{{ hx_pg_subnet }}' is not in valid CIDR format"
+    success_msg: "Subnet format validation passed"
+  tags: [validation]
+
+- name: Validate database name format
+  assert:
+    that:
+      - hx_pg_db | regex_search('^[a-zA-Z][a-zA-Z0-9_]*$')
+    fail_msg: "Database name '{{ hx_pg_db }}' contains invalid characters"
+    success_msg: "Database name format validation passed"
+  tags: [validation]
+
+- name: Validate username format
+  assert:
+    that:
+      - hx_pg_app_user | regex_search('^[a-zA-Z][a-zA-Z0-9_]*$')
+    fail_msg: "Username '{{ hx_pg_app_user }}' contains invalid characters"
+    success_msg: "Username format validation passed"
+  tags: [validation]
+
+- name: Validate password encryption method
+  assert:
+    that:
+      - hx_pg_password_encryption in ['md5', 'scram-sha-256']
+    fail_msg: "Password encryption '{{ hx_pg_password_encryption }}' is not supported"
+    success_msg: "Password encryption validation passed"
+  tags: [validation]
+
+- name: Validate SSL protocol version (if specified)
+  assert:
+    that:
+      - hx_pg_ssl_min_protocol_version in ['TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3']
+    fail_msg: "SSL protocol version '{{ hx_pg_ssl_min_protocol_version }}' is not supported"
+    success_msg: "SSL protocol version validation passed"
+  when: hx_pg_ssl_min_protocol_version | length > 0
+  tags: [validation]
+
+- name: Validate app password is provided (if user creation enabled)
+  assert:
+    that:
+      - hx_pg_app_password is defined
+      - hx_pg_app_password | length >= 8
+    fail_msg: "App password must be provided and at least 8 characters long when user creation is enabled"
+    success_msg: "App password validation passed"
+  when: hx_pg_create_app_user | bool
+  no_log: true
+  tags: [validation]
+
+- name: Check if PostgreSQL service exists
+  systemd:
+    name: "{{ hx_pg_service_name }}"
+  register: hx_pg_service_check
+  failed_when: false
+  tags: [validation]
+
+- name: Validate PostgreSQL service availability
+  assert:
+    that:
+      - hx_pg_service_check.status is defined
+    fail_msg: "PostgreSQL service '{{ hx_pg_service_name }}' is not available"
+    success_msg: "PostgreSQL service validation passed"
+  tags: [validation]
+
+- name: Check CA certificate file (if CA enabled)
+  stat:
+    path: "{{ hx_pg_ca_path }}"
+  register: hx_pg_ca_file_check
+  when: hx_pg_ca_enabled | bool
+  tags: [validation]
+
+- name: Validate CA certificate exists (if CA enabled)
+  assert:
+    that:
+      - hx_pg_ca_file_check.stat.exists
+      - hx_pg_ca_file_check.stat.isreg
+    fail_msg: "CA certificate file '{{ hx_pg_ca_path }}' does not exist"
+    success_msg: "CA certificate validation passed"
+  when: hx_pg_ca_enabled | bool
+  tags: [validation]
+
+- name: Display validation summary
+  debug:
+    msg:
+      - "Variable validation completed successfully"
+      - "PostgreSQL Version: {{ hx_pg_cluster_version }}"
+      - "Database: {{ hx_pg_db }}"
+      - "App User: {{ hx_pg_app_user }}"
+      - "SSL Enabled: {{ hx_pg_ssl_enabled }}"
+      - "Security Enabled: {{ hx_pg_security_enabled }}"
+      - "Password Encryption: {{ hx_pg_password_encryption }}"
+  tags: [validation]

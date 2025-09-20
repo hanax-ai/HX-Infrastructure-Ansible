@@ -1,0 +1,51 @@
+
+---
+- name: Converge
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 600
+      when: ansible_os_family == "Debian"
+
+    - name: Install basic packages for testing
+      package:
+        name:
+          - systemd
+          - dbus
+        state: present
+
+    - name: Start systemd services
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - systemd-logind
+        - dbus
+      failed_when: false
+
+  roles:
+    - role: hx_domain_join_standardized
+      vars:
+        # Test configuration - no actual domain join
+        hx_domain_join_enabled: false
+        hx_ad_domain: "test.local"
+        hx_ad_realm: "TEST.LOCAL"
+        hx_ad_admin_user: "testadmin"
+        hx_ad_admin_password: "TestPassword123!"
+        hx_ad_computer_name: "TESTHOST"
+
+        # Enable configuration and security testing
+        hx_sssd_enabled: true
+        hx_krb5_enabled: true
+        hx_domain_security_enabled: true
+        hx_domain_backup_enabled: true
+        hx_domain_audit_logging_enabled: true
+
+        # Disable features that require actual domain
+        hx_domain_health_checks_enabled: false
+        hx_home_dir_enabled: false
+        hx_sudo_enabled: false

@@ -1,0 +1,98 @@
+
+---
+# Installation Tasks for HX CA Trust
+
+- name: Create required directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop: "{{ hx_ca_required_directories }}"
+  tags: [install]
+
+- name: Install required packages
+  apt:
+    name: "{{ hx_ca_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  register: hx_ca_package_install
+  retries: 3
+  delay: 5
+  until: hx_ca_package_install is succeeded
+  tags: [install]
+
+- name: Create backup of existing certificates (if backup enabled)
+  shell: |
+    set -euo pipefail
+    if [ -f "{{ hx_ca_cert_full_path }}" ]; then
+      cp "{{ hx_ca_cert_full_path }}" "{{ hx_ca_backup_dir }}/{{ hx_ca_root_ca_filename }}.{{ hx_ca_backup_timestamp }}.bak"
+      echo "Backup created"
+    else
+      echo "No existing certificate to backup"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_ca_backup_result
+  when: hx_ca_backup_enabled | bool
+  changed_when: "'Backup created' in hx_ca_backup_result.stdout"
+  tags: [install]
+
+- name: Fetch root CA certificate from CA server
+  fetch:
+    src: "{{ hx_ca_root_ca_path_on_ca }}"
+    dest: "/tmp/{{ hx_ca_root_ca_filename }}"
+    flat: yes
+  delegate_to: "{{ hx_ca_host }}"
+  register: hx_ca_fetch_result
+  retries: "{{ hx_ca_validation_retries }}"
+  delay: "{{ hx_ca_validation_delay }}"
+  until: hx_ca_fetch_result is succeeded
+  tags: [install]
+
+- name: Verify certificate format before deployment
+  command: openssl x509 -in "/tmp/{{ hx_ca_root_ca_filename }}" -text -noout
+  register: hx_ca_cert_verify
+  changed_when: false
+  failed_when: hx_ca_cert_verify.rc != 0
+  tags: [install]
+
+- name: Deploy root CA certificate to system trust store
+  copy:
+    src: "/tmp/{{ hx_ca_root_ca_filename }}"
+    dest: "{{ hx_ca_cert_full_path }}"
+    owner: "{{ hx_ca_cert_owner }}"
+    group: "{{ hx_ca_cert_group }}"
+    mode: "{{ hx_ca_cert_mode }}"
+    backup: yes
+  notify: update ca trust store
+  register: hx_ca_deploy_result
+  tags: [install]
+
+- name: Clean up temporary certificate file
+  file:
+    path: "/tmp/{{ hx_ca_root_ca_filename }}"
+    state: absent
+  tags: [install]
+
+- name: Log certificate deployment
+  lineinfile:
+    path: "{{ hx_ca_log_dir }}/deployment.log"
+    line: "{{ ansible_date_time.iso8601 }} - Certificate {{ hx_ca_root_ca_filename }} deployed from {{ hx_ca_host }}"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_ca_audit_logging_enabled | bool
+  tags: [install]
+
+- name: Display installation summary
+  debug:
+    msg:
+      - "Certificate installation completed"
+      - "Source: {{ hx_ca_host }}:{{ hx_ca_root_ca_path_on_ca }}"
+      - "Destination: {{ hx_ca_cert_full_path }}"
+      - "Backup: {{ hx_ca_backup_enabled | ternary('Created', 'Disabled') }}"
+  tags: [install]

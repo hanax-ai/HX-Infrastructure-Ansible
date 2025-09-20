@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="HX Infrastructure Team" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>dependency_validator - HX Infrastructure Ansible - Exemplary Automation</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "dependency_validator";
+        var mkdocs_page_input_path = "roles/dependency_validator.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> HX Infrastructure Ansible - Exemplary Automation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Architecture</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../../architecture/overview.md">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../architecture/diagrams/">Diagrams</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../">Roles</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../../development/guidelines.md">Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/style-guide/">Style Guide</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">HX Infrastructure Ansible - Exemplary Automation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">dependency_validator</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="dependency_validator">dependency_validator<a class="headerlink" href="#dependency_validator" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Comprehensive dependency validation framework for HX Infrastructure</p>
+<p><strong>Author:</strong> HX Infrastructure Team<br />
+<strong>Version:</strong> Unknown</p>
+<h2 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h2>
+<p>The following variables can be configured for this role:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">dependency_validation_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">dependency_validation_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.0.0</span>
+<span class="nt">dependency_validation_strict_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">dependency_validation_fail_fast</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="nt">system_requirements</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;min_memory_gb&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;min_disk_gb&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;min_cpu_cores&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;supported_architectures&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;x86_64&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;aarch64&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;supported_os_families&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;RedHat&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;Debian&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;Ubuntu&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;supported_os_versions&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;RedHat&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;8&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;9&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;Debian&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;10&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;11&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;12&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;Ubuntu&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;20.04&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;22.04&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;24.04&#39;</span><span class="p p-Indicator">]}}</span>
+<span class="nt">package_dependencies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;essential_packages&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;python3&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;curl&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;wget&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;openssl&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;ca-certificates&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;role_specific_packages&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{},</span><span class="w"> </span><span class="s">&#39;version_constraints&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{}}</span>
+<span class="nt">service_dependencies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;required_services&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[],</span><span class="w"> </span><span class="s">&#39;forbidden_services&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[],</span><span class="w"> </span><span class="s">&#39;service_states&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;required_running&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[],</span><span class="w"> </span><span class="s">&#39;required_stopped&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[]}}</span>
+<span class="nt">network_dependencies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;connectivity_checks&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="s">&#39;host&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;8.8.8.8&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;port&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">53</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;protocol&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;udp&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;timeout&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">},</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;host&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;1.1.1.1&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;port&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">53</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;protocol&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;udp&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;timeout&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">}],</span><span class="w"> </span><span class="s">&#39;dns_resolution_checks&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;google.com&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;github.com&#39;</span><span class="p p-Indicator">],</span><span class="w"> </span><span class="s">&#39;required_ports_open&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[],</span><span class="w"> </span><span class="s">&#39;required_ports_closed&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[]}</span>
+<span class="nt">certificate_dependencies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;validate_ca_bundle&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;required_ca_certificates&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[],</span><span class="w"> </span><span class="s">&#39;ssl_endpoints_check&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[],</span><span class="w"> </span><span class="s">&#39;certificate_expiry_days&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">30</span><span class="p p-Indicator">}</span>
+<span class="nt">external_dependencies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;api_endpoints&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[],</span><span class="w"> </span><span class="s">&#39;database_connections&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[],</span><span class="w"> </span><span class="s">&#39;message_queues&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[],</span><span class="w"> </span><span class="s">&#39;storage_backends&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[]}</span>
+<span class="nt">dependency_cache</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enabled&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;cache_dir&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;/tmp/ansible-dependency-cache&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;cache_ttl_seconds&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">3600</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;offline_mode&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">False</span><span class="p p-Indicator">}</span>
+<span class="nt">validation_timeouts</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;network_timeout&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;service_timeout&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">30</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;package_timeout&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">300</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;overall_timeout&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">600</span><span class="p p-Indicator">}</span>
+<span class="nt">validation_retries</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;network_retries&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;service_retries&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;package_retries&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;retry_delay&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">}</span>
+<span class="nt">dependency_reporting</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;generate_report&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;report_format&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;json&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;report_path&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;/tmp/dependency-validation-report.json&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;detailed_logging&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;log_level&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;INFO&#39;</span><span class="p p-Indicator">}</span>
+<span class="nt">environment_overrides</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;development&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;dependency_validation_strict_mode&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">False</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;validation_timeouts&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;overall_timeout&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">300</span><span class="p p-Indicator">}},</span><span class="w"> </span><span class="s">&#39;testing&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;dependency_validation_strict_mode&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;dependency_cache&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;cache_ttl_seconds&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">1800</span><span class="p p-Indicator">}},</span><span class="w"> </span><span class="s">&#39;production&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;dependency_validation_strict_mode&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;dependency_validation_fail_fast&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;validation_retries&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;network_retries&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;service_retries&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">3</span><span class="p p-Indicator">}}}</span>
+<span class="nt">features</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;validate_system_requirements&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;validate_packages&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;validate_services&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;validate_network&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;validate_certificates&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;validate_external_deps&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;generate_dependency_matrix&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;offline_validation&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">False</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+
+<h2 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
+<p>No dependencies.</p>
+<h2 id="tasks">Tasks<a class="headerlink" href="#tasks" title="Permanent link">&para;</a></h2>
+<p>The following task files are included:</p>
+<ul>
+<li><code>system_requirements.yml</code></li>
+<li><code>network_validation.yml</code></li>
+<li><code>package_validation.yml</code></li>
+<li><code>main.yml</code></li>
+</ul>
+<h2 id="handlers">Handlers<a class="headerlink" href="#handlers" title="Permanent link">&para;</a></h2>
+<p>The following handlers are available:</p>
+<h2 id="templates">Templates<a class="headerlink" href="#templates" title="Permanent link">&para;</a></h2>
+<p>The following templates are provided:</p>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

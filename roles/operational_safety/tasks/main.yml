@@ -1,0 +1,206 @@
+
+---
+# Enhanced Operational Safety Framework - Phase 2 Day 2
+# Comprehensive safety controls for production operations
+
+- name: Initialize operational safety logging
+  file:
+    path: "{{ operational_safety_log_dir | default('/var/log/ansible-safety') }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+  delegate_to: localhost
+  run_once: true
+  tags: [safety, init]
+
+- name: Pre-operation system state backup
+  block:
+    - name: Create timestamped backup directory
+      file:
+        path: "{{ safety_backup_base_dir | default('/opt/ansible-backups') }}/{{ ansible_date_time.epoch }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+      register: backup_dir_created
+
+    - name: Backup critical system files
+      archive:
+        path: "{{ item }}"
+        dest: "{{ backup_dir_created.path }}/{{ item | basename }}-{{ ansible_date_time.epoch }}.tar.gz"
+        format: gz
+      loop: "{{ safety_backup_paths | default(['/etc', '/opt/config']) }}"
+      when:
+        - safety_require_backup | default(true) | bool
+        - item is exists
+      ignore_errors: true
+
+    - name: Backup database if configured
+      shell: |
+        if command -v pg_dump >/dev/null 2>&1; then
+          pg_dump -h {{ db_host | default('localhost') }} -U {{ db_user | default('postgres') }} {{ db_name | default('hx_db') }} > {{ backup_dir_created.path }}/database-{{ ansible_date_time.epoch }}.sql
+        fi
+      when: safety_backup_database | default(false) | bool
+      ignore_errors: true
+
+    - name: Verify backup integrity
+      stat:
+        path: "{{ backup_dir_created.path }}"
+      register: backup_verification
+
+    - name: Set backup path for safety checks
+      set_fact:
+        current_backup_path: "{{ backup_dir_created.path }}"
+        backup_verified: "{{ backup_verification.stat.exists }}"
+  when: safety_require_backup | default(true) | bool
+  tags: [safety, backup]
+
+- name: Enhanced safety confirmation with operation details
+  pause:
+    prompt: |
+      ╔══════════════════════════════════════════════════════════════════════════════╗
+      ║                        🚨 CRITICAL OPERATION SAFETY CHECK 🚨                 ║
+      ╠══════════════════════════════════════════════════════════════════════════════╣
+      ║ Operation: {{ safety_operation_name | default('Unknown operation') | upper }}
+      ║ Target Host: {{ inventory_hostname }}
+      ║ Environment: {{ environment_type | default('Unknown') | upper }}
+      ║ User: {{ ansible_user_id | default('Unknown') }}
+      ║ Timestamp: {{ ansible_date_time.iso8601 }}
+      ║
+      ║ POTENTIAL RISKS:
+      {% for risk in safety_risks | default(['System downtime', 'Data loss', 'Service interruption']) %}
+      ║   • {{ risk }}
+      {% endfor %}
+      ║
+      ║ SAFETY MEASURES ACTIVE:
+      ║   • Backup Created: {{ 'YES' if backup_verified | default(false) else 'NO' }}
+      ║   • Rollback Plan: {{ 'YES' if safety_rollback_plan is defined else 'NO' }}
+      ║   • Maintenance Window: {{ 'YES' if safety_maintenance_window_active | default(false) else 'NO' }}
+      ║
+      ║ CONFIRMATION REQUIRED:
+      ║ Type 'PROCEED_WITH_CAUTION' to continue or Ctrl+C to abort
+      ╚══════════════════════════════════════════════════════════════════════════════╝
+    echo: yes
+  register: enhanced_safety_confirmation
+  when:
+    - safety_confirmation_required | default(true) | bool
+    - not ansible_check_mode
+    - environment_type | default('dev') in ['production', 'prod', 'staging']
+  tags: [safety, confirmation]
+
+- name: Validate enhanced safety confirmation
+  fail:
+    msg: |
+      ❌ OPERATION ABORTED - Invalid or missing confirmation
+      Required: 'PROCEED_WITH_CAUTION'
+      Received: '{{ enhanced_safety_confirmation.user_input | default('None') }}'
+  when:
+    - safety_confirmation_required | default(true) | bool
+    - not ansible_check_mode
+    - environment_type | default('dev') in ['production', 'prod', 'staging']
+    - enhanced_safety_confirmation.user_input | default('') != 'PROCEED_WITH_CAUTION'
+  tags: [safety, validation]
+
+- name: Dangerous command protection wrapper
+  block:
+    - name: Check for dangerous commands in task
+      fail:
+        msg: |
+          🚫 DANGEROUS COMMAND DETECTED: {{ item }}
+          This command is blocked for safety. Use safe alternatives or override with safety_allow_dangerous=true
+      when:
+        - safety_dangerous_commands is defined
+        - item in (ansible_task_name | default('') + ' ' + (shell_command | default('')) + ' ' + (command_args | default('')))
+        - not (safety_allow_dangerous | default(false) | bool)
+      loop: "{{ safety_dangerous_commands | default(['rm -rf', 'dd if=', 'mkfs', 'fdisk', 'parted', 'wipefs', 'shred']) }}"
+
+    - name: Log dangerous command usage
+      lineinfile:
+        path: "{{ operational_safety_log_dir | default('/var/log/ansible-safety') }}/dangerous-commands.log"
+        line: "{{ ansible_date_time.iso8601 }} - DANGEROUS: {{ ansible_task_name | default('Unknown') }} by {{ ansible_user_id }} on {{ inventory_hostname }}"
+        create: yes
+        owner: root
+        group: root
+        mode: '0640'
+      when: safety_allow_dangerous | default(false) | bool
+      delegate_to: localhost
+  when: safety_dangerous_command_protection | default(true) | bool
+  tags: [safety, dangerous_commands]
+
+- name: Production environment additional safety checks
+  block:
+    - name: Verify production maintenance window
+      fail:
+        msg: "Production operations only allowed during maintenance window ({{ safety_maintenance_start | default('02:00') }}-{{ safety_maintenance_end | default('06:00') }} UTC)"
+      when:
+        - safety_require_maintenance_window | default(true) | bool
+        - not (ansible_date_time.hour | int >= (safety_maintenance_start | default('02:00'))[:2] | int and
+               ansible_date_time.hour | int <= (safety_maintenance_end | default('06:00'))[:2] | int)
+
+    - name: Check for active monitoring alerts
+      uri:
+        url: "{{ monitoring_api_url | default('http://localhost:9090/api/v1/alerts') }}"
+        method: GET
+        timeout: 10
+      register: monitoring_check
+      ignore_errors: true
+      when: safety_check_monitoring | default(false) | bool
+
+    - name: Fail if critical alerts active
+      fail:
+        msg: "Critical monitoring alerts detected. Resolve alerts before proceeding with maintenance."
+      when:
+        - safety_check_monitoring | default(false) | bool
+        - monitoring_check is succeeded
+        - monitoring_check.json.data.alerts | length > 0
+
+    - name: Verify cluster health before operation
+      shell: |
+        if command -v kubectl >/dev/null 2>&1; then
+          kubectl get nodes --no-headers | grep -v Ready && exit 1 || exit 0
+        fi
+      register: cluster_health
+      ignore_errors: true
+      when: safety_check_cluster_health | default(false) | bool
+
+    - name: Production operation logging
+      lineinfile:
+        path: "{{ operational_safety_log_dir | default('/var/log/ansible-safety') }}/production-operations.log"
+        line: |
+          {{ ansible_date_time.iso8601 }} - PRODUCTION_OP: {{ safety_operation_name | default('Unknown') }}
+          User: {{ ansible_user_id }} | Host: {{ inventory_hostname }} | Backup: {{ current_backup_path | default('None') }}
+        create: yes
+        owner: root
+        group: root
+        mode: '0640'
+      delegate_to: localhost
+  when: environment_type | default('dev') in ['production', 'prod']
+  tags: [safety, production]
+
+- name: Create operation rollback script
+  template:
+    src: rollback_script.sh.j2
+    dest: "{{ operational_safety_log_dir | default('/var/log/ansible-safety') }}/rollback-{{ ansible_date_time.epoch }}.sh"
+    owner: root
+    group: root
+    mode: '0750'
+  vars:
+    operation_name: "{{ safety_operation_name | default('Unknown') }}"
+    backup_path: "{{ current_backup_path | default('') }}"
+    target_host: "{{ inventory_hostname }}"
+  when:
+    - safety_create_rollback_script | default(true) | bool
+    - current_backup_path is defined
+  delegate_to: localhost
+  tags: [safety, rollback]
+
+- name: Final safety validation
+  assert:
+    that:
+      - backup_verified | default(false) or not (safety_require_backup | default(true) | bool)
+      - enhanced_safety_confirmation.user_input | default('') == 'PROCEED_WITH_CAUTION' or not (safety_confirmation_required | default(true) | bool)
+      - environment_type is defined
+    fail_msg: "Safety validation failed. Operation cannot proceed."
+    success_msg: "✅ All safety checks passed. Operation authorized to proceed."
+  tags: [safety, validation]

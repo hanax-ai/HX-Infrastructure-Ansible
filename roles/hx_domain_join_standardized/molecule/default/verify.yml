@@ -1,0 +1,135 @@
+
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Check if required packages are installed
+      package_facts:
+        manager: auto
+
+    - name: Assert required packages are installed
+      assert:
+        that:
+          - "'realmd' in ansible_facts.packages"
+          - "'sssd' in ansible_facts.packages"
+          - "'adcli' in ansible_facts.packages"
+          - "'krb5-user' in ansible_facts.packages"
+        fail_msg: "Required domain join packages are not installed"
+        success_msg: "All required packages are installed"
+
+    - name: Check if required directories exist
+      stat:
+        path: "{{ item }}"
+      register: required_dirs
+      loop:
+        - /var/backups/hx/domain-join
+        - /var/log/hx/domain-join
+        - /etc/sssd
+
+    - name: Assert required directories exist
+      assert:
+        that:
+          - item.stat.exists
+          - item.stat.isdir
+        fail_msg: "Required directory {{ item.item }} does not exist"
+        success_msg: "Required directories exist"
+      loop: "{{ required_dirs.results }}"
+
+    - name: Check configuration files exist
+      stat:
+        path: "{{ item }}"
+      register: config_files
+      loop:
+        - /etc/realmd.conf
+        - /etc/krb5.conf
+        - /etc/sssd/sssd.conf
+
+    - name: Assert configuration files exist
+      assert:
+        that:
+          - item.stat.exists
+          - item.stat.isreg
+        fail_msg: "Configuration file {{ item.item }} does not exist"
+        success_msg: "Configuration files exist"
+      loop: "{{ config_files.results }}"
+
+    - name: Check SSSD configuration file permissions
+      stat:
+        path: /etc/sssd/sssd.conf
+      register: sssd_config
+
+    - name: Assert SSSD config has correct permissions
+      assert:
+        that:
+          - sssd_config.stat.mode == "0600"
+          - sssd_config.stat.pw_name == "root"
+          - sssd_config.stat.gr_name == "root"
+        fail_msg: "SSSD configuration file has incorrect permissions"
+        success_msg: "SSSD configuration file permissions are correct"
+
+    - name: Check Kerberos configuration content
+      shell: grep -q "TEST.LOCAL" /etc/krb5.conf
+      register: krb5_content
+      changed_when: false
+
+    - name: Assert Kerberos config contains test realm
+      assert:
+        that:
+          - krb5_content.rc == 0
+        fail_msg: "Kerberos configuration does not contain test realm"
+        success_msg: "Kerberos configuration is properly templated"
+
+    - name: Check SSSD configuration content
+      shell: grep -q "test.local" /etc/sssd/sssd.conf
+      register: sssd_content
+      changed_when: false
+
+    - name: Assert SSSD config contains test domain
+      assert:
+        that:
+          - sssd_content.rc == 0
+        fail_msg: "SSSD configuration does not contain test domain"
+        success_msg: "SSSD configuration is properly templated"
+
+    - name: Check NSSwitch configuration
+      shell: grep -q "files sss" /etc/nsswitch.conf
+      register: nsswitch_content
+      changed_when: false
+
+    - name: Assert NSSwitch is configured for SSSD
+      assert:
+        that:
+          - nsswitch_content.rc == 0
+        fail_msg: "NSSwitch is not configured for SSSD"
+        success_msg: "NSSwitch configuration is correct"
+
+    - name: Check log files were created
+      stat:
+        path: "{{ item }}"
+      register: log_files
+      loop:
+        - /var/log/hx/domain-join/installation.log
+        - /var/log/hx/domain-join/configuration.log
+
+    - name: Assert log files exist
+      assert:
+        that:
+          - item.stat.exists
+        fail_msg: "Log file {{ item.item }} does not exist"
+        success_msg: "Log files are created"
+      loop: "{{ log_files.results }}"
+
+    - name: Verify realmd service can be started
+      systemd:
+        name: realmd
+        state: started
+      register: realmd_start
+      failed_when: false
+
+    - name: Assert realmd service starts successfully
+      assert:
+        that:
+          - realmd_start is succeeded
+        fail_msg: "Realmd service failed to start"
+        success_msg: "Realmd service starts correctly"

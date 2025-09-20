@@ -1,0 +1,111 @@
+
+---
+# Execute Maintenance Tasks
+- name: Create maintenance execution log
+  file:
+    path: "/var/log/hx-infrastructure/maintenance-{{ ansible_date_time.epoch }}.log"
+    state: touch
+    mode: '0644'
+
+- name: Stop non-critical services during maintenance
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+  loop: "{{ non_critical_services | default(['apache2', 'httpd']) }}"
+  register: stopped_services
+  failed_when: false
+
+- name: Clear system caches
+  shell: |
+    # Clear page cache, dentries and inodes
+    sync
+    echo 3 > /proc/sys/vm/drop_caches
+    echo "System caches cleared at $(date)" >> /var/log/hx-infrastructure/maintenance-{{ ansible_date_time.epoch }}.log
+  when: clear_system_caches | default(true)
+
+- name: Clean temporary files
+  shell: |
+    # Clean /tmp files older than 7 days
+    find /tmp -type f -atime +7 -delete 2>/dev/null || true
+    find /var/tmp -type f -atime +7 -delete 2>/dev/null || true
+    echo "Temporary files cleaned at $(date)" >> /var/log/hx-infrastructure/maintenance-{{ ansible_date_time.epoch }}.log
+  when: clean_temp_files | default(true)
+
+- name: Rotate log files
+  shell: |
+    # Force log rotation
+    logrotate -f /etc/logrotate.conf
+    echo "Log rotation completed at $(date)" >> /var/log/hx-infrastructure/maintenance-{{ ansible_date_time.epoch }}.log
+  when: rotate_logs | default(true)
+
+- name: Update system packages
+  package:
+    name: "*"
+    state: latest
+  register: package_updates
+  when: update_packages | default(false)
+
+- name: Clean package cache
+  shell: |
+    if command -v apt-get >/dev/null 2>&1; then
+      apt-get clean
+      apt-get autoremove -y
+    elif command -v yum >/dev/null 2>&1; then
+      yum clean all
+    elif command -v dnf >/dev/null 2>&1; then
+      dnf clean all
+    fi
+    echo "Package cache cleaned at $(date)" >> /var/log/hx-infrastructure/maintenance-{{ ansible_date_time.epoch }}.log
+  when: clean_package_cache | default(true)
+
+- name: Optimize filesystem
+  shell: |
+    # Run filesystem check and optimization
+    for fs in $(df -t ext4 -t xfs --output=target | tail -n +2); do
+      if [ "$fs" != "/" ]; then
+        echo "Optimizing filesystem $fs at $(date)" >> /var/log/hx-infrastructure/maintenance-{{ ansible_date_time.epoch }}.log
+      fi
+    done
+  when: optimize_filesystem | default(false)
+
+- name: Restart critical services
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop: "{{ critical_services_restart | default(['nginx', 'postgresql']) }}"
+  when: restart_critical_services | default(false)
+
+- name: Start previously stopped services
+  systemd:
+    name: "{{ item.item }}"
+    state: started
+  loop: "{{ stopped_services.results }}"
+  when: 
+    - item is succeeded
+    - item.item is defined
+
+- name: Generate maintenance summary
+  set_fact:
+    maintenance_summary:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      hostname: "{{ inventory_hostname }}"
+      tasks_completed:
+        - "{{ 'system_caches_cleared' if clear_system_caches | default(true) else '' }}"
+        - "{{ 'temp_files_cleaned' if clean_temp_files | default(true) else '' }}"
+        - "{{ 'logs_rotated' if rotate_logs | default(true) else '' }}"
+        - "{{ 'packages_updated' if update_packages | default(false) else '' }}"
+        - "{{ 'package_cache_cleaned' if clean_package_cache | default(true) else '' }}"
+        - "{{ 'filesystem_optimized' if optimize_filesystem | default(false) else '' }}"
+      services_restarted: "{{ critical_services_restart | default([]) }}"
+      package_updates: "{{ package_updates.changed if package_updates is defined else false }}"
+      duration: "maintenance in progress"
+
+- name: Log maintenance summary
+  copy:
+    content: "{{ maintenance_summary | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/maintenance-summary-{{ ansible_date_time.epoch }}.json"
+
+- name: Set maintenance execution status
+  set_fact:
+    maintenance_executed: true
+    maintenance_timestamp: "{{ ansible_date_time.iso8601 }}"

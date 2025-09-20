@@ -1,0 +1,62 @@
+
+---
+# Service Discovery and Registration
+- name: Install service discovery tools
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - consul
+    - consul-template
+  when: service_discovery_enabled | default(true)
+
+- name: Configure Consul agent
+  template:
+    src: consul.json.j2
+    dest: /etc/consul.d/consul.json
+    mode: '0644'
+  vars:
+    datacenter: "{{ consul_datacenter | default('dc1') }}"
+    node_name: "{{ inventory_hostname }}"
+    bind_addr: "{{ ansible_default_ipv4.address }}"
+  notify: restart consul
+
+- name: Start and enable Consul service
+  systemd:
+    name: consul
+    state: started
+    enabled: yes
+
+- name: Register services with Consul
+  uri:
+    url: "https://{{ consul_host | default('localhost') }}:8500/v1/agent/service/register"
+    method: PUT
+    body_format: json
+    body:
+      ID: "{{ item.name }}-{{ inventory_hostname }}"
+      Name: "{{ item.name }}"
+      Tags: "{{ item.tags | default([]) }}"
+      Address: "{{ ansible_default_ipv4.address }}"
+      Port: "{{ item.port }}"
+      Check:
+        HTTP: "https://{{ ansible_default_ipv4.address }}:{{ item.port }}{{ item.health_endpoint | default('/health') }}"
+        Interval: "{{ item.check_interval | default('30s') }}"
+        Timeout: "{{ item.check_timeout | default('10s') }}"
+  loop: "{{ services_to_register | default([]) }}"
+  when: service_discovery_enabled | default(true)
+
+- name: Query service health from Consul
+  uri:
+    url: "https://{{ consul_host | default('localhost') }}:8500/v1/health/service/{{ item }}"
+    method: GET
+  register: service_health_query
+  loop: "{{ services_to_monitor | default([]) }}"
+  when: service_discovery_enabled | default(true)
+
+- name: Update service discovery status
+  set_fact:
+    service_discovery_status:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      registered_services: "{{ services_to_register | default([]) | length }}"
+      healthy_services: "{{ service_health_query.results | selectattr('json', 'defined') | selectattr('json', 'length', '>', 0) | list | length }}"
+      consul_available: "{{ service_health_query is succeeded }}"

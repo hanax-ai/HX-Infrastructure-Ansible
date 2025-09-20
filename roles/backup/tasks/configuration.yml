@@ -1,0 +1,41 @@
+
+---
+# Configuration tasks for backup automation
+# Sets up backup configuration files and parameters
+
+- name: Create backup configuration directory
+  file:
+    path: "{{ backup_config_dir | default('/etc/backup') }}"
+    state: directory
+    mode: '0750'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  tags: [backup, configuration]
+
+- name: Generate main backup configuration
+  template:
+    src: backup.conf.j2
+    dest: "{{ backup_config_dir | default('/etc/backup') }}/backup.conf"
+    mode: '0640'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  tags: [backup, configuration]
+
+- name: Configure backup retention policy
+  template:
+    src: retention.conf.j2
+    dest: "{{ backup_config_dir | default('/etc/backup') }}/retention.conf"
+    mode: '0640'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  tags: [backup, configuration, retention]
+
+- name: Configure backup notification settings
+  template:
+    src: notifications.conf.j2
+    dest: "{{ backup_config_dir | default('/etc/backup') }}/notifications.conf"
+    mode: '0640'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  when: backup_notifications_enabled | default(false)
+  tags: [backup, configuration, notifications]

@@ -1,0 +1,84 @@
+---
+- name: "Hx | PostgreSQL Auth | Create backup directory"
+  file:
+    path: "/var/backups/postgresql"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0750'
+  tags: ['prepare']
+
+- name: "Hx | PostgreSQL Auth | Backup current configuration files"
+  copy:
+    src: "{{ item }}"
+    dest: "/var/backups/postgresql/{{ item | basename }}.{{ ansible_date_time.epoch }}"
+    remote_src: true
+    owner: postgres
+    group: postgres
+    mode: '0640'
+  loop:
+    - "{{ hx_pg_config_dir }}/postgresql.conf"
+    - "{{ hx_pg_config_dir }}/pg_hba.conf"
+  when: hx_pg_backup_config | default(true) | bool
+  tags: ['prepare']
+
+- name: "Hx | PostgreSQL Auth | Install required Python packages"
+  package:
+    name:
+      - python3-psycopg2
+      - python3-cryptography
+    state: present
+  tags: ['prepare']
+
+- name: "Hx | PostgreSQL Auth | Create SSL certificate directory"
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0750'
+  loop:
+    - "/etc/ssl/certs"
+    - "/etc/ssl/private"
+  when: hx_pg_ssl_enabled | default(false) | bool
+  tags: ['prepare']
+
+- name: "Hx | PostgreSQL Auth | Check SSL certificate files"
+  stat:
+    path: "{{ item }}"
+  register: hx_pg_ssl_files
+  loop:
+    - "{{ hx_pg_ssl_cert_file }}"
+    - "{{ hx_pg_ssl_key_file }}"
+  when: hx_pg_ssl_enabled | default(false) | bool
+  tags: ['prepare']
+
+- name: "Hx | PostgreSQL Auth | Validate SSL certificate files exist"
+  assert:
+    that:
+      - item.stat.exists
+    fail_msg: "SSL certificate file {{ item.item }} does not exist"
+    success_msg: "SSL certificate file {{ item.item }} found"
+  loop: "{{ hx_pg_ssl_files.results }}"
+  when: 
+    - hx_pg_ssl_enabled | default(false) | bool
+    - hx_pg_ssl_files is defined
+  tags: ['prepare']
+
+- name: "Hx | PostgreSQL Auth | Set proper SSL file permissions"
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ hx_pg_ssl_cert_file }}"
+      owner: "postgres"
+      group: "postgres"
+      mode: "0644"
+    - path: "{{ hx_pg_ssl_key_file }}"
+      owner: "postgres"
+      group: "postgres"
+      mode: "0600"
+  when: hx_pg_ssl_enabled | default(false) | bool
+  tags: ['prepare']

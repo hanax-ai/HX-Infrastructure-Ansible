@@ -1,0 +1,103 @@
+---
+- name: "Hx | LiteLLM | Validate required variables"
+  assert:
+    that:
+      - hx_litellm_port is defined
+      - hx_litellm_port is number
+      - hx_litellm_port > 1024
+      - hx_litellm_port < 65536
+      - hx_litellm_install_method is defined
+      - hx_litellm_install_method in ['pip', 'docker', 'source']
+      - hx_litellm_user is defined
+      - hx_litellm_group is defined
+    fail_msg: "Required LiteLLM variables are missing or invalid"
+    success_msg: "LiteLLM variables validated successfully"
+  tags: ['validate']
+
+- name: "Hx | LiteLLM | Validate security configuration"
+  assert:
+    that:
+      - hx_litellm_master_key is defined
+      - "'CHANGE_ME' not in hx_litellm_master_key"
+      - hx_litellm_master_key | length >= 32
+    fail_msg: "Master key must be defined and secure (minimum 32 characters)"
+    success_msg: "Security configuration validated"
+  tags: ['validate']
+
+- name: "Hx | LiteLLM | Validate database configuration"
+  assert:
+    that:
+      - hx_litellm_database_type in ['postgresql', 'sqlite', 'mysql']
+      - hx_litellm_database_name is defined
+      - hx_litellm_database_user is defined
+      - "'CHANGE_ME' not in hx_litellm_database_password"
+    fail_msg: "Database configuration is invalid"
+    success_msg: "Database configuration validated"
+  when: hx_litellm_database_enabled | default(false) | bool
+  tags: ['validate']
+
+- name: "Hx | LiteLLM | Validate LLM provider configuration"
+  assert:
+    that:
+      - item.value.api_key is defined
+      - "'CHANGE_ME' not in item.value.api_key"
+    fail_msg: "Provider {{ item.key }} has invalid or missing API key"
+    success_msg: "Provider {{ item.key }} configuration validated"
+  loop: "{{ hx_litellm_providers | dict2items }}"
+  when: 
+    - item.value.enabled | default(false) | bool
+  no_log: true
+  tags: ['validate']
+
+- name: "Hx | LiteLLM | Check system requirements"
+  assert:
+    that:
+      - ansible_memtotal_mb >= 2048
+      - ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first > 10000000000
+    fail_msg: "System does not meet minimum requirements (2GB RAM, 10GB disk)"
+    success_msg: "System requirements validated"
+  tags: ['validate']
+
+- name: "Hx | LiteLLM | Validate Python version"
+  assert:
+    that:
+      - ansible_python_version is version('3.8', '>=')
+    fail_msg: "Python 3.8 or higher is required"
+    success_msg: "Python version validated"
+  when: hx_litellm_install_method == "pip"
+  tags: ['validate']
+
+- name: "Hx | LiteLLM | Check port availability"
+  wait_for:
+    port: "{{ hx_litellm_port }}"
+    host: "{{ ansible_default_ipv4.address | default('127.0.0.1') }}"
+    timeout: 1
+    state: stopped
+  failed_when: false
+  register: hx_litellm_port_check
+  tags: ['validate']
+
+- name: "Hx | LiteLLM | Warn about port conflicts"
+  debug:
+    msg: "Warning: Port {{ hx_litellm_port }} appears to be in use"
+  when: 
+    - hx_litellm_port_check.failed is defined
+    - not hx_litellm_port_check.failed
+  tags: ['validate']
+
+- name: "Hx | LiteLLM | Validate Docker availability"
+  command: docker --version
+  register: hx_litellm_docker_check
+  failed_when: false
+  changed_when: false
+  when: hx_litellm_install_method == "docker"
+  tags: ['validate']
+
+- name: "Hx | LiteLLM | Assert Docker is available"
+  assert:
+    that:
+      - hx_litellm_docker_check.rc == 0
+    fail_msg: "Docker is not available but required for Docker installation method"
+    success_msg: "Docker availability validated"
+  when: hx_litellm_install_method == "docker"
+  tags: ['validate']

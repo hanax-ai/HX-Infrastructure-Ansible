@@ -1,0 +1,155 @@
+---
+# Backup automation preparation tasks
+- name: Update package cache
+  package:
+    update_cache: yes
+  when: ansible_os_family in ['Debian', 'RedHat']
+
+- name: Install required system packages
+  package:
+    name: "{{ (ansible_os_family == 'Debian') | ternary(debian_packages, redhat_packages) }}"
+    state: present
+  vars:
+    debian_packages:
+      - cron
+      - rsync
+      - gzip
+      - tar
+      - openssl
+      - curl
+      - jq
+      - unzip
+      - python3-pip
+      - python3-psycopg2
+      - postgresql-client
+      - redis-tools
+    redhat_packages:
+      - cronie
+      - rsync
+      - gzip
+      - tar
+      - openssl
+      - curl
+      - jq
+      - unzip
+      - python3-pip
+      - python3-psycopg2
+      - postgresql
+      - redis
+
+- name: Install Python packages for backup automation
+  pip:
+    name: "{{ python_packages }}"
+    state: present
+    executable: pip3
+  vars:
+    python_packages:
+      - boto3
+      - psycopg2-binary
+      - redis
+      - cryptography
+      - requests
+      - pyyaml
+
+- name: Check if AWS CLI is installed
+  command: aws --version
+  register: aws_cli_check
+  failed_when: false
+  changed_when: false
+
+- name: Install AWS CLI v2
+  block:
+    - name: Download AWS CLI installer
+      get_url:
+        url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ 'aarch64' if ansible_architecture in ['aarch64','arm64'] else 'x86_64' }}.zip"
+        dest: "/tmp/awscliv2.zip"
+        mode: '0644'
+
+    - name: Extract AWS CLI installer
+      unarchive:
+        src: "/tmp/awscliv2.zip"
+        dest: "/tmp"
+        remote_src: yes
+
+    - name: Install AWS CLI
+      command: /tmp/aws/install
+      args:
+        creates: /usr/local/bin/aws
+
+    - name: Clean up AWS CLI installer
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/awscliv2.zip"
+        - "/tmp/aws"
+  when: 
+    - (remote_storage is defined) and (remote_storage.enabled | default(false))
+    - remote_storage.type == 's3'
+    - aws_cli_check.rc != 0
+
+- name: Gather system information
+  setup:
+    gather_subset:
+      - hardware
+      - network
+      - virtual
+
+- name: Set backup facts
+  set_fact:
+    backup_hostname: "{{ ansible_hostname }}"
+    backup_timestamp: "{{ ansible_date_time.epoch | default(lookup('pipe','date +%s')) }}"
+    backup_date: "{{ ansible_date_time.date | default(lookup('pipe','date +%F')) }}"
+    backup_time: "{{ ansible_date_time.time | default(lookup('pipe','date +%T')) }}"
+
+- name: Ensure backup log directory exists
+  file:
+    path: "{{ backup_automation.log_directory }}"
+    state: directory
+    mode: '0750'
+    owner: "{{ backup_security.owner }}"
+    group: "{{ backup_security.group }}"
+
+- name: Create backup automation log entry
+  lineinfile:
+    path: "{{ backup_automation.log_directory }}/backup-automation.log"
+    line: "{{ ansible_date_time.iso8601 }} [INFO] Backup automation preparation started on {{ ansible_hostname }}"
+    create: yes
+    mode: '0640'
+    owner: "{{ backup_security.owner }}"
+    group: "{{ backup_security.group }}"
+  ignore_errors: yes
+
+- name: Check system resources
+  shell: |
+    echo "CPU Cores: $(nproc)"
+    echo "Memory: $(free -h | grep '^Mem:' | awk '{print $2}')"
+    echo "Disk Space: $(df -h "{{ backup_automation.base_directory | dirname | replace('"','\"') }}" | tail -1 | awk '{print $4}')"
+  register: system_resources
+  changed_when: false
+
+- name: Log system resources
+  debug:
+    msg: "System Resources - {{ system_resources.stdout_lines }}"
+
+- name: Verify network connectivity to backup targets
+  uri:
+    url: "{{ item }}"
+    method: HEAD
+    timeout: 10
+    validate_certs: yes
+  register: connectivity_check
+  failed_when: false
+  loop:
+    - "https://s3.amazonaws.com"
+    - "https://github.com"
+  when: (remote_storage is defined) and (remote_storage.enabled | default(false))
+
+- name: Log connectivity status
+  debug:
+    msg: "Connectivity to {{ item.item }}: {{ 'OK' if item.status == 200 else 'FAILED' }}"
+  loop: "{{ connectivity_check.results }}"
+  when:
+    - remote_storage is defined
+    - remote_storage.enabled | default(false)
+    - connectivity_check is defined

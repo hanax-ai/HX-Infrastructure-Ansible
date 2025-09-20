@@ -1,0 +1,76 @@
+
+---
+# Variable Validation Tasks for HX CA Trust
+
+- name: Load validation rules
+  set_fact:
+    hx_ca_validation_rules: "{{ lookup('file', role_path + '/vars/validation.yml') | from_yaml }}"
+  tags: [validation]
+
+- name: Validate boolean variables
+  assert:
+    that:
+      - item.value is boolean
+    fail_msg: "Variable {{ item.key }} must be a boolean value"
+    success_msg: "Variable {{ item.key }} validation passed"
+  loop:
+    - { key: "hx_ca_trust_enabled", value: "{{ hx_ca_trust_enabled }}" }
+    - { key: "hx_ca_security_enabled", value: "{{ hx_ca_security_enabled }}" }
+    - { key: "hx_ca_validation_enabled", value: "{{ hx_ca_validation_enabled }}" }
+    - { key: "hx_ca_health_checks_enabled", value: "{{ hx_ca_health_checks_enabled }}" }
+  tags: [validation]
+
+- name: Validate required string variables
+  assert:
+    that:
+      - item is defined
+      - item | length > 0
+    fail_msg: "Required variable {{ item }} is not defined or empty"
+    success_msg: "Required variable validation passed"
+  loop:
+    - "{{ hx_ca_host }}"
+    - "{{ hx_ca_root_ca_path_on_ca }}"
+    - "{{ hx_ca_root_ca_filename }}"
+  tags: [validation]
+
+- name: Validate CA hostname format
+  assert:
+    that:
+      - hx_ca_host | regex_search('^[a-zA-Z0-9.-]+$')
+    fail_msg: "CA hostname '{{ hx_ca_host }}' contains invalid characters"
+    success_msg: "CA hostname format validation passed"
+  tags: [validation]
+
+- name: Validate certificate filename format
+  assert:
+    that:
+      - hx_ca_root_ca_filename | regex_search('^[a-zA-Z0-9._-]+\.crt$')
+    fail_msg: "Certificate filename '{{ hx_ca_root_ca_filename }}' must end with .crt"
+    success_msg: "Certificate filename format validation passed"
+  tags: [validation]
+
+- name: Validate SHA256 fingerprint format (if provided)
+  assert:
+    that:
+      - hx_ca_expected_sha256 | regex_search('^(SHA256:)?([A-Fa-f0-9]{2}:){31}[A-Fa-f0-9]{2}$') or hx_ca_expected_sha256 | length == 0
+    fail_msg: "SHA256 fingerprint '{{ hx_ca_expected_sha256 }}' has invalid format"
+    success_msg: "SHA256 fingerprint format validation passed"
+  when: hx_ca_expected_sha256 | length > 0
+  tags: [validation]
+
+- name: Validate file permissions
+  assert:
+    that:
+      - hx_ca_cert_mode | regex_search('^[0-7]{3,4}$')
+    fail_msg: "Certificate file mode '{{ hx_ca_cert_mode }}' is invalid"
+    success_msg: "File permissions validation passed"
+  tags: [validation]
+
+- name: Display validation summary
+  debug:
+    msg:
+      - "Variable validation completed successfully"
+      - "CA Host: {{ hx_ca_host }}"
+      - "Certificate: {{ hx_ca_root_ca_filename }}"
+      - "Security: {{ hx_ca_security_enabled | ternary('Enabled', 'Disabled') }}"
+  tags: [validation]

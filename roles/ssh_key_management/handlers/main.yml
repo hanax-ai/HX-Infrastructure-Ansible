@@ -1,0 +1,44 @@
+
+---
+# SSH Key Management Handlers - Phase 2 Day 2
+
+- name: restart sshd
+  systemd:
+    name: sshd
+    state: restarted
+    enabled: yes
+  listen: "restart sshd"
+
+- name: reload sshd
+  systemd:
+    name: sshd
+    state: reloaded
+  listen: "reload sshd"
+
+- name: restart ssh-agent
+  shell: |
+    pkill ssh-agent || true
+    eval $(ssh-agent -s)
+    ssh-add {{ ssh_key_private_path }}
+  become: true
+  become_user: "{{ ansible_user }}"
+  listen: "restart ssh-agent"
+
+- name: update known_hosts
+  known_hosts:
+    name: "{{ inventory_hostname }}"
+    key: "{{ ansible_ssh_host_key_rsa_public }}"
+    path: "{{ ansible_user_dir }}/.ssh/known_hosts_{{ environment_type | default('dev') }}"
+    state: present
+  become: true
+  become_user: "{{ ansible_user }}"
+  listen: "update known_hosts"
+
+- name: validate ssh config
+  command: ssh -F {{ ansible_user_dir }}/.ssh/config -T git@github.com
+  register: ssh_config_test
+  failed_when: false
+  changed_when: false
+  become: true
+  become_user: "{{ ansible_user }}"
+  listen: "validate ssh config"

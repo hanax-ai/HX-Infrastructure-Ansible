@@ -1,0 +1,56 @@
+
+---
+# Canary Deployment Implementation
+- name: Identify canary instances
+  set_fact:
+    canary_instances: "{{ groups['canary'] | default(groups['all'][:1]) }}"
+    production_instances: "{{ groups['production'] | default(groups['all'][1:]) }}"
+
+- name: Deploy to canary instances
+  shell: |
+    docker-compose -f /opt/hx-infrastructure/docker-compose.yml \
+    -p hx-canary-{{ ansible_date_time.epoch }} up -d
+  register: canary_deployment
+  environment:
+    COMPOSE_PROJECT_NAME: "hx-canary-{{ ansible_date_time.epoch }}"
+    APP_VERSION: "{{ app_version | default('latest') }}"
+  delegate_to: "{{ item }}"
+  loop: "{{ canary_instances }}"
+
+- name: Wait for canary instances to be ready
+  uri:
+    url: "https://{{ item }}:{{ canary_port | default(8082) }}/health"
+    method: GET
+    timeout: 30
+  register: canary_health_check
+  until: canary_health_check.status == 200
+  retries: 10
+  delay: 30
+  delegate_to: localhost
+  loop: "{{ canary_instances }}"
+
+- name: Configure canary traffic routing
+  template:
+    src: canary_routing.conf.j2
+    dest: /etc/nginx/conf.d/canary.conf
+    backup: yes
+  vars:
+    canary_percentage: "{{ canary_traffic_percentage | default(10) }}"
+  notify: reload nginx
+
+- name: Monitor canary performance
+  uri:
+    url: "https://{{ item }}:{{ canary_port | default(8082) }}/metrics"
+    method: GET
+    timeout: 10
+  register: canary_metrics
+  delegate_to: localhost
+  loop: "{{ canary_instances }}"
+  until: canary_metrics.status == 200
+  retries: "{{ (canary_monitoring_time | default(600)) // 30 }}"
+  delay: 30
+
+- name: Evaluate canary success criteria
+  set_fact:
+    canary_evaluation_passed: "{{ canary_metrics.results | selectattr('status', 'equalto', 200) | list | length == canary_instances | length }}"
+    canary_deployment_timestamp: "{{ ansible_date_time.iso8601 }}"

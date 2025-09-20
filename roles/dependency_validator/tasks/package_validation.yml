@@ -1,0 +1,71 @@
+
+---
+# Package Validation Tasks - Phase 3 Day 1
+
+- name: "Package Validation | Update package cache"
+  package:
+    update_cache: true
+  when: ansible_os_family in ['Debian', 'RedHat']
+
+- name: "Package Validation | Check essential packages availability"
+  package_facts:
+    manager: auto
+
+- name: "Package Validation | Validate essential packages are installed"
+  assert:
+    that:
+      - item in ansible_facts.packages
+    fail_msg: "Essential package '{{ item }}' is not installed"
+    success_msg: "Essential package '{{ item }}' is installed"
+  loop: "{{ package_dependencies.essential_packages }}"
+  when: package_dependencies.essential_packages | length > 0
+
+- name: "Package Validation | Check Python version"
+  command: python3 --version
+  register: python_version_check
+  changed_when: false
+  failed_when: python_version_check.rc != 0
+
+- name: "Package Validation | Validate Python version"
+  assert:
+    that:
+      - python_version_check.stdout is search('Python 3\.[6-9]|Python 3\.1[0-9]')
+    fail_msg: "Python version not supported: {{ python_version_check.stdout }}"
+    success_msg: "Python version is supported: {{ python_version_check.stdout }}"
+
+- name: "Package Validation | Check OpenSSL version"
+  command: openssl version
+  register: openssl_version_check
+  changed_when: false
+  failed_when: openssl_version_check.rc != 0
+
+- name: "Package Validation | Validate role-specific packages"
+  package_facts:
+    manager: auto
+  when: package_dependencies.role_specific_packages | length > 0
+
+- name: "Package Validation | Check role-specific package installation"
+  assert:
+    that:
+      - item in ansible_facts.packages
+    fail_msg: "Role-specific package '{{ item }}' is not installed"
+    success_msg: "Role-specific package '{{ item }}' is installed"
+  loop: "{{ package_dependencies.role_specific_packages }}"
+  when: package_dependencies.role_specific_packages | length > 0
+
+- name: "Package Validation | Check package manager health"
+  command: "{{ ansible_pkg_mgr }} --version"
+  register: package_manager_check
+  changed_when: false
+  failed_when: package_manager_check.rc != 0
+
+- name: "Package Validation | Package validation summary"
+  debug:
+    msg:
+      - "Package Validation Summary:"
+      - "  Package Manager: {{ ansible_pkg_mgr }} ✓"
+      - "  Python: {{ python_version_check.stdout }} ✓"
+      - "  OpenSSL: {{ openssl_version_check.stdout }} ✓"
+      - "  Essential Packages: {{ package_dependencies.essential_packages | length }} validated ✓"
+      - "  Role-specific Packages: {{ package_dependencies.role_specific_packages | length }} validated ✓"
+

@@ -1,0 +1,415 @@
+_# .github/workflows/phase3-cursor-integration.yml
+name: Phase 3 - Advanced Cursor AI Integration
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, develop, 'phase-*', 'feature/*', 'hotfix/*']
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created, edited]
+
+# Prevent concurrent runs for the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GH_TOKEN: ${{ secrets.HX_COMMIT_TOKEN }}
+  PYTHON_VERSION: '3.11'
+
+# Minimal permissions for security (principle of least privilege)
+permissions:
+  contents: read
+
+jobs:
+  # Job 1: Detect CodeRabbit Comments and Trigger Cursor
+  cursor-integration:
+    name: Cursor AI Integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      issues: write
+      pull-requests: write
+    if: >
+      (github.event_name == 'pull_request_review' && github.event.review.user.login == 'coderabbitai[bot]') ||
+      (github.event_name == 'issue_comment' && github.event.comment.user.login == 'coderabbitai[bot]') ||
+      (github.event_name == 'pull_request' &&
+       github.actor != 'github-actions[bot]' &&
+       github.actor != 'coderabbitai[bot]' &&
+       github.actor != 'dependabot[bot]' &&
+       !contains(github.event.head_commit.message, '[bot]') &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+
+    outputs:
+      cursor-requests-sent: ${{ steps.cursor-integration.outputs.requests-sent }}
+      cursor-requests-failed: ${{ steps.cursor-integration.outputs.requests-failed }}
+      cursor-summary: ${{ steps.cursor-integration.outputs.summary }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests==2.31.0 PyGithub==1.59.1 pyyaml==6.0.1
+        pip install scikit-learn==1.3.2 numpy==1.24.4 pandas==2.1.4
+        pip install flask==2.3.3 aiohttp==3.8.6
+
+    - name: Authenticate GitHub CLI
+      if: github.event.pull_request.head.repo.fork == false
+      shell: bash
+      run: |
+        gh auth status
+
+    - name: Validate Changed Paths (Allowlist Enforcement)
+      run: |
+        echo '=== Validating Changed Paths Against Allowlist ===='
+        git fetch origin
+
+        # Get changed files for this PR/push
+        if [ '${{ github.event_name }}' = 'pull_request' ]; then
+          changed=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD)
+        else
+          changed=$(git diff --name-only origin/main...HEAD)
+        fi
+
+        echo 'Files changed in this automation run:'
+        echo '$changed'
+
+        # Define allowlisted paths
+        allowlist_pattern='^(roles/|playbooks/|inventories/|scripts/|tests/|docs/|Makefile|README\.md)$'
+
+        # Check for non-allowlisted paths
+        violations=$(echo '$changed' | grep -v '^$' | grep -Ev '$allowlist_pattern' || true)
+
+        if [ -n '$violations' ]; then
+          echo '❌ ERROR: Non-allowlisted paths modified by automation:'
+          echo '$violations'
+          echo ''
+          echo 'Allowed paths for automation:'
+          echo '  - roles/'
+          echo '  - playbooks/'
+          echo '  - inventories/'
+          echo '  - scripts/'
+          echo '  - tests/'
+          echo '  - docs/'
+          echo '  - Makefile'
+          echo '  - README.md'
+          echo ''
+          echo 'Prohibited paths (manual changes only):'
+          echo '  - .github/workflows/'
+          echo '  - secrets/'
+          echo '  - .evidence/'
+          echo '  - .gitmodules'
+          exit 1
+        fi
+
+        echo '✅ All changed paths are allowlisted for automation'
+
+    - name: Extract CodeRabbit Comments
+      id: extract-comments
+      run: |
+        echo '=== Extracting CodeRabbit Comments ===='
+
+        # Get PR or issue number
+        if [ '${{ github.event_name }}' = 'pull_request' ]; then
+          PR_NUMBER='${{ github.event.pull_request.number }}'
+        elif [ '${{ github.event_name }}' = 'pull_request_review' ]; then
+          PR_NUMBER='${{ github.event.pull_request.number }}'
+        elif [ '${{ github.event_name }}' = 'issue_comment' ]; then
+          PR_NUMBER='${{ github.event.issue.number }}'
+        else
+          echo 'Unknown event type: ${{ github.event_name }}'
+          exit 1
+        fi
+
+        echo 'Processing PR/Issue: $PR_NUMBER'
+        echo 'pr-number=$PR_NUMBER' >> $GITHUB_OUTPUT
+
+        # Extract comments using GitHub CLI
+        gh pr view $PR_NUMBER --json reviews,comments > pr_data.json
+
+        # Parse CodeRabbit comments
+        python scripts/automation/parse_coderabbit_comments.py \
+          --input-file pr_data.json \
+          --output-file coderabbit_comments.json \
+          --pr-number $PR_NUMBER
+
+        # Check if we have comments to process
+        COMMENT_COUNT=$(jq length coderabbit_comments.json)
+        echo 'Found $COMMENT_COUNT CodeRabbit comments'
+        echo 'comment-count=$COMMENT_COUNT' >> $GITHUB_OUTPUT
+
+    - name: AI Classification of Issues
+      id: ai-classification
+      if: steps.extract-comments.outputs.comment-count > 0
+      run: |
+        echo '=== AI Classification of Issues ===='
+
+        python scripts/automation/classification/ai_classifier.py \
+          --input-file coderabbit_comments.json \
+          --output-file classified_issues.json \
+          --config-file scripts/automation/config/classification_config.yml
+
+        # Check classification results
+        CLASSIFIED_COUNT=$(jq length classified_issues.json)
+        echo 'Classified $CLASSIFIED_COUNT issues'
+        echo 'classified-count=$CLASSIFIED_COUNT' >> $GITHUB_OUTPUT
+
+        # Generate classification summary
+        jq -r '.[] | '\(.severity):\(.category):\(.complexity)'' classified_issues.json | \
+          sort | uniq -c | sort -nr > classification_summary.txt
+
+        echo 'Classification Summary:'
+        cat classification_summary.txt
+
+    - name: Cursor AI Integration
+      id: cursor-integration
+      if: steps.ai-classification.outputs.classified-count > 0 && github.event.pull_request.head.repo.fork == false
+      run: |
+        echo '=== Cursor AI Integration ===='
+
+        # Process issues with Cursor AI engine
+        python scripts/automation/cursor/cursor_ai_engine.py \
+          --issues-file classified_issues.json \
+          --config-file scripts/automation/config/classification_config.yml \
+          --output-file cursor_results.json
+
+        # Extract results
+        REQUESTS_SENT=$(jq -r '.sent_to_cursor // 0' cursor_results.json)
+        REQUESTS_FAILED=$(jq -r '.failed // 0' cursor_results.json)
+        REQUESTS_SKIPPED=$(jq -r '.skipped // 0' cursor_results.json)
+
+        echo 'Cursor Integration Results:'
+        echo '- Sent to Cursor: $REQUESTS_SENT'
+        echo '- Failed: $REQUESTS_FAILED'
+        echo '- Skipped: $REQUESTS_SKIPPED'
+
+        # Set outputs
+        echo 'requests-sent=$REQUESTS_SENT' >> $GITHUB_OUTPUT
+        echo 'requests-failed=$REQUESTS_FAILED' >> $GITHUB_OUTPUT
+        echo 'requests-skipped=$REQUESTS_SKIPPED' >> $GITHUB_OUTPUT
+
+        # Generate summary
+        SUMMARY=$(jq -r '.summary.processing_status // 'unknown'' cursor_results.json)
+        SUCCESS_RATE=$(jq -r '.summary.success_rate // 0' cursor_results.json)
+        echo 'summary=Status: $SUMMARY, Success Rate: $SUCCESS_RATE%' >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Issues for Manual Review
+      id: create-issues
+      if: (steps.cursor-integration.outputs.requests-failed > 0 || steps.cursor-integration.outputs.requests-skipped > 0) && github.event.pull_request.head.repo.fork == false
+      run: |
+        echo '=== Creating GitHub Issues for Manual Review ===='
+
+        # Create issues for failed and skipped items
+        python scripts/automation/create_github_issues.py \
+          --input-file classified_issues.json \
+          --cursor-results cursor_results.json \
+          --repository ${{ github.repository }} \
+          --pr-number ${{ steps.extract-comments.outputs.pr-number }}
+
+        echo 'GitHub issues created for manual review items'
+
+    - name: Generate Mermaid Workflow Diagram
+      id: generate-diagram
+      run: |
+        echo '=== Generating Workflow Diagram ===='
+
+        # Create Mermaid diagram showing the workflow
+        cat > cursor_workflow_diagram.md << 'EOF'
+        ```mermaid
+        flowchart TD
+            A[CodeRabbit Review] --> B{Extract Comments}
+            B -->|Found Comments| C[AI Classification]
+            B -->|No Comments| Z[End]
+
+            C --> D{Evaluate Suitability}
+            D -->|Suitable| E[Send to Cursor AI]
+            D -->|Not Suitable| F[Create GitHub Issue]
+
+            E --> G{Cursor Response}
+            G -->|Success| H[Track Remediation]
+            G -->|Failed| I[Create Failed Issue]
+
+            H --> J[Webhook Handler]
+            J --> K{Remediation Status}
+            K -->|Completed| L[Update GitHub Issue]
+            K -->|Failed| M[Manual Review Required]
+            K -->|In Progress| N[Continue Monitoring]
+
+            F --> O[Manual Review Queue]
+            I --> O
+            M --> O
+
+            L --> P[Close Issue if Validated]
+            O --> Q[Team Assignment]
+
+            style A fill:#e1f5fe
+            style E fill:#c8e6c9
+            style H fill:#fff3e0
+            style L fill:#e8f5e8
+            style O fill:#ffebee
+        ```
+        EOF
+
+        echo 'Mermaid diagram generated'
+
+    - name: Update PR with Cursor Integration Status
+      if: always() && github.event.pull_request.head.repo.fork == false
+      run: |
+        echo '=== Updating PR with Integration Status ===='
+
+        PR_NUMBER='${{ steps.extract-comments.outputs.pr-number }}'
+        REQUESTS_SENT='${{ steps.cursor-integration.outputs.requests-sent || '0' }}'
+        REQUESTS_FAILED='${{ steps.cursor-integration.outputs.requests-failed || '0' }}'
+        SUMMARY='${{ steps.cursor-integration.outputs.summary || 'No processing performed' }}'
+
+        # Create status comment
+        cat > cursor_status_comment.md << EOF
+        ## 🤖 Cursor AI Integration Status
+
+        **Workflow:** Phase 3 - Advanced Cursor AI Integration  
+        **Triggered by:** ${{ github.event_name }}  
+        **Processing Time:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+
+        ### Results Summary
+        - **Requests Sent to Cursor:** $REQUESTS_SENT
+        - **Requests Failed:** $REQUESTS_FAILED  
+        - **Processing Status:** $SUMMARY
+
+        ### Workflow Visualization
+        $(cat cursor_workflow_diagram.md)
+
+        ### Next Steps
+        EOF
+
+        if [ '$REQUESTS_SENT' -gt 0 ]; then
+          echo '- 🔄 Monitor Cursor AI remediation progress via webhook updates' >> cursor_status_comment.md
+          echo '- 📊 Check individual issue updates for remediation status' >> cursor_status_comment.md
+        fi
+
+        if [ '$REQUESTS_FAILED' -gt 0 ]; then
+          echo '- 👨‍💻 Review failed requests for manual remediation' >> cursor_status_comment.md
+          echo '- 🔍 Check GitHub issues created for manual review queue' >> cursor_status_comment.md
+        fi
+
+        echo '' >> cursor_status_comment.md
+        echo '---' >> cursor_status_comment.md
+        echo '*Automated by HX Infrastructure Ansible - Phase 3 Cursor Integration*' >> cursor_status_comment.md
+
+        # Post comment to PR
+        gh pr comment $PR_NUMBER --body-file cursor_status_comment.md
+
+        echo 'PR updated with Cursor integration status'
+
+    - name: Upload Artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cursor-integration-results-${{ github.run_id }}
+        path: |
+          coderabbit_comments.json
+          classified_issues.json
+          cursor_results.json
+          classification_summary.txt
+          cursor_workflow_diagram.md
+          cursor_status_comment.md
+        retention-days: 30
+
+  # Job 2: Webhook Server Health Check
+  webhook-health-check:
+    name: Webhook Server Health Check
+    runs-on: ubuntu-latest
+    needs: cursor-integration
+    timeout-minutes: 15
+    if: needs.cursor-integration.outputs.cursor-requests-sent > 0 && github.event.pull_request.head.repo.fork == false
+
+    steps:
+    - name: Check Webhook Server Health
+      run: |
+        echo '=== Checking Webhook Server Health ===='
+
+        # Check if webhook server is accessible
+        WEBHOOK_URL='${{ vars.CURSOR_WEBHOOK_URL || 'http://localhost:5000' }}'
+
+        if curl -f -s '$WEBHOOK_URL/health' > /dev/null; then
+          echo '✅ Webhook server is healthy'
+          echo 'webhook-status=healthy' >> $GITHUB_OUTPUT
+        else
+          echo '❌ Webhook server is not accessible'
+          echo 'webhook-status=unhealthy' >> $GITHUB_OUTPUT
+
+          # Create issue for webhook server problem
+          gh issue create \
+            --title '🚨 Cursor Webhook Server Unavailable' \
+            --body 'The Cursor webhook server at $WEBHOOK_URL is not responding to health checks. This may prevent remediation status updates from being processed.' \
+            --label 'infrastructure,urgent,cursor-integration'
+        fi
+
+  # Job 3: Monitoring and Metrics
+  monitoring-metrics:
+    name: Integration Monitoring & Metrics
+    runs-on: ubuntu-latest
+    needs: cursor-integration
+    timeout-minutes: 15
+    if: always()
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Generate Integration Metrics
+      run: |
+        echo '=== Generating Integration Metrics ===='
+
+        # Create metrics summary
+        cat > integration_metrics.json << EOF
+        {
+          'timestamp': '$(date -u +'%Y-%m-%dT%H:%M:%SZ')',
+          'workflow_run_id': '${{ github.run_id }}',
+          'pr_number': '${{ needs.cursor-integration.outputs.pr-number || 'N/A' }}',
+          'event_type': '${{ github.event_name }}',
+          'results': {
+            'cursor_requests_sent': ${{ needs.cursor-integration.outputs.cursor-requests-sent || 0 }},
+            'cursor_requests_failed': ${{ needs.cursor-integration.outputs.cursor-requests-failed || 0 }},
+            'processing_summary': '${{ needs.cursor-integration.outputs.cursor-summary || 'No processing' }}'
+          },
+          'performance': {
+            'workflow_duration_seconds': ${{ github.event.workflow_run.run_duration_ms || 0 }},
+            'success_rate': $(echo 'scale=2; ${{ needs.cursor-integration.outputs.cursor-requests-sent || 0 }} / (${{ needs.cursor-integration.outputs.cursor-requests-sent || 0 }} + ${{ needs.cursor-integration.outputs.cursor-requests-failed || 0 }}) * 100' | bc -l 2>/dev/null || echo '0')
+          }
+        }
+        EOF
+
+        echo 'Integration metrics generated:'
+        cat integration_metrics.json | jq .
+
+    - name: Store Metrics (Optional)
+      run: |
+        echo '=== Storing Metrics ===='
+
+        # In a production environment, you might send these metrics to:
+        # - Prometheus/Grafana
+        # - DataDog
+        # - CloudWatch
+        # - Internal monitoring system
+
+        echo 'Metrics stored for monitoring dashboard'
+
+    - name: Upload Metrics Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-metrics-${{ github.run_id }}
+        path: integration_metrics.json
+        retention-days: 90
+

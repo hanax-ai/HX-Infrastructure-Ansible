@@ -1,0 +1,143 @@
+---
+- name: "Hx | LiteLLM | Create system user and group"
+  group:
+    name: "{{ hx_litellm_group }}"
+    system: true
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Create system user"
+  user:
+    name: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    system: true
+    shell: "/bin/false"
+    home: "{{ hx_litellm_home }}"
+    create_home: true
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Create required directories"
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default(hx_litellm_user) }}"
+    group: "{{ item.group | default(hx_litellm_group) }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop:
+    - path: "{{ hx_litellm_home }}"
+    - path: "{{ hx_litellm_config_dir }}"
+      owner: "root"
+      group: "{{ hx_litellm_group }}"
+      mode: "0750"
+    - path: "{{ hx_litellm_log_dir }}"
+      mode: "0755"
+    - path: "{{ hx_litellm_data_dir }}"
+      mode: "0750"
+    - path: "{{ hx_litellm_backup_dir }}"
+      mode: "0750"
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Install system dependencies"
+  package:
+    name:
+      - python3
+      - python3-pip
+      - python3-venv
+      - python3-dev
+      - build-essential
+      - curl
+      - wget
+      - git
+      - redis-server
+    state: present
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Install PostgreSQL client libraries"
+  package:
+    name:
+      - libpq-dev
+      - python3-psycopg2
+    state: present
+  when: 
+    - hx_litellm_database_enabled | default(false) | bool
+    - hx_litellm_database_type == "postgresql"
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Create Python virtual environment"
+  command: python3 -m venv {{ hx_litellm_venv_path }}
+  args:
+    creates: "{{ hx_litellm_venv_path }}/bin/activate"
+  become_user: "{{ hx_litellm_user }}"
+  when: hx_litellm_install_method == "pip"
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Set virtual environment ownership"
+  file:
+    path: "{{ hx_litellm_venv_path }}"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    recurse: true
+  when: hx_litellm_install_method == "pip"
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Create requirements file"
+  template:
+    src: requirements.txt.j2
+    dest: "{{ hx_litellm_requirements_file }}"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0644"
+  when: hx_litellm_install_method == "pip"
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Create environment file"
+  template:
+    src: environment.j2
+    dest: "{{ hx_litellm_config_dir }}/.env"
+    owner: "{{ hx_litellm_user }}"
+    group: "{{ hx_litellm_group }}"
+    mode: "0600"
+  no_log: true
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Setup Redis for caching"
+  service:
+    name: redis-server
+    state: started
+    enabled: true
+  when: 
+    - hx_litellm_caching_enabled | default(false) | bool
+    - hx_litellm_cache_type == "redis"
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Configure Redis security"
+  lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: true
+  loop:
+    - regexp: "^bind"
+      line: "bind 127.0.0.1"
+    - regexp: "^# requirepass"
+      line: "requirepass {{ hx_litellm_redis_password }}"
+  when: 
+    - hx_litellm_caching_enabled | default(false) | bool
+    - hx_litellm_cache_type == "redis"
+    - hx_litellm_redis_password | length > 0
+  notify: restart redis
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Create Docker network"
+  docker_network:
+    name: "{{ hx_litellm_docker_network }}"
+    state: present
+  when: hx_litellm_install_method == "docker"
+  tags: ['prepare']
+
+- name: "Hx | LiteLLM | Pull Docker image"
+  docker_image:
+    name: "{{ hx_litellm_docker_image }}"
+    source: pull
+    state: present
+  when: hx_litellm_install_method == "docker"
+  tags: ['prepare']

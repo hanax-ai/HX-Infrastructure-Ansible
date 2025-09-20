@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="HX Infrastructure Team" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>common_templates - HX Infrastructure Ansible - Exemplary Automation</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "common_templates";
+        var mkdocs_page_input_path = "roles/common_templates.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> HX Infrastructure Ansible - Exemplary Automation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Architecture</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../../architecture/overview.md">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../architecture/diagrams/">Diagrams</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../">Roles</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../../development/guidelines.md">Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/style-guide/">Style Guide</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">HX Infrastructure Ansible - Exemplary Automation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">common_templates</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="common_templates">common_templates<a class="headerlink" href="#common_templates" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>No description available.</p>
+<p><strong>Author:</strong> Unknown<br />
+<strong>Version:</strong> Unknown</p>
+<h2 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h2>
+<p>The following variables can be configured for this role:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">template_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0.0</span>
+<span class="nt">template_last_updated</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="w"> </span><span class="nv">ansible_date_time.iso8601</span><span class="w"> </span><span class="p p-Indicator">}}</span>
+<span class="nt">base_template_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">common_templates</span>
+<span class="nt">template_encoding</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">utf-8</span>
+<span class="nt">organization_name</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="w"> </span><span class="nv">organization_name | default(&#39;HX Infrastructure&#39;)</span><span class="w"> </span><span class="p p-Indicator">}}</span>
+<span class="nt">environment</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="w"> </span><span class="nv">ansible_environment | default(&#39;production&#39;)</span><span class="w"> </span><span class="p p-Indicator">}}</span>
+<span class="nt">managed_by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ansible HX Infrastructure Framework</span>
+<span class="nt">enable_template_inheritance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">template_validation_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">template_security_scanning</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">common_blocks</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;header&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;configuration&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;security&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;monitoring&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;footer&#39;</span><span class="p p-Indicator">]</span>
+<span class="nt">template_cache_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">template_optimization_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">standard</span>
+<span class="nt">template_security</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;escape_variables&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;validate_input&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;sanitize_output&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;audit_logging&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">}</span>
+<span class="nt">template_documentation</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;auto_generate&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;include_examples&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;include_variables&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;include_blocks&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">}</span>
+<span class="nt">quality_thresholds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;security_score_min&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">80</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;performance_score_min&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">75</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;complexity_max&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">15</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;max_template_lines&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">200</span><span class="p p-Indicator">}</span>
+<span class="nt">standardization</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;enforce_naming_convention&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;require_documentation&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;enforce_indentation&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;indentation_type&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&#39;spaces&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;indentation_size&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">2</span><span class="p p-Indicator">}</span>
+<span class="nt">monitoring</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&#39;track_usage&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;performance_monitoring&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;error_tracking&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;audit_trail&#39;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="nv">True</span><span class="p p-Indicator">}</span>
+</code></pre></div>
+
+<h2 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
+<p>No dependencies.</p>
+<h2 id="tasks">Tasks<a class="headerlink" href="#tasks" title="Permanent link">&para;</a></h2>
+<p>The following task files are included:</p>
+<ul>
+<li><code>main.yml</code></li>
+</ul>
+<h2 id="handlers">Handlers<a class="headerlink" href="#handlers" title="Permanent link">&para;</a></h2>
+<p>The following handlers are available:</p>
+<h2 id="templates">Templates<a class="headerlink" href="#templates" title="Permanent link">&para;</a></h2>
+<p>The following templates are provided:</p>
+<ul>
+<li><code>template_metadata.json.j2</code></li>
+<li><code>base.j2</code></li>
+</ul>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

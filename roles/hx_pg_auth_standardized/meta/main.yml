@@ -1,0 +1,34 @@
+
+---
+galaxy_info:
+  role_name: hx_pg_auth_standardized
+  author: HX Infrastructure Team
+  description: Professional-grade PostgreSQL authentication and security management for HX Infrastructure
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - infrastructure
+    - database
+    - postgresql
+    - authentication
+    - security
+    - ssl
+    - tls
+
+dependencies:
+  - role: hx_domain_join_standardized
+    when: hx_pg_gss_user | length > 0
+
+collections:
+  - community.postgresql
+  - ansible.posix

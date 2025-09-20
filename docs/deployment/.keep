@@ -1,0 +1,11 @@
+
+# Deployment Documentation
+
+This directory will contain deployment guides and procedures for the HX-Infrastructure Ansible project.
+
+Planned documentation:
+- Environment-specific deployment guides
+- Rollback procedures
+- Change management processes
+- Deployment validation checklists
+- Emergency procedures

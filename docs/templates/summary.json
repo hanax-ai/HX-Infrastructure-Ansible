@@ -1,0 +1,183 @@
+{
+  "generated_at": "2025-09-18T07:17:54.761242",
+  "total_templates": 22,
+  "successful_docs": 22,
+  "templates": [
+    {
+      "name": "roles/hx_ca_trust_standardized/templates/security_audit.j2",
+      "doc_file": "roles_hx_ca_trust_standardized_templates_security_audit.md",
+      "variables": 0,
+      "blocks": 0,
+      "macros": 0,
+      "size": 2641
+    },
+    {
+      "name": "roles/hx_ca_trust_standardized/templates/ca_monitor.sh.j2",
+      "doc_file": "roles_hx_ca_trust_standardized_templates_ca_monitor.sh.md",
+      "variables": 3,
+      "blocks": 0,
+      "macros": 0,
+      "size": 1961
+    },
+    {
+      "name": "roles/hx_ca_trust_standardized/templates/health_report.j2",
+      "doc_file": "roles_hx_ca_trust_standardized_templates_health_report.md",
+      "variables": 0,
+      "blocks": 0,
+      "macros": 0,
+      "size": 3477
+    },
+    {
+      "name": "roles/hx_domain_join_standardized/templates/security_audit.j2",
+      "doc_file": "roles_hx_domain_join_standardized_templates_security_audit.md",
+      "variables": 0,
+      "blocks": 0,
+      "macros": 0,
+      "size": 3320
+    },
+    {
+      "name": "roles/hx_domain_join_standardized/templates/krb5.conf.j2",
+      "doc_file": "roles_hx_domain_join_standardized_templates_krb5.conf.md",
+      "variables": 0,
+      "blocks": 0,
+      "macros": 0,
+      "size": 1522
+    },
+    {
+      "name": "roles/hx_domain_join_standardized/templates/sudoers_domain.j2",
+      "doc_file": "roles_hx_domain_join_standardized_templates_sudoers_domain.md",
+      "variables": 4,
+      "blocks": 0,
+      "macros": 0,
+      "size": 433
+    },
+    {
+      "name": "roles/hx_domain_join_standardized/templates/resolv.conf.j2",
+      "doc_file": "roles_hx_domain_join_standardized_templates_resolv.conf.md",
+      "variables": 3,
+      "blocks": 0,
+      "macros": 0,
+      "size": 308
+    },
+    {
+      "name": "roles/hx_domain_join_standardized/templates/realmd.conf.j2",
+      "doc_file": "roles_hx_domain_join_standardized_templates_realmd.conf.md",
+      "variables": 13,
+      "blocks": 0,
+      "macros": 0,
+      "size": 915
+    },
+    {
+      "name": "roles/hx_domain_join_standardized/templates/sssd.conf.j2",
+      "doc_file": "roles_hx_domain_join_standardized_templates_sssd.conf.md",
+      "variables": 0,
+      "blocks": 0,
+      "macros": 0,
+      "size": 2047
+    },
+    {
+      "name": "roles/hx_domain_join_standardized/templates/health_report.j2",
+      "doc_file": "roles_hx_domain_join_standardized_templates_health_report.md",
+      "variables": 28,
+      "blocks": 0,
+      "macros": 0,
+      "size": 4600
+    },
+    {
+      "name": "roles/ssh_key_management/templates/rotate_ssh_keys.sh.j2",
+      "doc_file": "roles_ssh_key_management_templates_rotate_ssh_keys.sh.md",
+      "variables": 12,
+      "blocks": 0,
+      "macros": 0,
+      "size": 4468
+    },
+    {
+      "name": "roles/ssh_key_management/templates/ssh_config.j2",
+      "doc_file": "roles_ssh_key_management_templates_ssh_config.md",
+      "variables": 11,
+      "blocks": 0,
+      "macros": 0,
+      "size": 2716
+    },
+    {
+      "name": "roles/ssh_key_management/templates/ssh_key_inventory.yml.j2",
+      "doc_file": "roles_ssh_key_management_templates_ssh_key_inventory.yml.md",
+      "variables": 0,
+      "blocks": 0,
+      "macros": 0,
+      "size": 1207
+    },
+    {
+      "name": "roles/operational_safety/templates/rollback_script.sh.j2",
+      "doc_file": "roles_operational_safety_templates_rollback_script.sh.md",
+      "variables": 9,
+      "blocks": 0,
+      "macros": 0,
+      "size": 2996
+    },
+    {
+      "name": "roles/hx_pg_auth_standardized/templates/security_audit.j2",
+      "doc_file": "roles_hx_pg_auth_standardized_templates_security_audit.md",
+      "variables": 0,
+      "blocks": 0,
+      "macros": 0,
+      "size": 1051
+    },
+    {
+      "name": "roles/hx_pg_auth_standardized/templates/pg_ident.conf.j2",
+      "doc_file": "roles_hx_pg_auth_standardized_templates_pg_ident.conf.md",
+      "variables": 3,
+      "blocks": 0,
+      "macros": 0,
+      "size": 641
+    },
+    {
+      "name": "roles/hx_pg_auth_standardized/templates/postgresql.conf.j2",
+      "doc_file": "roles_hx_pg_auth_standardized_templates_postgresql.conf.md",
+      "variables": 34,
+      "blocks": 0,
+      "macros": 0,
+      "size": 5712
+    },
+    {
+      "name": "roles/hx_pg_auth_standardized/templates/backup_manifest.j2",
+      "doc_file": "roles_hx_pg_auth_standardized_templates_backup_manifest.md",
+      "variables": 22,
+      "blocks": 0,
+      "macros": 0,
+      "size": 2842
+    },
+    {
+      "name": "roles/hx_pg_auth_standardized/templates/health_report.j2",
+      "doc_file": "roles_hx_pg_auth_standardized_templates_health_report.md",
+      "variables": 0,
+      "blocks": 0,
+      "macros": 0,
+      "size": 890
+    },
+    {
+      "name": "roles/hx_pg_auth_standardized/templates/pg_hba.conf.j2",
+      "doc_file": "roles_hx_pg_auth_standardized_templates_pg_hba.conf.md",
+      "variables": 4,
+      "blocks": 0,
+      "macros": 0,
+      "size": 1062
+    },
+    {
+      "name": "templates/safety_test_report.j2",
+      "doc_file": "templates_safety_test_report.md",
+      "variables": 5,
+      "blocks": 0,
+      "macros": 0,
+      "size": 1478
+    },
+    {
+      "name": "templates/phase3_validation_report.json.j2",
+      "doc_file": "templates_phase3_validation_report.json.md",
+      "variables": 0,
+      "blocks": 0,
+      "macros": 0,
+      "size": 3284
+    }
+  ]
+}

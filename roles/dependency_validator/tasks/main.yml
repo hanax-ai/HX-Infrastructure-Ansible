@@ -1,0 +1,75 @@
+
+---
+# Dependency Validator Main Tasks - Phase 3 Day 1
+# Comprehensive prerequisite checking system
+
+- name: "Dependency Validation | Display validation start"
+  debug:
+    msg: "Starting comprehensive dependency validation for {{ inventory_hostname }}"
+  when: dependency_validation_enabled | bool
+
+- name: "Dependency Validation | Create cache directory"
+  file:
+    path: "{{ dependency_cache.cache_dir }}"
+    state: directory
+    mode: '0755'
+  when:
+    - dependency_validation_enabled | bool
+    - dependency_cache.enabled | bool
+
+- name: "Dependency Validation | Include system requirements validation"
+  include_tasks: system_requirements.yml
+  when:
+    - dependency_validation_enabled | bool
+    - features.validate_system_requirements | bool
+
+- name: "Dependency Validation | Include package validation"
+  include_tasks: package_validation.yml
+  when:
+    - dependency_validation_enabled | bool
+    - features.validate_packages | bool
+
+- name: "Dependency Validation | Include service validation"
+  include_tasks: service_validation.yml
+  when:
+    - dependency_validation_enabled | bool
+    - features.validate_services | bool
+
+- name: "Dependency Validation | Include network validation"
+  include_tasks: network_validation.yml
+  when:
+    - dependency_validation_enabled | bool
+    - features.validate_network | bool
+
+- name: "Dependency Validation | Include certificate validation"
+  include_tasks: certificate_validation.yml
+  when:
+    - dependency_validation_enabled | bool
+    - features.validate_certificates | bool
+
+- name: "Dependency Validation | Include external dependencies validation"
+  include_tasks: external_validation.yml
+  when:
+    - dependency_validation_enabled | bool
+    - features.validate_external_deps | bool
+
+- name: "Dependency Validation | Generate dependency matrix"
+  include_tasks: dependency_matrix.yml
+  when:
+    - dependency_validation_enabled | bool
+    - features.generate_dependency_matrix | bool
+
+- name: "Dependency Validation | Generate validation report"
+  template:
+    src: validation_report.json.j2
+    dest: "{{ dependency_reporting.report_path }}"
+    mode: '0644'
+  when:
+    - dependency_validation_enabled | bool
+    - dependency_reporting.generate_report | bool
+
+- name: "Dependency Validation | Display validation completion"
+  debug:
+    msg: "Dependency validation completed successfully for {{ inventory_hostname }}"
+  when: dependency_validation_enabled | bool
+

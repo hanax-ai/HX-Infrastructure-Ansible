@@ -1,0 +1,43 @@
+---
+# Backup automation handlers
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+  become: yes
+
+- name: restart backup-monitoring
+  systemd:
+    name: backup-monitoring
+    state: restarted
+  become: yes
+
+- name: restart backup-metrics
+  systemd:
+    name: backup-metrics
+    state: restarted
+  when: (backup_automation.monitoring.prometheus_metrics | default(false)) | bool
+  become: yes
+
+- name: restart database-backup-metrics
+  systemd:
+    name: database-backup-metrics
+    state: restarted
+  when: (backup_automation.monitoring.prometheus_metrics | default(false)) | bool
+  become: yes
+
+- name: reload cron
+  service:
+    name: "{{ (ansible_os_family == 'RedHat') | ternary('crond', 'cron') }}"
+    state: restarted
+  become: yes
+
+- name: restart rsyslog
+  service:
+    name: rsyslog
+    state: restarted
+  become: yes
+
+- name: reload backup configuration
+  command: /var/lib/backup/scripts/reload-backup-config.sh
+  become: yes
+  become_user: backup

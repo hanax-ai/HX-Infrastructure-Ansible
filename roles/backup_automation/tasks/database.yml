@@ -1,0 +1,220 @@
+---
+# Database backup configuration tasks
+- name: Create database backup directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: backup
+    group: backup
+    mode: '0750'
+  loop:
+    - "{{ backup_automation.base_directory }}/database"
+    - "{{ backup_automation.base_directory }}/database/postgresql"
+    - "{{ backup_automation.base_directory }}/database/redis"
+    - "{{ backup_automation.temp_directory }}/database"
+    - "/var/lib/backup/scripts"
+  become: yes
+
+- name: Create PostgreSQL backup script
+  template:
+    src: postgresql-backup.sh.j2
+    dest: /var/lib/backup/scripts/postgresql-backup.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: database_backup.databases.postgresql.enabled
+
+- name: Create PostgreSQL restore script
+  template:
+    src: postgresql-restore.sh.j2
+    dest: /var/lib/backup/scripts/postgresql-restore.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: database_backup.databases.postgresql.enabled
+
+- name: Create Redis backup script
+  template:
+    src: redis-backup.sh.j2
+    dest: /var/lib/backup/scripts/redis-backup.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: database_backup.databases.redis.enabled
+
+- name: Create Redis restore script
+  template:
+    src: redis-restore.sh.j2
+    dest: /var/lib/backup/scripts/redis-restore.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: database_backup.databases.redis.enabled
+
+- name: Create database backup wrapper script
+  template:
+    src: database-backup-wrapper.sh.j2
+    dest: /var/lib/backup/scripts/database-backup-wrapper.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+
+- name: Create PostgreSQL connection test script
+  template:
+    src: test-postgresql-connection.sh.j2
+    dest: /var/lib/backup/scripts/test-postgresql-connection.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: database_backup.databases.postgresql.enabled
+
+- name: Create Redis connection test script
+  template:
+    src: test-redis-connection.sh.j2
+    dest: /var/lib/backup/scripts/test-redis-connection.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: database_backup.databases.redis.enabled
+
+- name: Test PostgreSQL connectivity
+  command: /var/lib/backup/scripts/test-postgresql-connection.sh
+  register: postgresql_test
+  failed_when: postgresql_test.rc != 0
+  become: yes
+  become_user: backup
+  changed_when: false
+  when: 
+    - (database_backup is defined) and (database_backup.databases.postgresql.enabled | default(false))
+    - not ansible_check_mode
+
+- name: Test Redis connectivity
+  command: /var/lib/backup/scripts/test-redis-connection.sh
+  register: redis_test
+  failed_when: redis_test.rc != 0
+  become: yes
+  become_user: backup
+  changed_when: false
+  when: 
+    - (database_backup is defined) and (database_backup.databases.redis.enabled | default(false))
+    - not ansible_check_mode
+
+- name: Create database backup verification script
+  template:
+    src: verify-database-backup.sh.j2
+    dest: /var/lib/backup/scripts/verify-database-backup.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: verification.enabled
+
+- name: Create database backup cleanup script
+  template:
+    src: cleanup-database-backups.sh.j2
+    dest: /var/lib/backup/scripts/cleanup-database-backups.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+
+- name: Schedule PostgreSQL daily backup
+  cron:
+    name: "PostgreSQL Daily Backup"
+    user: backup
+    job: "/var/lib/backup/scripts/postgresql-backup.sh daily"
+    minute: "{{ backup_schedule.database.daily.split()[0] }}"
+    hour: "{{ backup_schedule.database.daily.split()[1] }}"
+    state: present
+  when: database_backup.databases.postgresql.enabled
+
+- name: Schedule PostgreSQL weekly backup
+  cron:
+    name: "PostgreSQL Weekly Backup"
+    user: backup
+    job: "/var/lib/backup/scripts/postgresql-backup.sh weekly"
+    minute: "{{ backup_schedule.database.weekly.split()[0] }}"
+    hour: "{{ backup_schedule.database.weekly.split()[1] }}"
+    weekday: "{{ backup_schedule.database.weekly.split()[4] }}"
+    state: present
+  when: database_backup.databases.postgresql.enabled
+
+- name: Schedule PostgreSQL monthly backup
+  cron:
+    name: "PostgreSQL Monthly Backup"
+    user: backup
+    job: "/var/lib/backup/scripts/postgresql-backup.sh monthly"
+    minute: "{{ backup_schedule.database.monthly.split()[0] }}"
+    hour: "{{ backup_schedule.database.monthly.split()[1] }}"
+    day: "{{ backup_schedule.database.monthly.split()[2] }}"
+    state: present
+  when: database_backup.databases.postgresql.enabled
+
+- name: Schedule Redis daily backup
+  cron:
+    name: "Redis Daily Backup"
+    user: backup
+    job: "/var/lib/backup/scripts/redis-backup.sh daily"
+    minute: "{{ ((backup_schedule.database.daily.split()[0] | int) + 15) % 60 }}"
+    hour: "{{ ((backup_schedule.database.daily.split()[1] | int) + (((backup_schedule.database.daily.split()[0] | int) + 15) // 60)) % 24 }}"
+    state: present
+  when: database_backup.databases.redis.enabled
+
+- name: Schedule database backup cleanup
+  cron:
+    name: "Database Backup Cleanup"
+    user: backup
+    job: "/var/lib/backup/scripts/cleanup-database-backups.sh"
+    minute: "0"
+    hour: "5"
+    state: present
+
+- name: Create database backup monitoring script
+  template:
+    src: monitor-database-backups.sh.j2
+    dest: /var/lib/backup/scripts/monitor-database-backups.sh
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: backup_monitoring.enabled
+
+- name: Schedule database backup monitoring
+  cron:
+    name: "Database Backup Monitoring"
+    user: backup
+    job: "/var/lib/backup/scripts/monitor-database-backups.sh"
+    minute: "*/15"
+    state: present
+  when: (backup_monitoring is defined) and (backup_monitoring.enabled | default(false))
+
+- name: Create database backup metrics collection script
+  template:
+    src: collect-database-backup-metrics.py.j2
+    dest: /var/lib/backup/scripts/collect-database-backup-metrics.py
+    owner: backup
+    group: backup
+    mode: '0750'
+  when: (backup_automation is defined) and
+        (backup_automation.monitoring is defined) and
+        (backup_automation.monitoring.prometheus_metrics | default(false))
+
+- name: Install database backup metrics collection service
+  template:
+    src: database-backup-metrics.service.j2
+    dest: /etc/systemd/system/database-backup-metrics.service
+    owner: root
+    group: root
+    mode: '0644'
+  when: (backup_automation is defined) and
+        (backup_automation.monitoring is defined) and
+        (backup_automation.monitoring.prometheus_metrics | default(false))
+
+- name: Enable and start database backup metrics service
+  systemd:
+    name: database-backup-metrics
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  when: 
+    - (backup_automation is defined) and
+      (backup_automation.monitoring is defined) and
+      (backup_automation.monitoring.prometheus_metrics | default(false))
+    - not ansible_check_mode

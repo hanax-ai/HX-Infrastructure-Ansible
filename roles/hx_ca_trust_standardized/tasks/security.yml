@@ -1,0 +1,116 @@
+
+---
+# Security Tasks for HX CA Trust
+
+- name: Verify certificate file permissions
+  file:
+    path: "{{ hx_ca_cert_full_path }}"
+    owner: "{{ hx_ca_cert_owner }}"
+    group: "{{ hx_ca_cert_group }}"
+    mode: "{{ hx_ca_cert_mode }}"
+  when: hx_ca_strict_permissions | bool
+  tags: [security]
+
+- name: Secure backup directory permissions
+  file:
+    path: "{{ hx_ca_backup_dir }}"
+    owner: root
+    group: root
+    mode: '0700'
+  when: hx_ca_backup_enabled | bool
+  tags: [security]
+
+- name: Secure log directory permissions
+  file:
+    path: "{{ hx_ca_log_dir }}"
+    owner: root
+    group: root
+    mode: '0750'
+  when: hx_ca_audit_logging_enabled | bool
+  tags: [security]
+
+- name: Verify certificate chain (if chain verification enabled)
+  shell: |
+    set -euo pipefail
+    openssl verify -CAfile "{{ hx_ca_cert_full_path }}" "{{ hx_ca_cert_full_path }}"
+  args:
+    executable: /bin/bash
+  register: hx_ca_chain_verify
+  changed_when: false
+  failed_when: hx_ca_chain_verify.rc != 0
+  when: hx_ca_verify_chain | bool
+  tags: [security]
+
+- name: Check certificate expiration
+  shell: |
+    set -euo pipefail
+    expiry_date=$(openssl x509 -in "{{ hx_ca_cert_full_path }}" -enddate -noout | cut -d= -f2)
+    expiry_epoch=$(date -d "$expiry_date" +%s)
+    current_epoch=$(date +%s)
+    days_until_expiry=$(( (expiry_epoch - current_epoch) / 86400 ))
+
+    if [ $days_until_expiry -lt 30 ]; then
+      echo "WARNING: Certificate expires in $days_until_expiry days"
+      exit 1
+    else
+      echo "Certificate valid for $days_until_expiry days"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_ca_expiry_check
+  changed_when: false
+  failed_when: false
+  tags: [security]
+
+- name: Log security warnings
+  lineinfile:
+    path: "{{ hx_ca_log_dir }}/security.log"
+    line: "{{ ansible_date_time.iso8601 }} - {{ hx_ca_expiry_check.stdout }}"
+    create: yes
+    owner: root
+    group: root
+    mode: '0640'
+  when:
+    - hx_ca_audit_logging_enabled | bool
+    - hx_ca_expiry_check.stdout is defined
+  tags: [security]
+
+- name: Validate SAN entries (if SAN check targets provided)
+  shell: |
+    set -euo pipefail
+    san_entries=$(openssl x509 -in "{{ hx_ca_cert_full_path }}" -text -noout | grep -A1 "Subject Alternative Name" | tail -1 || echo "No SAN entries")
+    echo "SAN entries: $san_entries"
+
+    # Check if target is in SAN entries
+    if echo "$san_entries" | grep -q "{{ item.address }}"; then
+      echo "Target {{ item.address }} found in SAN entries"
+    else
+      echo "WARNING: Target {{ item.address }} not found in SAN entries"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_ca_san_check
+  changed_when: false
+  loop: "{{ hx_ca_san_check_targets }}"
+  when: hx_ca_san_check_targets | length > 0
+  tags: [security]
+
+- name: Create security audit report
+  template:
+    src: security_audit.j2
+    dest: "{{ hx_ca_log_dir }}/security_audit_{{ hx_ca_backup_timestamp }}.txt"
+    owner: root
+    group: root
+    mode: '0640'
+  when: hx_ca_audit_logging_enabled | bool
+  tags: [security]
+
+- name: Display security summary
+  debug:
+    msg:
+      - "Security validation completed"
+      - "File permissions: {{ hx_ca_strict_permissions | ternary('Enforced', 'Standard') }}"
+      - "Chain verification: {{ hx_ca_verify_chain | ternary('Passed', 'Skipped') }}"
+      - "Certificate expiry: {{ hx_ca_expiry_check.stdout | default('Not checked') }}"
+      - "SAN validation: {{ (hx_ca_san_check_targets | length > 0) | ternary('Completed', 'Skipped') }}"
+  tags: [security]

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="HX Infrastructure Team" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Style Guide - HX Infrastructure Ansible - Exemplary Automation</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Style Guide";
+        var mkdocs_page_input_path = "development/style-guide.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> HX Infrastructure Ansible - Exemplary Automation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Architecture</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../../architecture/overview.md">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../architecture/diagrams/">Diagrams</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../roles/">Roles</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="" href="../guidelines.md">Guidelines</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Style Guide</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#general-principles">📋 General Principles</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#clarity-and-accessibility">Clarity and Accessibility</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#consistency">Consistency</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#maintainability">Maintainability</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#markdown-standards">📝 Markdown Standards</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#headings">Headings</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#code-blocks">Code Blocks</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#links-and-references">Links and References</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#lists-and-tables">Lists and Tables</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#admonitions-and-callouts">Admonitions and Callouts</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#content-structure">📖 Content Structure</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#document-templates">Document Templates</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#role-documentation">Role Documentation</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#operational-procedures">Operational Procedures</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#variable-documentation">Variable Documentation</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#code-examples">Code Examples</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#formatting-standards">🎨 Formatting Standards</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#file-naming">File Naming</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#line-length">Line Length</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#whitespace-and-formatting">Whitespace and Formatting</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#cross-references">🔗 Cross-References</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#internal-links">Internal Links</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#external-references">External References</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#quality-checklist">✅ Quality Checklist</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#content-quality">Content Quality</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#technical-accuracy">Technical Accuracy</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#style-compliance">Style Compliance</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#accessibility">Accessibility</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#maintenance">🔄 Maintenance</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#regular-reviews">Regular Reviews</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#version-control">Version Control</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#feedback-integration">Feedback Integration</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">HX Infrastructure Ansible - Exemplary Automation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Development</li>
+      <li class="breadcrumb-item active">Style Guide</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="documentation-style-guide">Documentation Style Guide<a class="headerlink" href="#documentation-style-guide" title="Permanent link">&para;</a></h1>
+<p>This style guide ensures consistency, clarity, and maintainability across all documentation in the HX Infrastructure Ansible project.</p>
+<h2 id="general-principles">📋 General Principles<a class="headerlink" href="#general-principles" title="Permanent link">&para;</a></h2>
+<h3 id="clarity-and-accessibility">Clarity and Accessibility<a class="headerlink" href="#clarity-and-accessibility" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Write for your audience - assume basic Ansible knowledge but explain complex concepts</li>
+<li>Use active voice and present tense</li>
+<li>Avoid jargon and acronyms without explanation</li>
+<li>Provide context and examples for all procedures</li>
+</ul>
+<h3 id="consistency">Consistency<a class="headerlink" href="#consistency" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Follow established patterns and templates</li>
+<li>Use consistent terminology throughout</li>
+<li>Maintain uniform formatting and structure</li>
+<li>Apply standardized naming conventions</li>
+</ul>
+<h3 id="maintainability">Maintainability<a class="headerlink" href="#maintainability" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Keep documentation close to code</li>
+<li>Use version control for all changes</li>
+<li>Include update dates and version information</li>
+<li>Provide clear ownership and contact information</li>
+</ul>
+<h2 id="markdown-standards">📝 Markdown Standards<a class="headerlink" href="#markdown-standards" title="Permanent link">&para;</a></h2>
+<h3 id="headings">Headings<a class="headerlink" href="#headings" title="Permanent link">&para;</a></h3>
+<p>Use hierarchical heading structure with proper nesting:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Page Title (H1) - One per document</span>
+<span class="gu">## Major Section (H2)</span>
+<span class="gu">### Subsection (H3)</span>
+<span class="gu">#### Detail Section (H4) - Avoid deeper nesting</span>
+</code></pre></div>
+
+<p><strong>Guidelines:</strong>
+- Use sentence case for headings: "Getting started" not "Getting Started"
+- Include emoji icons for major sections when appropriate
+- Avoid skipping heading levels
+- Keep headings descriptive and scannable</p>
+<h3 id="code-blocks">Code Blocks<a class="headerlink" href="#code-blocks" title="Permanent link">&para;</a></h3>
+<p>Always specify language for syntax highlighting:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Good - with language specification</span>
+<span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Example task</span>
+<span class="w">  </span><span class="nt">debug</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">msg</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Hello</span><span class="nv"> </span><span class="s">World&quot;</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code># Avoid - no language specification
+---
+- name: Example task
+  debug:
+    msg: &quot;Hello World&quot;
+</code></pre></div>
+
+<p><strong>Best Practices:</strong>
+- Use <code>yaml</code> for Ansible content
+- Use <code>bash</code> for shell commands
+- Use <code>json</code> for JSON data
+- Include comments in code examples
+- Test all code examples for accuracy</p>
+<h3 id="links-and-references">Links and References<a class="headerlink" href="#links-and-references" title="Permanent link">&para;</a></h3>
+<p>Use descriptive link text and relative paths:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Good</span>
+See the [<span class="nt">deployment guide</span>](<span class="na">../operations/deployment.md</span>) for details.
+Learn about [<span class="nt">role variables</span>](<span class="na">roles/hx_ca_trust.md#variables</span>).
+
+<span class="gh"># Avoid</span>
+Click [<span class="nt">here</span>](<span class="na">../operations/deployment.md</span>) for more info.
+See [<span class="nt">this link</span>](<span class="na">https://example.com/docs</span>).
+</code></pre></div>
+
+<p><strong>Guidelines:</strong>
+- Use relative paths for internal links
+- Include section anchors when linking to specific content
+- Verify all links work correctly
+- Provide context for external links</p>
+<h3 id="lists-and-tables">Lists and Tables<a class="headerlink" href="#lists-and-tables" title="Permanent link">&para;</a></h3>
+<p>Use consistent formatting for lists and tables:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Unordered lists</span>
+<span class="k">-</span><span class="w"> </span>First item with proper spacing
+<span class="k">-</span><span class="w"> </span>Second item
+<span class="w">  </span><span class="k">-</span><span class="w"> </span>Nested item with 2-space indentation
+<span class="w">  </span><span class="k">-</span><span class="w"> </span>Another nested item
+
+<span class="gh"># Ordered lists</span>
+<span class="k">1.</span> First step
+<span class="k">2.</span> Second step
+<span class="k">3.</span> Third step
+
+<span class="gh"># Tables with proper alignment</span>
+| Column 1 | Column 2 | Column 3 |
+|----------|----------|----------|
+| Value 1  | Value 2  | Value 3  |
+| Data A   | Data B   | Data C   |
+</code></pre></div>
+
+<h3 id="admonitions-and-callouts">Admonitions and Callouts<a class="headerlink" href="#admonitions-and-callouts" title="Permanent link">&para;</a></h3>
+<p>Use admonitions for important information:</p>
+<div class="codehilite"><pre><span></span><code>!!! note &quot;Information&quot;
+    This provides additional context or helpful information.
+
+!!! warning &quot;Important&quot;
+    This highlights something that requires attention.
+
+!!! danger &quot;Critical&quot;
+    This indicates potential risks or critical issues.
+
+!!! tip &quot;Best Practice&quot;
+    This shares recommended approaches or optimizations.
+</code></pre></div>
+
+<h2 id="content-structure">📖 Content Structure<a class="headerlink" href="#content-structure" title="Permanent link">&para;</a></h2>
+<h3 id="document-templates">Document Templates<a class="headerlink" href="#document-templates" title="Permanent link">&para;</a></h3>
+<p>Each document type should follow a consistent structure:</p>
+<h4 id="role-documentation">Role Documentation<a class="headerlink" href="#role-documentation" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Role Name</span>
+
+<span class="gu">## Overview</span>
+Brief description and purpose
+
+<span class="gu">## Requirements</span>
+Prerequisites and dependencies
+
+<span class="gu">## Variables</span>
+Detailed variable documentation with examples
+
+<span class="gu">## Usage</span>
+Examples and common use cases
+
+<span class="gu">## Testing</span>
+How to test the role
+
+<span class="gu">## Troubleshooting</span>
+Common issues and solutions
+</code></pre></div>
+
+<h4 id="operational-procedures">Operational Procedures<a class="headerlink" href="#operational-procedures" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Procedure Name</span>
+
+<span class="gu">## Purpose</span>
+What this procedure accomplishes
+
+<span class="gu">## Prerequisites</span>
+Required access, tools, and conditions
+
+<span class="gu">## Steps</span>
+Detailed step-by-step instructions
+
+<span class="gu">## Verification</span>
+How to confirm success
+
+<span class="gu">## Rollback</span>
+How to undo changes if needed
+
+<span class="gu">## Troubleshooting</span>
+Common issues and solutions
+</code></pre></div>
+
+<h3 id="variable-documentation">Variable Documentation<a class="headerlink" href="#variable-documentation" title="Permanent link">&para;</a></h3>
+<p>Document all variables with consistent format:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Variable name with clear description</span>
+<span class="nt">variable_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default_value</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain"># Type</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string|boolean|integer|list|dict</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain"># Required</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes|no</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain"># Description</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Detailed explanation of purpose and usage</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain"># Example</span><span class="nt">: variable_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;example_value&quot;</span>
+<span class="w">  </span><span class="c1"># Valid values: list of acceptable values if applicable</span>
+</code></pre></div>
+
+<h3 id="code-examples">Code Examples<a class="headerlink" href="#code-examples" title="Permanent link">&para;</a></h3>
+<p>Provide complete, working examples:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Complete playbook example</span>
+<span class="nn">---</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Example playbook</span>
+<span class="w">  </span><span class="nt">hosts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">all</span>
+<span class="w">  </span><span class="nt">become</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
+<span class="w">  </span><span class="nt">vars</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">example_var</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;value&quot;</span>
+
+<span class="w">  </span><span class="nt">tasks</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Example task with clear description</span>
+<span class="w">      </span><span class="nt">debug</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">msg</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">example_var</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">tags</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example</span>
+</code></pre></div>
+
+<h2 id="formatting-standards">🎨 Formatting Standards<a class="headerlink" href="#formatting-standards" title="Permanent link">&para;</a></h2>
+<h3 id="file-naming">File Naming<a class="headerlink" href="#file-naming" title="Permanent link">&para;</a></h3>
+<p>Use consistent naming conventions:</p>
+<ul>
+<li><strong>Files</strong>: <code>snake_case.md</code> (e.g., <code>deployment_guide.md</code>)</li>
+<li><strong>Directories</strong>: <code>kebab-case</code> (e.g., <code>user-guides</code>)</li>
+<li><strong>Images</strong>: <code>descriptive-name.png</code> (e.g., <code>architecture-diagram.png</code>)</li>
+</ul>
+<h3 id="line-length">Line Length<a class="headerlink" href="#line-length" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Maximum</strong>: 120 characters per line</li>
+<li><strong>Preferred</strong>: 80-100 characters for readability</li>
+<li><strong>Code blocks</strong>: Can exceed for readability</li>
+<li><strong>Tables</strong>: Can exceed when necessary</li>
+</ul>
+<h3 id="whitespace-and-formatting">Whitespace and Formatting<a class="headerlink" href="#whitespace-and-formatting" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Use 2 spaces for indentation in YAML</li>
+<li>Include blank lines around headings and sections</li>
+<li>Use consistent spacing in lists and tables</li>
+<li>Remove trailing whitespace</li>
+</ul>
+<h2 id="cross-references">🔗 Cross-References<a class="headerlink" href="#cross-references" title="Permanent link">&para;</a></h2>
+<h3 id="internal-links">Internal Links<a class="headerlink" href="#internal-links" title="Permanent link">&para;</a></h3>
+<p>Create a web of interconnected documentation:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Reference related content</span>
+For more details, see:
+<span class="k">-</span><span class="w"> </span>[<span class="nt">Security hardening</span>](<span class="na">../security/hardening.md</span>)
+<span class="k">-</span><span class="w"> </span>[<span class="nt">Backup procedures</span>](<span class="na">../operations/backup.md</span>)
+<span class="k">-</span><span class="w"> </span>[<span class="nt">Troubleshooting guide</span>](<span class="na">../operations/troubleshooting.md</span>)
+
+<span class="gh"># Link to specific sections</span>
+Review the [<span class="nt">variable configuration</span>](<span class="na">roles/common.md#variables</span>) section.
+</code></pre></div>
+
+<h3 id="external-references">External References<a class="headerlink" href="#external-references" title="Permanent link">&para;</a></h3>
+<p>Provide authoritative external sources:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh"># Reference official documentation</span>
+Based on [<span class="nt">Ansible best practices</span>](<span class="na">https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html</span>).
+
+<span class="gh"># Include version-specific links when relevant</span>
+Compatible with [<span class="nt">Ansible 2.12+</span>](<span class="na">https://docs.ansible.com/ansible/2.12/</span>).
+</code></pre></div>
+
+<h2 id="quality-checklist">✅ Quality Checklist<a class="headerlink" href="#quality-checklist" title="Permanent link">&para;</a></h2>
+<p>Before publishing documentation, verify:</p>
+<h3 id="content-quality">Content Quality<a class="headerlink" href="#content-quality" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Information is accurate and up-to-date</li>
+<li>[ ] Examples are tested and working</li>
+<li>[ ] All links are functional</li>
+<li>[ ] Content follows logical flow</li>
+<li>[ ] Audience needs are addressed</li>
+</ul>
+<h3 id="technical-accuracy">Technical Accuracy<a class="headerlink" href="#technical-accuracy" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Code examples are syntactically correct</li>
+<li>[ ] Variable names match actual implementation</li>
+<li>[ ] Procedures have been tested</li>
+<li>[ ] Version compatibility is specified</li>
+<li>[ ] Dependencies are documented</li>
+</ul>
+<h3 id="style-compliance">Style Compliance<a class="headerlink" href="#style-compliance" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Headings follow hierarchy rules</li>
+<li>[ ] Code blocks specify language</li>
+<li>[ ] Links use descriptive text</li>
+<li>[ ] Formatting is consistent</li>
+<li>[ ] Grammar and spelling are correct</li>
+</ul>
+<h3 id="accessibility">Accessibility<a class="headerlink" href="#accessibility" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Alt text provided for images</li>
+<li>[ ] Tables include headers</li>
+<li>[ ] Color is not the only way to convey information</li>
+<li>[ ] Content is screen reader friendly</li>
+<li>[ ] Language is clear and inclusive</li>
+</ul>
+<h2 id="maintenance">🔄 Maintenance<a class="headerlink" href="#maintenance" title="Permanent link">&para;</a></h2>
+<h3 id="regular-reviews">Regular Reviews<a class="headerlink" href="#regular-reviews" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Monthly</strong>: Check for outdated information</li>
+<li><strong>Quarterly</strong>: Review and update examples</li>
+<li><strong>Annually</strong>: Comprehensive style guide review</li>
+<li><strong>As needed</strong>: Update for major changes</li>
+</ul>
+<h3 id="version-control">Version Control<a class="headerlink" href="#version-control" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Use meaningful commit messages</li>
+<li>Tag documentation versions</li>
+<li>Maintain changelog for major updates</li>
+<li>Archive obsolete documentation</li>
+</ul>
+<h3 id="feedback-integration">Feedback Integration<a class="headerlink" href="#feedback-integration" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Monitor user feedback and questions</li>
+<li>Update documentation based on common issues</li>
+<li>Incorporate suggestions from team members</li>
+<li>Track documentation usage and effectiveness</li>
+</ul>
+<hr />
+<p><strong>Note</strong>: This style guide is a living document. Suggest improvements through the standard contribution process.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../roles/" class="btn btn-neutral float-left" title="Roles"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../../roles/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

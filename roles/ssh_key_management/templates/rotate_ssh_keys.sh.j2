@@ -1,0 +1,142 @@
+
+#!/bin/bash
+# SSH Key Rotation Script - Ansible Generated
+# Host: {{ inventory_hostname }}
+# Generated: {{ ansible_date_time.iso8601 }}
+
+set -euo pipefail
+
+# Configuration
+HOST="{{ inventory_hostname }}"
+USER="{{ ansible_user }}"
+KEY_TYPE="{{ ssh_key_type }}"
+KEY_PATH="{{ ssh_key_private_path }}"
+BACKUP_DIR="{{ ssh_key_backup_dir }}"
+LOG_FILE="{{ ssh_key_log_dir }}/rotation.log"
+ANSIBLE_PLAYBOOK="{{ ansible_playbook_path | default('/opt/ansible/playbooks/ssh_key_rotation.yml') }}"
+
+# Logging function
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
+# Error handling
+error_exit() {
+    log "ERROR: $1"
+    exit 1
+}
+
+# Check if key needs rotation
+check_key_age() {
+    if [[ ! -f "$KEY_PATH" ]]; then
+        log "SSH key not found: $KEY_PATH"
+        return 0  # Key doesn't exist, needs creation
+    fi
+    
+    local key_age_days
+    key_age_days=$(( ($(date +%s) - $(stat -c %Y "$KEY_PATH")) / 86400 ))
+    
+    log "SSH key age: $key_age_days days"
+    
+    if [[ $key_age_days -gt {{ ssh_key_rotation_days }} ]]; then
+        log "SSH key rotation required (age: $key_age_days days, limit: {{ ssh_key_rotation_days }} days)"
+        return 0
+    else
+        log "SSH key rotation not required"
+        return 1
+    fi
+}
+
+# Send rotation warning
+send_warning() {
+    local days_until_rotation=$1
+    log "Sending rotation warning: $days_until_rotation days until rotation"
+    
+    # Send email notification if configured
+    {% if ssh_rotation_notification_email is defined %}
+    mail -s "SSH Key Rotation Warning - $HOST" {{ ssh_rotation_notification_email }} << EOF
+SSH key rotation warning for host: $HOST
+
+Current key age: $(({{ ssh_key_rotation_days }} - days_until_rotation)) days
+Rotation scheduled in: $days_until_rotation days
+Key path: $KEY_PATH
+
+This is an automated notification from the SSH key management system.
+EOF
+    {% endif %}
+}
+
+# Perform key rotation
+rotate_key() {
+    log "Starting SSH key rotation for $HOST"
+    
+    # Create backup directory
+    local backup_timestamp
+    backup_timestamp=$(date +%s)
+    local backup_path="$BACKUP_DIR/$backup_timestamp"
+    mkdir -p "$backup_path"
+    
+    # Backup current key
+    if [[ -f "$KEY_PATH" ]]; then
+        cp "$KEY_PATH" "$backup_path/"
+        cp "$KEY_PATH.pub" "$backup_path/" 2>/dev/null || true
+        log "Current key backed up to: $backup_path"
+    fi
+    
+    # Run Ansible playbook for key rotation
+    if [[ -f "$ANSIBLE_PLAYBOOK" ]]; then
+        log "Running Ansible playbook: $ANSIBLE_PLAYBOOK"
+        ansible-playbook -i "{{ inventory_file | default('inventories/production/hosts.yml') }}" \
+                        --limit "$HOST" \
+                        -e "ssh_key_force_regenerate=true" \
+                        -e "ssh_key_backup_enabled=true" \
+                        "$ANSIBLE_PLAYBOOK" || error_exit "Ansible playbook failed"
+    else
+        error_exit "Ansible playbook not found: $ANSIBLE_PLAYBOOK"
+    fi
+    
+    # Verify new key
+    if [[ -f "$KEY_PATH" ]]; then
+        local new_fingerprint
+        new_fingerprint=$(ssh-keygen -lf "$KEY_PATH" | awk '{print $2}')
+        log "New SSH key fingerprint: $new_fingerprint"
+        
+        # Test connectivity
+        if ssh -o ConnectTimeout=10 -o BatchMode=yes -i "$KEY_PATH" "$USER@$HOST" "echo 'SSH key rotation successful'" >/dev/null 2>&1; then
+            log "SSH key rotation completed successfully"
+            
+            # Clean up old backups (keep last 5)
+            find "$BACKUP_DIR" -maxdepth 1 -type d -name "[0-9]*" | sort -nr | tail -n +6 | xargs rm -rf
+            log "Old backups cleaned up"
+        else
+            error_exit "SSH connectivity test failed with new key"
+        fi
+    else
+        error_exit "New SSH key not found after rotation"
+    fi
+}
+
+# Main execution
+main() {
+    log "SSH key rotation check started for $HOST"
+    
+    # Check if rotation is needed
+    if check_key_age; then
+        rotate_key
+    else
+        # Check if warning should be sent
+        local key_age_days
+        key_age_days=$(( ($(date +%s) - $(stat -c %Y "$KEY_PATH")) / 86400 ))
+        local days_until_rotation
+        days_until_rotation=$(( {{ ssh_key_rotation_days }} - key_age_days ))
+        
+        if [[ $days_until_rotation -le {{ ssh_key_rotation_warning_days }} ]]; then
+            send_warning $days_until_rotation
+        fi
+    fi
+    
+    log "SSH key rotation check completed for $HOST"
+}
+
+# Execute main function
+main "$@"

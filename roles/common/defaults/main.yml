@@ -1,0 +1,69 @@
+---
+# Common role defaults with hx_ prefix standardization
+
+# System configuration
+hx_common_system_packages:
+  - curl
+  - wget
+  - vim
+  - htop
+  - git
+  - unzip
+  - tree
+  - jq
+
+hx_common_timezone: "UTC"
+hx_common_locale: "en_US.UTF-8"
+
+# User management
+hx_common_create_users: true
+hx_common_users:
+  - name: "hx-deploy"
+    groups: ["sudo"]
+    shell: "/bin/bash"
+    create_home: true
+
+# SSH configuration
+hx_common_ssh_port: 22
+hx_common_ssh_password_auth: false
+hx_common_ssh_root_login: false
+hx_common_ssh_permit_empty_passwords: false
+hx_common_ssh_max_auth_tries: 3
+
+# Firewall configuration
+hx_common_firewall_enabled: true
+hx_common_firewall_default_policy: "deny"
+hx_common_firewall_allowed_ports:
+  - "22/tcp"  # SSH
+  - "80/tcp"  # HTTP
+  - "443/tcp" # HTTPS
+
+# Logging configuration
+hx_common_log_level: "INFO"
+hx_common_log_retention_days: 30
+hx_common_syslog_enabled: true
+
+# Update configuration
+hx_common_auto_updates: false
+hx_common_security_updates: true
+hx_common_update_cache_valid_time: 3600
+
+# Monitoring configuration
+hx_common_monitoring_enabled: true
+hx_common_metrics_collection: true
+hx_common_health_check_enabled: true
+
+# Backup configuration
+hx_common_backup_enabled: true
+hx_common_backup_retention_days: 7
+hx_common_backup_directory: "/opt/hx/backups"
+
+# Service configuration
+hx_common_service_restart_policy: "on-failure"
+hx_common_service_timeout: 300
+
+# Security hardening
+hx_common_security_hardening: true
+hx_common_fail2ban_enabled: true
+hx_common_disable_unused_services: true
+hx_common_kernel_hardening: true

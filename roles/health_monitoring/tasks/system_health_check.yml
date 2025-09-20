@@ -1,0 +1,53 @@
+
+---
+# Comprehensive System Health Checks
+- name: Check CPU usage
+  shell: |
+    top -bn1 | grep "Cpu(s)" | awk '{print $2}' | awk -F'%' '{print $1}'
+  register: cpu_usage
+  changed_when: false
+
+- name: Check memory usage
+  shell: |
+    free | grep Mem | awk '{printf "%.1f", ($3/$2) * 100.0}'
+  register: memory_usage
+  changed_when: false
+
+- name: Check disk usage
+  shell: |
+    df / | tail -1 | awk '{print $5}' | sed 's/%//'
+  register: disk_usage
+  changed_when: false
+
+- name: Check system load
+  shell: |
+    uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//'
+  register: system_load
+  changed_when: false
+
+- name: Evaluate health status
+  set_fact:
+    system_health_status: |
+      {
+        "cpu_usage": {{ cpu_usage.stdout | float }},
+        "memory_usage": {{ memory_usage.stdout | float }},
+        "disk_usage": {{ disk_usage.stdout | int }},
+        "system_load": {{ system_load.stdout | float }},
+        "timestamp": "{{ ansible_date_time.iso8601 }}",
+        "healthy": {{ (cpu_usage.stdout | float < alert_thresholds.cpu_usage) and 
+                     (memory_usage.stdout | float < alert_thresholds.memory_usage) and 
+                     (disk_usage.stdout | int < alert_thresholds.disk_usage) }}
+      }
+
+- name: Log health status
+  copy:
+    content: "{{ system_health_status }}"
+    dest: "/var/log/hx-infrastructure/health-{{ ansible_date_time.epoch }}.json"
+  when: log_health_status | default(true)
+
+- name: Trigger alert if unhealthy
+  include_tasks: trigger_alert.yml
+  vars:
+    alert_type: "system_health"
+    alert_message: "System health check failed on {{ inventory_hostname }}"
+  when: not (system_health_status | from_json).healthy

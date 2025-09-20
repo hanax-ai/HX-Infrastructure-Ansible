@@ -1,0 +1,43 @@
+
+---
+# HX Domain Join Main Tasks
+# Orchestrates all Active Directory domain integration operations
+
+- name: Include variable validation
+  include_tasks: validate.yml
+  tags: [validation, hx_domain_join]
+
+- name: Include installation tasks
+  include_tasks: install.yml
+  when: hx_domain_join_enabled | bool
+  tags: [install, hx_domain_join]
+
+- name: Include configuration tasks
+  include_tasks: configure.yml
+  when: hx_domain_join_enabled | bool
+  tags: [configure, hx_domain_join]
+
+- name: Include domain join tasks
+  include_tasks: join_domain.yml
+  when: hx_domain_join_enabled | bool
+  tags: [join_domain, hx_domain_join]
+
+- name: Include security tasks
+  include_tasks: security.yml
+  when: hx_domain_security_enabled | bool
+  tags: [security, hx_domain_join]
+
+- name: Include health check tasks
+  include_tasks: health_checks.yml
+  when: hx_domain_health_checks_enabled | bool
+  tags: [health_checks, hx_domain_join]
+
+- name: Display deployment summary
+  debug:
+    msg:
+      - "HX Domain Join deployment completed successfully"
+      - "Domain: {{ hx_domain_join_enabled | ternary(hx_ad_domain, 'Disabled') }}"
+      - "Computer: {{ hx_domain_join_enabled | ternary(hx_ad_computer_name, 'N/A') }}"
+      - "SSSD: {{ hx_sssd_enabled | ternary('Enabled', 'Disabled') }}"
+      - "Security: {{ hx_domain_security_enabled | ternary('Enabled', 'Disabled') }}"
+  tags: [hx_domain_join]

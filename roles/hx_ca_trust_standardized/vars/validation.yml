@@ -1,0 +1,51 @@
+
+---
+# Variable Validation Rules for HX CA Trust Role
+
+validation_rules:
+  hx_ca_trust_enabled:
+    type: boolean
+    required: true
+    description: "Enable or disable CA trust management"
+
+  hx_ca_host:
+    type: string
+    required: true
+    pattern: '^[a-zA-Z0-9.-]+$'
+    description: "Certificate Authority server hostname"
+
+  hx_ca_root_ca_path_on_ca:
+    type: string
+    required: true
+    description: "Path to root CA certificate on CA server"
+
+  hx_ca_root_ca_filename:
+    type: string
+    required: true
+    pattern: '^[a-zA-Z0-9._-]+\.crt$'
+    description: "Root CA certificate filename"
+
+  hx_ca_expected_sha256:
+    type: string
+    required: false
+    pattern: '^(SHA256:)?([A-Fa-f0-9]{2}:){31}[A-Fa-f0-9]{2}$|^$'
+    description: "Expected SHA256 fingerprint of CA certificate"
+
+# Required directories
+required_directories:
+  - "{{ hx_ca_cert_dir }}"
+  - "{{ hx_ca_backup_dir }}"
+  - "{{ hx_ca_log_dir }}"
+
+# Required packages
+required_packages:
+  - ca-certificates
+  - openssl
+  - curl
+
+# File permission validation
+file_permissions:
+  certificate:
+    owner: "{{ hx_ca_cert_owner }}"
+    group: "{{ hx_ca_cert_group }}"
+    mode: "{{ hx_ca_cert_mode }}"

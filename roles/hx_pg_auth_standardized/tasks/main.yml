@@ -1,0 +1,49 @@
+
+---
+# HX PostgreSQL Authentication Main Tasks
+# Orchestrates all PostgreSQL authentication and security operations
+
+- name: Include variable validation
+  include_tasks: validate.yml
+  tags: [validation, hx_pg_auth]
+
+- name: Include backup tasks
+  include_tasks: backup.yml
+  when: hx_pg_backup_enabled | bool
+  tags: [backup, hx_pg_auth]
+
+- name: Include installation tasks
+  include_tasks: install.yml
+  when: hx_pg_auth_enabled | bool
+  tags: [install, hx_pg_auth]
+
+- name: Include configuration tasks
+  include_tasks: configure.yml
+  when: hx_pg_auth_enabled | bool
+  tags: [configure, hx_pg_auth]
+
+- name: Include user management tasks
+  include_tasks: users.yml
+  when: hx_pg_auth_enabled | bool
+  tags: [users, hx_pg_auth]
+
+- name: Include security tasks
+  include_tasks: security.yml
+  when: hx_pg_security_enabled | bool
+  tags: [security, hx_pg_auth]
+
+- name: Include health check tasks
+  include_tasks: health_checks.yml
+  when: hx_pg_health_checks_enabled | bool
+  tags: [health_checks, hx_pg_auth]
+
+- name: Display deployment summary
+  debug:
+    msg:
+      - "HX PostgreSQL Authentication deployment completed successfully"
+      - "Database: {{ hx_pg_auth_enabled | ternary(hx_pg_db, 'Disabled') }}"
+      - "SSL/TLS: {{ hx_pg_ssl_enabled | ternary('Enabled', 'Disabled') }}"
+      - "Authentication: {{ hx_pg_password_encryption }}"
+      - "Security: {{ hx_pg_security_enabled | ternary('Enabled', 'Disabled') }}"
+      - "App User: {{ hx_pg_create_app_user | ternary('Created', 'Skipped') }}"
+  tags: [hx_pg_auth]

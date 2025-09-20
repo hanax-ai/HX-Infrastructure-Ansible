@@ -1,0 +1,176 @@
+# Ansible Role Feedback - Additional Issues (Part 2)
+
+## Role Structure Issues
+
+21. **High**: Missing standardized directory structure
+    - Inconsistent role layout across different roles
+    - Missing required directories (handlers, templates, files)
+    - No meta/main.yml files for role dependencies
+
+22. **High**: Incomplete task file organization
+    - Missing validate.yml, prepare.yml, configure.yml task files
+    - No proper task file separation by function
+    - Missing security.yml and verify.yml tasks
+
+23. **Medium**: Missing defaults standardization
+    - Default variables not properly categorized
+    - Missing variable validation and type definitions
+    - No environment-specific default overrides
+
+## Service Management Issues
+
+24. **High**: Systemd service management incomplete
+    - Missing proper systemd unit file templates
+    - No service dependency management
+    - Missing service health checks
+
+25. **High**: Service configuration templates missing
+    - No standardized configuration file templates
+    - Missing environment-specific configurations
+    - No configuration validation mechanisms
+
+26. **Medium**: Log management not implemented
+    - Missing log rotation configuration
+    - No centralized logging setup
+    - Missing log level management
+
+## Database Integration Issues
+
+27. **High**: PostgreSQL integration incomplete in hx_pg_auth_standardized
+    - Missing database schema management
+    - No proper connection pooling configuration
+    - Missing backup and recovery procedures
+
+28. **High**: Database migration handling missing
+    - No database version management
+    - Missing migration rollback procedures
+    - No data integrity validation
+
+29. **Medium**: Database monitoring not implemented
+    - Missing performance monitoring setup
+    - No database health checks
+    - Missing alerting configuration
+
+## Web UI Role Issues (hx_webui_install_standardized)
+
+30. **High**: Web server configuration incomplete
+    - Missing nginx/apache configuration templates
+    - No SSL/TLS certificate management
+    - Missing security headers configuration
+
+31. **High**: Static file management missing
+    - No proper static file serving configuration
+    - Missing asset optimization
+    - No CDN integration support
+
+32. **Medium**: Web application deployment incomplete
+    - Missing application server configuration
+    - No proper environment variable management
+    - Missing application health checks
+
+## LiteLLM Proxy Role Issues (hx_litellm_proxy_standardized)
+
+33. **High**: Multi-provider LLM support incomplete
+    - Missing configuration for different LLM providers
+    - No API key management for external services
+    - Missing rate limiting configuration
+
+34. **High**: Proxy configuration templates missing
+    - No standardized proxy configuration files
+    - Missing load balancing configuration
+    - No failover mechanism implementation
+
+35. **Medium**: LLM model management incomplete
+    - Missing model versioning support
+    - No model caching configuration
+    - Missing model performance monitoring
+
+## Testing and Validation Issues
+
+36. **High**: Comprehensive testing missing
+    - No end-to-end testing scenarios
+    - Missing security penetration testing
+    - No performance testing implementation
+
+37. **Medium**: Validation scripts incomplete
+    - Missing service validation scripts
+    - No configuration validation tools
+    - Missing deployment verification
+
+## CI/CD Integration Issues
+
+38. **High**: CodeRabbit CI/CD workflow missing
+    - No automated code review configuration
+    - Missing CI/CD pipeline definitions
+    - No automated testing integration
+
+39. **Medium**: Pre-commit hooks not configured
+    - Missing code quality checks
+    - No automated linting on commit
+    - Missing security scanning
+
+## Monitoring and Observability
+
+40. **Medium**: Monitoring integration missing
+    - No Prometheus metrics configuration
+    - Missing Grafana dashboard templates
+    - No alerting rule definitions
+
+41. **Medium**: Health check endpoints missing
+    - No standardized health check implementation
+    - Missing service readiness probes
+    - No dependency health validation
+
+## Security Hardening
+
+42. **High**: Container security not addressed
+    - Missing container security scanning
+    - No runtime security policies
+    - Missing container image hardening
+
+43. **Medium**: Network security incomplete
+    - Missing firewall rule management
+    - No network segmentation configuration
+    - Missing intrusion detection setup
+
+## Documentation and Maintenance
+
+44. **Medium**: Operational documentation missing
+    - No troubleshooting guides
+    - Missing operational runbooks
+    - No disaster recovery procedures
+
+45. **Low**: Version management incomplete
+    - Missing semantic versioning
+    - No changelog maintenance
+    - Missing upgrade procedures
+
+## Additional Quality Issues
+
+46. **Medium**: Error messages not standardized
+    - Inconsistent error message formats
+    - Missing error code definitions
+    - No error handling documentation
+
+47. **Low**: Code comments insufficient
+    - Missing inline documentation
+    - No complex logic explanations
+    - Missing TODO and FIXME tracking
+
+48. **Low**: Variable naming inconsistencies
+    - Mixed naming conventions
+    - Non-descriptive variable names
+    - Missing variable grouping
+
+## Integration Issues
+
+49. **Medium**: Role interdependencies not managed
+    - Missing dependency declarations
+    - No proper role execution order
+    - Missing shared variable management
+
+50. **Low**: Configuration drift detection missing
+    - No configuration state monitoring
+    - Missing drift correction mechanisms
+    - No configuration audit trails
+

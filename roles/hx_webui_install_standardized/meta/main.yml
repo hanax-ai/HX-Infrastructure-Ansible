@@ -1,0 +1,43 @@
+---
+galaxy_info:
+  author: HX Infrastructure Team
+  description: Enterprise web UI installation and configuration
+  company: HX AI
+  license: MIT
+  min_ansible_version: "2.12"
+  
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+
+  galaxy_tags:
+    - web
+    - nginx
+    - apache
+    - ssl
+    - security
+    - performance
+
+dependencies:
+  - role: geerlingguy.nginx
+    when: hx_webui_server_type == "nginx"
+    vars:
+      nginx_remove_default_vhost: true
+      nginx_vhosts: []
+      nginx_upstreams: []
+  
+  - role: geerlingguy.apache
+    when: hx_webui_server_type == "apache"
+    vars:
+      apache_remove_default_vhost: true
+      apache_create_vhosts: false
+
+collections:
+  - community.general
+  - ansible.posix

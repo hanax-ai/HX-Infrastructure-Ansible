@@ -1,0 +1,323 @@
+
+---
+# Verification tasks for hx_ca_trust_standardized role
+# Comprehensive testing and validation
+
+- name: Verify CA certificate exists and is valid
+  block:
+    - name: Check CA certificate file exists
+      ansible.builtin.stat:
+        path: "{{ hx_ca_trust_ca_cert_path }}"
+      register: ca_cert_stat
+      become: true
+
+    - name: Assert CA certificate exists
+      ansible.builtin.assert:
+        that:
+          - ca_cert_stat.stat.exists
+          - ca_cert_stat.stat.size > 0
+        fail_msg: "CA certificate file does not exist or is empty"
+        success_msg: "CA certificate file exists and has content"
+
+    - name: Verify CA certificate validity
+      community.crypto.x509_certificate_info:
+        path: "{{ hx_ca_trust_ca_cert_path }}"
+      register: ca_cert_info
+      become: true
+
+    - name: Assert CA certificate is valid
+      ansible.builtin.assert:
+        that:
+          - ca_cert_info.not_after | to_datetime > ansible_date_time.iso8601 | to_datetime
+          - ca_cert_info.subject.commonName == hx_ca_trust_ca_name
+          - ca_cert_info.is_ca
+        fail_msg: "CA certificate is invalid or expired"
+        success_msg: "CA certificate is valid and properly configured"
+
+- name: Verify CA private key
+  block:
+    - name: Check CA private key file exists
+      ansible.builtin.stat:
+        path: "{{ hx_ca_trust_ca_key_path }}"
+      register: ca_key_stat
+      become: true
+
+    - name: Assert CA private key exists
+      ansible.builtin.assert:
+        that:
+          - ca_key_stat.stat.exists
+          - ca_key_stat.stat.size > 0
+          - ca_key_stat.stat.mode == hx_ca_trust_key_mode
+        fail_msg: "CA private key file does not exist, is empty, or has wrong permissions"
+        success_msg: "CA private key file exists with correct permissions"
+
+    - name: Verify private key matches certificate
+      ansible.builtin.shell:
+        cmd: |
+          cert_modulus=$(openssl x509 -noout -modulus -in {{ hx_ca_trust_ca_cert_path }} | openssl md5)
+          key_modulus=$(openssl rsa -noout -modulus -in {{ hx_ca_trust_ca_key_path }} | openssl md5)
+          [ "$cert_modulus" = "$key_modulus" ]
+      register: key_match_result
+      become: true
+      changed_when: false
+      failed_when: key_match_result.rc != 0
+
+- name: Verify system trust store integration
+  block:
+    - name: Check certificate in system trust store (Debian)
+      ansible.builtin.stat:
+        path: "/usr/local/share/ca-certificates/{{ hx_ca_trust_ca_name }}.crt"
+      register: system_cert_debian
+      when: ansible_os_family == "Debian"
+
+    - name: Check certificate in system trust store (RedHat)
+      ansible.builtin.stat:
+        path: "/etc/pki/ca-trust/source/anchors/{{ hx_ca_trust_ca_name }}.crt"
+      register: system_cert_redhat
+      when: ansible_os_family == "RedHat"
+
+    - name: Verify system trust store update
+      ansible.builtin.command:
+        cmd: "openssl verify -CApath /etc/ssl/certs {{ hx_ca_trust_ca_cert_path }}"
+      register: trust_verify
+      become: true
+      changed_when: false
+      failed_when: false
+      when: hx_ca_trust_update_system_store | default(true)
+
+- name: Test certificate creation functionality
+  block:
+    - name: Create test private key
+      community.crypto.openssl_privatekey:
+        path: "{{ hx_ca_trust_work_dir }}/test.key"
+        size: 2048
+        type: RSA
+      become: true
+
+    - name: Create test certificate request
+      community.crypto.openssl_csr:
+        path: "{{ hx_ca_trust_work_dir }}/test.csr"
+        privatekey_path: "{{ hx_ca_trust_work_dir }}/test.key"
+        common_name: "test.{{ hx_ca_trust_ca_name | lower }}"
+        organization_name: "{{ hx_ca_trust_ca_organization }}"
+        country_name: "{{ hx_ca_trust_ca_country }}"
+      become: true
+
+    - name: Sign test certificate
+      community.crypto.x509_certificate:
+        path: "{{ hx_ca_trust_work_dir }}/test.crt"
+        csr_path: "{{ hx_ca_trust_work_dir }}/test.csr"
+        ownca_path: "{{ hx_ca_trust_ca_cert_path }}"
+        ownca_privatekey_path: "{{ hx_ca_trust_ca_key_path }}"
+        ownca_digest: "{{ hx_ca_trust_digest }}"
+        ownca_not_after: "+30d"
+        provider: ownca
+      become: true
+
+    - name: Verify test certificate
+      ansible.builtin.command:
+        cmd: "openssl verify -CAfile {{ hx_ca_trust_ca_cert_path }} {{ hx_ca_trust_work_dir }}/test.crt"
+      register: test_cert_verify
+      become: true
+      changed_when: false
+
+    - name: Assert test certificate is valid
+      ansible.builtin.assert:
+        that:
+          - "'OK' in test_cert_verify.stdout"
+        fail_msg: "Test certificate verification failed"
+        success_msg: "Test certificate verification passed"
+
+    - name: Clean up test files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ hx_ca_trust_work_dir }}/test.key"
+        - "{{ hx_ca_trust_work_dir }}/test.csr"
+        - "{{ hx_ca_trust_work_dir }}/test.crt"
+      become: true
+  when: hx_ca_trust_test_certificate_creation | default(true)
+
+- name: Verify intermediate CAs
+  block:
+    - name: Check intermediate CA certificates
+      ansible.builtin.stat:
+        path: "{{ item.cert_path }}"
+      register: intermediate_cert_stats
+      loop: "{{ hx_ca_trust_intermediate_cas }}"
+      become: true
+
+    - name: Verify intermediate CA certificate chain
+      ansible.builtin.command:
+        cmd: "openssl verify -CAfile {{ hx_ca_trust_ca_cert_path }} {{ item.cert_path }}"
+      register: intermediate_verify
+      loop: "{{ hx_ca_trust_intermediate_cas }}"
+      become: true
+      changed_when: false
+
+    - name: Assert intermediate CAs are valid
+      ansible.builtin.assert:
+        that:
+          - "'OK' in item.stdout"
+        fail_msg: "Intermediate CA verification failed for {{ item.item.name }}"
+        success_msg: "Intermediate CA verification passed for {{ item.item.name }}"
+      loop: "{{ intermediate_verify.results }}"
+  when: hx_ca_trust_intermediate_cas | length > 0
+
+- name: Verify Java keystore integration
+  block:
+    - name: Check Java keystore
+      ansible.builtin.stat:
+        path: "{{ hx_ca_trust_java_keystore_path }}"
+      register: java_keystore_stat
+      become: true
+
+    - name: List certificates in Java keystore
+      ansible.builtin.command:
+        cmd: "keytool -list -keystore {{ hx_ca_trust_java_keystore_path }} -storepass {{ hx_ca_trust_java_keystore_password }}"
+      register: keystore_list
+      become: true
+      changed_when: false
+
+    - name: Assert CA certificate is in Java keystore
+      ansible.builtin.assert:
+        that:
+          - "hx_ca_trust_ca_name in keystore_list.stdout"
+        fail_msg: "CA certificate not found in Java keystore"
+        success_msg: "CA certificate found in Java keystore"
+  when: hx_ca_trust_java_keystore_update | default(false)
+
+- name: Verify CRL functionality
+  block:
+    - name: Check CRL file exists
+      ansible.builtin.stat:
+        path: "{{ hx_ca_trust_crl_path }}"
+      register: crl_stat
+      become: true
+
+    - name: Verify CRL validity
+      ansible.builtin.command:
+        cmd: "openssl crl -in {{ hx_ca_trust_crl_path }} -text -noout"
+      register: crl_verify
+      become: true
+      changed_when: false
+
+    - name: Assert CRL is valid
+      ansible.builtin.assert:
+        that:
+          - crl_stat.stat.exists
+          - crl_verify.rc == 0
+        fail_msg: "CRL file is invalid or missing"
+        success_msg: "CRL file is valid"
+  when: hx_ca_trust_crl_enabled | default(false)
+
+- name: Verify monitoring and backup systems
+  block:
+    - name: Check monitoring script exists
+      ansible.builtin.stat:
+        path: /usr/local/bin/hx-cert-monitor
+      register: monitor_script_stat
+      become: true
+
+    - name: Check backup script exists
+      ansible.builtin.stat:
+        path: /usr/local/bin/hx-cert-backup
+      register: backup_script_stat
+      become: true
+
+    - name: Test monitoring script
+      ansible.builtin.command:
+        cmd: /usr/local/bin/hx-cert-monitor --test
+      register: monitor_test
+      become: true
+      changed_when: false
+      failed_when: false
+
+    - name: Assert monitoring system is functional
+      ansible.builtin.assert:
+        that:
+          - monitor_script_stat.stat.exists
+          - monitor_script_stat.stat.executable
+        fail_msg: "Monitoring script is missing or not executable"
+        success_msg: "Monitoring system is functional"
+  when: hx_ca_trust_check_expiration | default(false)
+
+- name: Verify security hardening
+  block:
+    - name: Check file permissions
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+      register: security_file_stats
+      loop:
+        - path: "{{ hx_ca_trust_ca_cert_path }}"
+          expected_mode: "{{ hx_ca_trust_cert_mode }}"
+        - path: "{{ hx_ca_trust_ca_key_path }}"
+          expected_mode: "{{ hx_ca_trust_key_mode }}"
+      become: true
+
+    - name: Assert file permissions are secure
+      ansible.builtin.assert:
+        that:
+          - item.stat.mode == item.item.expected_mode
+          - item.stat.uid == 0  # root
+          - item.stat.gid == 0  # root
+        fail_msg: "File permissions are not secure for {{ item.item.path }}"
+        success_msg: "File permissions are secure for {{ item.item.path }}"
+      loop: "{{ security_file_stats.results }}"
+
+    - name: Check audit rules (if enabled)
+      ansible.builtin.command:
+        cmd: auditctl -l
+      register: audit_rules_check
+      become: true
+      changed_when: false
+      failed_when: false
+      when: hx_ca_trust_audit_enabled | default(false)
+
+- name: Performance and load testing
+  block:
+    - name: Test certificate generation performance
+      ansible.builtin.shell:
+        cmd: |
+          start_time=$(date +%s.%N)
+          openssl genrsa -out /tmp/perf_test.key 2048 2>/dev/null
+          openssl req -new -key /tmp/perf_test.key -out /tmp/perf_test.csr -subj "/CN=perf-test" 2>/dev/null
+          openssl x509 -req -in /tmp/perf_test.csr -CA {{ hx_ca_trust_ca_cert_path }} -CAkey {{ hx_ca_trust_ca_key_path }} -CAcreateserial -out /tmp/perf_test.crt -days 1 2>/dev/null
+          end_time=$(date +%s.%N)
+          echo "scale=3; $end_time - $start_time" | bc
+          rm -f /tmp/perf_test.*
+      register: perf_test
+      become: true
+      changed_when: false
+
+    - name: Assert performance is acceptable
+      ansible.builtin.assert:
+        that:
+          - perf_test.stdout | float < 5.0  # Less than 5 seconds
+        fail_msg: "Certificate generation performance is too slow: {{ perf_test.stdout }}s"
+        success_msg: "Certificate generation performance is acceptable: {{ perf_test.stdout }}s"
+  when: hx_ca_trust_performance_testing | default(false)
+
+- name: Log verification completion
+  ansible.builtin.lineinfile:
+    path: "{{ hx_ca_trust_audit_log_path }}"
+    line: "{{ ansible_date_time.iso8601 }} - CA Trust verification completed successfully on {{ inventory_hostname }}"
+    create: true
+  become: true
+  when: hx_ca_trust_audit_enabled | default(false)
+
+- name: Display verification summary
+  ansible.builtin.debug:
+    msg:
+      - "CA Trust verification completed successfully"
+      - "CA Certificate: Valid and properly configured"
+      - "Private Key: Secure and matches certificate"
+      - "System Trust Store: {{ 'Integrated' if hx_ca_trust_update_system_store else 'Not integrated' }}"
+      - "Certificate Creation: {{ 'Tested and working' if hx_ca_trust_test_certificate_creation else 'Not tested' }}"
+      - "Intermediate CAs: {{ hx_ca_trust_intermediate_cas | length }} configured"
+      - "Java Keystore: {{ 'Integrated' if hx_ca_trust_java_keystore_update else 'Not integrated' }}"
+      - "CRL: {{ 'Enabled and valid' if hx_ca_trust_crl_enabled else 'Disabled' }}"
+      - "Monitoring: {{ 'Enabled' if hx_ca_trust_check_expiration else 'Disabled' }}"
+      - "Security Hardening: Applied and verified"
+  when: hx_ca_trust_enable_logging | default(true)

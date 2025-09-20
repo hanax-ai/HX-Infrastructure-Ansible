@@ -1,0 +1,71 @@
+
+---
+# Automated incident detection
+- name: Check for service failures
+  systemd:
+    name: "{{ item }}"
+  register: service_status
+  failed_when: false
+  loop: "{{ critical_services | default(['nginx', 'postgresql', 'docker']) }}"
+
+- name: Detect failed services
+  set_fact:
+    failed_services: "{{ failed_services | default([]) + [item.item] }}"
+  loop: "{{ service_status.results }}"
+  when: item.status.ActiveState != "active"
+
+- name: Check system resource thresholds
+  include_role:
+    name: health_monitoring
+    tasks_from: system_health_check
+
+- name: Detect resource incidents
+  set_fact:
+    resource_incidents: []
+  vars:
+    health_data: "{{ system_health_status | from_json }}"
+
+- name: Add CPU incident
+  set_fact:
+    resource_incidents: "{{ resource_incidents + ['high_cpu_usage'] }}"
+  when: (system_health_status | from_json).cpu_usage > alert_thresholds.cpu_usage
+
+- name: Add memory incident
+  set_fact:
+    resource_incidents: "{{ resource_incidents + ['high_memory_usage'] }}"
+  when: (system_health_status | from_json).memory_usage > alert_thresholds.memory_usage
+
+- name: Add disk incident
+  set_fact:
+    resource_incidents: "{{ resource_incidents + ['high_disk_usage'] }}"
+  when: (system_health_status | from_json).disk_usage > alert_thresholds.disk_usage
+
+- name: Check application endpoints
+  uri:
+    url: "{{ item }}"
+    method: GET
+    timeout: 10
+  register: endpoint_check
+  failed_when: false
+  loop: "{{ application_endpoints | default(['https://localhost/health']) }}"
+
+- name: Detect endpoint failures
+  set_fact:
+    failed_endpoints: "{{ failed_endpoints | default([]) + [item.item] }}"
+  loop: "{{ endpoint_check.results }}"
+  when: item.status != 200
+
+- name: Create incident summary
+  set_fact:
+    detected_incidents:
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+      failed_services: "{{ failed_services | default([]) }}"
+      resource_incidents: "{{ resource_incidents | default([]) }}"
+      failed_endpoints: "{{ failed_endpoints | default([]) }}"
+      total_incidents: "{{ (failed_services | default([]) | length) + (resource_incidents | default([]) | length) + (failed_endpoints | default([]) | length) }}"
+
+- name: Log detected incidents
+  copy:
+    content: "{{ detected_incidents | to_nice_json }}"
+    dest: "/var/log/hx-infrastructure/incidents/detected-{{ ansible_date_time.epoch }}.json"
+  when: detected_incidents.total_incidents > 0

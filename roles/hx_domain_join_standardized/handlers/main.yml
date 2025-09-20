@@ -1,0 +1,67 @@
+
+---
+# HX Domain Join Handlers
+# Service management and configuration reload handlers
+
+- name: restart sssd
+  systemd:
+    name: "{{ hx_sssd_service }}"
+    state: restarted
+    daemon_reload: yes
+  listen: "restart sssd"
+
+- name: reload sssd
+  systemd:
+    name: "{{ hx_sssd_service }}"
+    state: reloaded
+  listen: "reload sssd"
+
+- name: restart realmd
+  systemd:
+    name: "{{ hx_realmd_service }}"
+    state: restarted
+  listen: "restart realmd"
+
+- name: clear sssd cache
+  shell: |
+    set -euo pipefail
+    systemctl stop {{ hx_sssd_service }}
+    rm -rf /var/lib/sss/db/*
+    rm -rf /var/lib/sss/mc/*
+    systemctl start {{ hx_sssd_service }}
+  args:
+    executable: /bin/bash
+  listen: "clear sssd cache"
+
+- name: update nsswitch
+  command: systemctl restart systemd-logind
+  listen: "update nsswitch"
+
+- name: backup domain config
+  shell: |
+    set -euo pipefail
+    backup_dir="{{ hx_domain_backup_dir }}/handler-backup-{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+    mkdir -p "$backup_dir"
+
+    for config_file in {{ hx_sssd_conf_path }} {{ hx_krb5_conf_path }} {{ hx_realmd_conf_path }}; do
+      if [ -f "$config_file" ]; then
+        cp "$config_file" "$backup_dir/$(basename $config_file).bak"
+      fi
+    done
+
+    echo "Configuration backed up to: $backup_dir"
+  args:
+    executable: /bin/bash
+  when: hx_domain_backup_enabled | bool
+  listen: "backup domain config"
+
+- name: log domain changes
+  lineinfile:
+    path: "{{ hx_domain_log_dir }}/changes.log"
+    line: "{{ ansible_date_time.iso8601 }} - Domain configuration changed, services restarted"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_domain_audit_logging_enabled | bool
+  listen: "log domain changes"

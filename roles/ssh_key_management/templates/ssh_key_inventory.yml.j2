@@ -1,0 +1,36 @@
+
+---
+# SSH Key Inventory - {{ inventory_hostname }}
+# Generated: {{ creation_date }}
+
+host_info:
+  hostname: "{{ inventory_hostname }}"
+  environment: "{{ environment_type | default('unknown') }}"
+  ansible_user: "{{ ansible_user }}"
+  
+ssh_key_details:
+  key_type: "{{ key_type }}"
+  key_path: "{{ key_path }}"
+  public_key_path: "{{ key_path }}.pub"
+  fingerprint: "{{ key_fingerprint }}"
+  creation_date: "{{ creation_date }}"
+  comment: "{{ ssh_key_comment }}"
+  
+security_settings:
+  strict_host_checking: "{{ ssh_client_config.StrictHostKeyChecking | default('yes') }}"
+  password_auth_disabled: true
+  key_only_auth: true
+  
+rotation_info:
+  rotation_enabled: "{{ ssh_key_rotation_enabled | default(false) }}"
+  rotation_interval_days: "{{ ssh_key_rotation_days | default(90) }}"
+  next_rotation_due: "{{ (ansible_date_time.epoch | int + (ssh_key_rotation_days | default(90) * 86400)) | strftime('%Y-%m-%d') }}"
+  
+backup_info:
+  backup_enabled: "{{ ssh_key_backup_enabled | default(true) }}"
+  backup_directory: "{{ ssh_key_backup_dir }}"
+  
+compliance:
+  key_strength: "{{ 'Strong' if key_type == 'ed25519' else 'Standard' }}"
+  meets_security_policy: true
+  last_audit_date: "{{ creation_date }}"

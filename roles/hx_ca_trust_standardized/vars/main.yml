@@ -1,0 +1,28 @@
+
+---
+# HX CA Trust Role Internal Variables
+# Computed values and constants
+
+# Certificate Paths
+hx_ca_cert_dir: "/usr/local/share/ca-certificates"
+hx_ca_backup_dir: "/var/backups/hx/ca-certificates"
+hx_ca_log_dir: "/var/log/hx/ca-trust"
+
+# Computed Configuration
+hx_ca_cert_full_path: "{{ hx_ca_cert_dir }}/{{ hx_ca_root_ca_filename }}"
+hx_ca_backup_timestamp: "{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}{{ ansible_date_time.second }}"
+
+# Service Files
+hx_ca_update_command: "update-ca-certificates"
+
+# Required Directories
+hx_ca_required_directories:
+  - "{{ hx_ca_cert_dir }}"
+  - "{{ hx_ca_backup_dir }}"
+  - "{{ hx_ca_log_dir }}"
+
+# Validation Commands
+hx_ca_validation_commands:
+  cert_info: "openssl x509 -in {{ hx_ca_cert_full_path }} -text -noout"
+  cert_fingerprint: "openssl x509 -in {{ hx_ca_cert_full_path }} -fingerprint -sha256 -noout"
+  cert_verify: "openssl verify -CAfile {{ hx_ca_cert_full_path }} {{ hx_ca_cert_full_path }}"

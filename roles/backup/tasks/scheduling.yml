@@ -1,0 +1,46 @@
+
+---
+# Scheduling tasks for backup automation
+# Sets up cron jobs and backup schedules
+
+- name: Create daily backup cron job
+  cron:
+    name: "Daily backup job"
+    minute: "{{ backup_daily_minute | default('0') }}"
+    hour: "{{ backup_daily_hour | default('2') }}"
+    job: "/usr/local/bin/backup-system.sh daily"
+    user: "{{ backup_user | default('backup') }}"
+    state: present
+  tags: [backup, scheduling, cron, daily]
+
+- name: Create weekly backup cron job
+  cron:
+    name: "Weekly backup job"
+    minute: "{{ backup_weekly_minute | default('0') }}"
+    hour: "{{ backup_weekly_hour | default('3') }}"
+    weekday: "{{ backup_weekly_day | default('0') }}"
+    job: "/usr/local/bin/backup-system.sh weekly"
+    user: "{{ backup_user | default('backup') }}"
+    state: present
+  tags: [backup, scheduling, cron, weekly]
+
+- name: Create monthly backup cron job
+  cron:
+    name: "Monthly backup job"
+    minute: "{{ backup_monthly_minute | default('0') }}"
+    hour: "{{ backup_monthly_hour | default('4') }}"
+    day: "{{ backup_monthly_day | default('1') }}"
+    job: "/usr/local/bin/backup-system.sh monthly"
+    user: "{{ backup_user | default('backup') }}"
+    state: present
+  tags: [backup, scheduling, cron, monthly]
+
+- name: Create backup cleanup cron job
+  cron:
+    name: "Backup cleanup job"
+    minute: "{{ backup_cleanup_minute | default('30') }}"
+    hour: "{{ backup_cleanup_hour | default('5') }}"
+    job: "/usr/local/bin/backup-cleanup.sh"
+    user: "{{ backup_user | default('backup') }}"
+    state: present
+  tags: [backup, scheduling, cron, cleanup]

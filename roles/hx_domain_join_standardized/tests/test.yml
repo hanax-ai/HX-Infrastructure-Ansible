@@ -1,0 +1,18 @@
+
+---
+- hosts: localhost
+  remote_user: root
+  roles:
+    - hx_domain_join_standardized
+  vars:
+    # Test configuration
+    hx_domain_join_enabled: false  # Skip actual domain join
+    hx_ad_domain: "test.local"
+    hx_ad_realm: "TEST.LOCAL"
+    hx_ad_admin_user: "testadmin"
+    hx_ad_admin_password: "TestPassword123!"
+    hx_ad_computer_name: "TESTHOST"
+    hx_sssd_enabled: true
+    hx_krb5_enabled: true
+    hx_domain_security_enabled: true
+    hx_domain_health_checks_enabled: false

@@ -1,0 +1,575 @@
+
+---
+# Operations Services Role Defaults
+# Databases, Cache, Monitoring, and Logging Services
+
+# Common Operations Configuration
+operations_common:
+  base_path: "{{ operations_base_path | default('/opt/operations') }}"
+  data_path: "{{ operations_data_path | default('/data') }}"
+  config_path: "{{ operations_config_path | default('/etc/operations') }}"
+  logs_path: "{{ operations_logs_path | default('/var/log/operations') }}"
+  backup_path: "{{ operations_backup_path | default('/backup') }}"
+  user: "{{ operations_user | default('operations') }}"
+  group: "{{ operations_group | default('operations') }}"
+  uid: "{{ operations_uid | default(3000) }}"
+  gid: "{{ operations_gid | default(3000) }}"
+
+# PostgreSQL Configuration
+postgresql:
+  version: "{{ postgresql_version | default('15') }}"
+  port: "{{ postgresql_port | default(5432) }}"
+  data_directory: "{{ postgresql_data_directory | default('/data/postgresql') }}"
+  config_directory: "{{ postgresql_config_directory | default('/etc/postgresql') }}"
+  log_directory: "{{ postgresql_log_directory | default('/var/log/postgresql') }}"
+  
+  # Cluster Configuration
+  cluster:
+    name: "{{ postgresql_cluster_name | default('hx-postgres') }}"
+    
+  # Connection Configuration
+  connection:
+    max_connections: "{{ postgresql_max_connections | default(200) }}"
+    shared_buffers: "{{ postgresql_shared_buffers | default('256MB') }}"
+    effective_cache_size: "{{ postgresql_effective_cache_size | default('1GB') }}"
+    maintenance_work_mem: "{{ postgresql_maintenance_work_mem | default('64MB') }}"
+    checkpoint_completion_target: "{{ postgresql_checkpoint_completion_target | default(0.9) }}"
+    wal_buffers: "{{ postgresql_wal_buffers | default('16MB') }}"
+    default_statistics_target: "{{ postgresql_default_statistics_target | default(100) }}"
+    random_page_cost: "{{ postgresql_random_page_cost | default(1.1) }}"
+    effective_io_concurrency: "{{ postgresql_effective_io_concurrency | default(200) }}"
+    
+  # Memory Configuration (Dynamic based on system memory)
+  memory:
+    shared_buffers: "{{ postgresql_memory_shared_buffers | default((ansible_memtotal_mb * 0.25) | int) }}MB"
+    effective_cache_size: "{{ postgresql_memory_effective_cache_size | default((ansible_memtotal_mb * 0.75) | int) }}MB"
+    work_mem: "{{ postgresql_memory_work_mem | default(((ansible_memtotal_mb * 0.25) / 200) | int) }}MB"
+    maintenance_work_mem: "{{ postgresql_memory_maintenance_work_mem | default((ansible_memtotal_mb * 0.05) | int) }}MB"
+    
+  # WAL Configuration
+  wal:
+    level: "{{ postgresql_wal_level | default('replica') }}"
+    sync_method: "{{ postgresql_wal_sync_method | default('fsync') }}"
+    buffers: "{{ postgresql_wal_buffers | default('16MB') }}"
+    writer_delay: "{{ postgresql_wal_writer_delay | default('200ms') }}"
+    commit_delay: "{{ postgresql_wal_commit_delay | default(0) }}"
+    commit_siblings: "{{ postgresql_wal_commit_siblings | default(5) }}"
+    
+  # Replication Configuration
+  replication:
+    enabled: "{{ postgresql_replication_enabled | default(true) }}"
+    user: "{{ postgresql_replication_user | default('replicator') }}"
+    password: "{{ vault_postgres_replication_password }}"
+    max_wal_senders: "{{ postgresql_max_wal_senders | default(10) }}"
+    wal_keep_segments: "{{ postgresql_wal_keep_segments | default(32) }}"
+    hot_standby: "{{ postgresql_hot_standby | default(true) }}"
+    hot_standby_feedback: "{{ postgresql_hot_standby_feedback | default(true) }}"
+    
+  # Databases Template
+  databases_template:
+    - name: "webui"
+      owner: "{{ vault_webui_db_user }}"
+      encoding: "{{ postgresql_database_encoding | default('UTF8') }}"
+      locale: "{{ postgresql_database_locale | default('en_US.UTF-8') }}"
+      template: "{{ postgresql_database_template | default('template0') }}"
+    - name: "model_registry"
+      owner: "{{ vault_model_registry_user }}"
+      encoding: "{{ postgresql_database_encoding | default('UTF8') }}"
+      locale: "{{ postgresql_database_locale | default('en_US.UTF-8') }}"
+      template: "{{ postgresql_database_template | default('template0') }}"
+    - name: "monitoring"
+      owner: "{{ vault_monitoring_db_user }}"
+      encoding: "{{ postgresql_database_encoding | default('UTF8') }}"
+      locale: "{{ postgresql_database_locale | default('en_US.UTF-8') }}"
+      template: "{{ postgresql_database_template | default('template0') }}"
+    - name: "grafana"
+      owner: "{{ vault_grafana_db_user }}"
+      encoding: "{{ postgresql_database_encoding | default('UTF8') }}"
+      locale: "{{ postgresql_database_locale | default('en_US.UTF-8') }}"
+      template: "{{ postgresql_database_template | default('template0') }}"
+
+  databases: "{{ postgresql_databases | default(databases_template) }}"
+      
+  # Users Template
+  users_template:
+    - name: "{{ vault_webui_db_user }}"
+      password: "{{ vault_webui_db_password }}"
+      privileges: "{{ postgresql_webui_privileges | default('ALL') }}"
+      database: "webui"
+    - name: "{{ vault_model_registry_user }}"
+      password: "{{ vault_model_registry_password }}"
+      privileges: "{{ postgresql_model_registry_privileges | default('ALL') }}"
+      database: "model_registry"
+    - name: "{{ vault_monitoring_db_user }}"
+      password: "{{ vault_monitoring_db_password }}"
+      privileges: "{{ postgresql_monitoring_privileges | default('ALL') }}"
+      database: "monitoring"
+    - name: "{{ vault_grafana_db_user }}"
+      password: "{{ vault_grafana_db_password }}"
+      privileges: "{{ postgresql_grafana_privileges | default('ALL') }}"
+      database: "grafana"
+
+  users: "{{ postgresql_users | default(users_template) }}"
+      
+  # Backup Configuration
+  backup:
+    enabled: "{{ postgresql_backup_enabled | default(true) }}"
+    tool: "{{ postgresql_backup_tool | default('pg_basebackup') }}"
+    schedule: "{{ postgresql_backup_schedule | default('0 2 * * *') }}"
+    retention_days: "{{ postgresql_backup_retention_days | default(30) }}"
+    compression: "{{ postgresql_backup_compression | default(true) }}"
+    encryption: "{{ postgresql_backup_encryption | default(true) }}"
+    
+  # Monitoring Configuration
+  monitoring:
+    enabled: "{{ postgresql_monitoring_enabled | default(true) }}"
+    exporter_port: "{{ postgresql_exporter_port | default(9187) }}"
+    queries_config: "{{ postgresql_queries_config | default('/etc/postgres_exporter/queries.yaml') }}"
+    
+  # Logging Configuration
+  logging:
+    log_destination: "{{ postgresql_log_destination | default('stderr') }}"
+    logging_collector: "{{ postgresql_logging_collector | default(true) }}"
+    log_directory: "{{ postgresql_log_directory | default('/var/log/postgresql') }}"
+    log_filename: "{{ postgresql_log_filename | default('postgresql-%Y-%m-%d_%H%M%S.log') }}"
+    log_rotation_age: "{{ postgresql_log_rotation_age | default('1d') }}"
+    log_rotation_size: "{{ postgresql_log_rotation_size | default('100MB') }}"
+    log_min_duration_statement: "{{ postgresql_log_min_duration_statement | default('1000ms') }}"
+    log_checkpoints: "{{ postgresql_log_checkpoints | default(true) }}"
+    log_connections: "{{ postgresql_log_connections | default(true) }}"
+    log_disconnections: "{{ postgresql_log_disconnections | default(true) }}"
+    log_lock_waits: "{{ postgresql_log_lock_waits | default(true) }}"
+    log_temp_files: "{{ postgresql_log_temp_files | default(0) }}"
+
+# Redis Configuration
+redis:
+  version: "{{ redis_version | default('7') }}"
+  port: "{{ redis_port | default(6379) }}"
+  bind: "{{ redis_bind | default('0.0.0.0') }}"
+  protected_mode: "{{ redis_protected_mode | default(false) }}"
+  password: "{{ vault_redis_password }}"
+  
+  # Memory Configuration (Dynamic based on system memory)
+  memory:
+    maxmemory: "{{ redis_maxmemory | default((ansible_memtotal_mb * 0.75) | int) }}MB"
+    maxmemory_policy: "{{ redis_maxmemory_policy | default('allkeys-lru') }}"
+    
+  # Persistence Configuration
+  persistence:
+    save_enabled: "{{ redis_save_enabled | default(true) }}"
+    save_rules: "{{ redis_save_rules | default(['900 1', '300 10', '60 10000']) }}"
+    rdbcompression: "{{ redis_rdbcompression | default(true) }}"
+    rdbchecksum: "{{ redis_rdbchecksum | default(true) }}"
+    dbfilename: "{{ redis_dbfilename | default('dump.rdb') }}"
+    dir: "{{ redis_dir | default('/data/redis') }}"
+    
+    # AOF Configuration
+    appendonly: "{{ redis_appendonly | default(true) }}"
+    appendfilename: "{{ redis_appendfilename | default('appendonly.aof') }}"
+    appendfsync: "{{ redis_appendfsync | default('everysec') }}"
+    no_appendfsync_on_rewrite: "{{ redis_no_appendfsync_on_rewrite | default(false) }}"
+    auto_aof_rewrite_percentage: "{{ redis_auto_aof_rewrite_percentage | default(100) }}"
+    auto_aof_rewrite_min_size: "{{ redis_auto_aof_rewrite_min_size | default('64MB') }}"
+    
+  # Replication Configuration
+  replication:
+    enabled: "{{ redis_replication_enabled | default(true) }}"
+    master_auth: "{{ vault_redis_password }}"
+    replica_read_only: "{{ redis_replica_read_only | default(true) }}"
+    replica_serve_stale_data: "{{ redis_replica_serve_stale_data | default(true) }}"
+    replica_priority: "{{ redis_replica_priority | default(100) }}"
+    
+  # Network Configuration
+  network:
+    tcp_keepalive: "{{ redis_tcp_keepalive | default(300) }}"
+    tcp_backlog: "{{ redis_tcp_backlog | default(511) }}"
+    timeout: "{{ redis_timeout | default(0) }}"
+    
+  # Security Configuration
+  security:
+    requirepass: "{{ vault_redis_password }}"
+    rename_commands: "{{ redis_rename_commands | default({
+      'FLUSHDB': 'FLUSHDB_HX_' + ansible_date_time.epoch,
+      'FLUSHALL': 'FLUSHALL_HX_' + ansible_date_time.epoch,
+      'KEYS': 'KEYS_HX_' + ansible_date_time.epoch,
+      'CONFIG': 'CONFIG_HX_' + ansible_date_time.epoch
+    }) }}"
+      
+  # Logging Configuration
+  logging:
+    loglevel: "{{ redis_loglevel | default('notice') }}"
+    logfile: "{{ redis_logfile | default('/var/log/redis/redis-server.log') }}"
+    syslog_enabled: "{{ redis_syslog_enabled | default(true) }}"
+    syslog_ident: "{{ redis_syslog_ident | default('redis') }}"
+    
+  # Monitoring Configuration
+  monitoring:
+    enabled: "{{ redis_monitoring_enabled | default(true) }}"
+    exporter_port: "{{ redis_exporter_port | default(9121) }}"
+    
+  # Backup Configuration
+  backup:
+    enabled: "{{ redis_backup_enabled | default(true) }}"
+    schedule: "{{ redis_backup_schedule | default('0 3 * * *') }}"
+    retention_days: "{{ redis_backup_retention_days | default(14) }}"
+    compression: "{{ redis_backup_compression | default(true) }}"
+
+# Prometheus Configuration
+prometheus:
+  version: "{{ prometheus_version | default('latest') }}"
+  port: "{{ prometheus_port | default(9090) }}"
+  data_directory: "{{ prometheus_data_directory | default('/data/prometheus') }}"
+  config_directory: "{{ prometheus_config_directory | default('/etc/prometheus') }}"
+  
+  # Global Configuration
+  global:
+    scrape_interval: "{{ prometheus_scrape_interval | default('15s') }}"
+    evaluation_interval: "{{ prometheus_evaluation_interval | default('15s') }}"
+    external_labels:
+      cluster: "{{ prometheus_cluster_label | default('hx-infrastructure') }}"
+      environment: "{{ environment }}"
+      
+  # Rule Files
+  rule_files: "{{ prometheus_rule_files | default(['/etc/prometheus/rules/*.yml']) }}"
+    
+  # Scrape Configurations Template
+  scrape_configs_template:
+    - job_name: "prometheus"
+      static_configs:
+        - targets: ["localhost:9090"]
+        
+    - job_name: "node-exporter"
+      static_configs:
+        - targets: "{{ groups['all'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:9100') | list }}"
+        
+    - job_name: "postgres-exporter"
+      static_configs:
+        - targets: "{{ groups['databases'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:9187') | list }}"
+        
+    - job_name: "redis-exporter"
+      static_configs:
+        - targets: "{{ groups['cache_services'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:9121') | list }}"
+        
+    - job_name: "nginx-exporter"
+      static_configs:
+        - targets: "{{ groups['web_interfaces'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:9113') | list }}"
+        
+    - job_name: "litellm"
+      static_configs:
+        - targets: "{{ groups['llm_services'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:4000') | list }}"
+      metrics_path: "/metrics"
+
+  scrape_configs: "{{ prometheus_scrape_configs | default(scrape_configs_template) }}"
+      
+  # Storage Configuration
+  storage:
+    retention_time: "{{ prometheus_retention_time | default('90d') }}"
+    retention_size: "{{ prometheus_retention_size | default('50GB') }}"
+    
+  # Remote Write Configuration
+  remote_write: "{{ prometheus_remote_write | default([]) }}"
+  
+  # Remote Read Configuration
+  remote_read: "{{ prometheus_remote_read | default([]) }}"
+
+# Grafana Configuration
+grafana:
+  version: "{{ grafana_version | default('latest') }}"
+  port: "{{ grafana_port | default(3001) }}"
+  data_directory: "{{ grafana_data_directory | default('/data/grafana') }}"
+  config_directory: "{{ grafana_config_directory | default('/etc/grafana') }}"
+  
+  # Server Configuration
+  server:
+    protocol: "{{ grafana_protocol | default('http') }}"
+    http_addr: "{{ grafana_http_addr | default('0.0.0.0') }}"
+    http_port: "{{ grafana_http_port | default(3001) }}"
+    domain: "{{ grafana_domain | default(domain_name) }}"
+    root_url: "{{ grafana_root_url | default('https://' + domain_name + '/grafana/') }}"
+    serve_from_sub_path: "{{ grafana_serve_from_sub_path | default(true) }}"
+    
+  # Database Configuration
+  database:
+    type: "{{ grafana_database_type | default('postgres') }}"
+    host: "{{ grafana_database_host | default(groups['databases'][0] + ':5432') }}"
+    name: "{{ grafana_database_name | default('grafana') }}"
+    user: "{{ vault_grafana_db_user }}"
+    password: "{{ vault_grafana_db_password }}"
+    ssl_mode: "{{ grafana_database_ssl_mode | default('require') }}"
+    
+  # Security Configuration
+  security:
+    admin_user: "{{ grafana_admin_user | default('admin') }}"
+    admin_password: "{{ vault_grafana_admin_password }}"
+    secret_key: "{{ vault_grafana_secret_key }}"
+    
+  # Authentication Configuration
+  auth:
+    disable_login_form: "{{ grafana_disable_login_form | default(false) }}"
+    disable_signout_menu: "{{ grafana_disable_signout_menu | default(false) }}"
+    
+    # Anonymous Access
+    anonymous:
+      enabled: "{{ grafana_anonymous_enabled | default(false) }}"
+      org_name: "{{ grafana_anonymous_org_name | default('Main Org.') }}"
+      org_role: "{{ grafana_anonymous_org_role | default('Viewer') }}"
+      
+  # Users Configuration
+  users:
+    allow_sign_up: "{{ grafana_allow_sign_up | default(false) }}"
+    allow_org_create: "{{ grafana_allow_org_create | default(false) }}"
+    auto_assign_org: "{{ grafana_auto_assign_org | default(true) }}"
+    auto_assign_org_role: "{{ grafana_auto_assign_org_role | default('Viewer') }}"
+    default_theme: "{{ grafana_default_theme | default('dark') }}"
+    
+  # Dashboards Configuration
+  dashboards:
+    default_home_dashboard_path: "{{ grafana_default_home_dashboard_path | default('/etc/grafana/dashboards/home.json') }}"
+    
+  # Data Sources Template
+  datasources_template:
+    - name: "Prometheus"
+      type: "prometheus"
+      url: "{{ grafana_prometheus_url | default('http://' + groups['monitoring'][0] + ':9090') }}"
+      access: "proxy"
+      is_default: true
+
+  datasources: "{{ grafana_datasources | default(datasources_template) }}"
+      
+  # Plugins
+  plugins: "{{ grafana_plugins | default([
+    'grafana-piechart-panel',
+    'grafana-worldmap-panel',
+    'grafana-clock-panel',
+    'grafana-simple-json-datasource'
+  ]) }}"
+
+# Alertmanager Configuration
+alertmanager:
+  version: "{{ alertmanager_version | default('latest') }}"
+  port: "{{ alertmanager_port | default(9093) }}"
+  data_directory: "{{ alertmanager_data_directory | default('/data/alertmanager') }}"
+  config_directory: "{{ alertmanager_config_directory | default('/etc/alertmanager') }}"
+  
+  # Global Configuration
+  global:
+    smtp_smarthost: "{{ vault_smtp_server }}:{{ vault_smtp_port }}"
+    smtp_from: "{{ vault_smtp_from }}"
+    smtp_auth_username: "{{ vault_smtp_username }}"
+    smtp_auth_password: "{{ vault_smtp_password }}"
+    
+  # Route Configuration
+  route:
+    group_by: "{{ alertmanager_route_group_by | default(['alertname', 'cluster', 'service']) }}"
+    group_wait: "{{ alertmanager_route_group_wait | default('10s') }}"
+    group_interval: "{{ alertmanager_route_group_interval | default('10s') }}"
+    repeat_interval: "{{ alertmanager_route_repeat_interval | default('1h') }}"
+    receiver: "{{ alertmanager_route_receiver | default('web.hook') }}"
+    
+  # Receivers Configuration Template
+  receivers_template:
+    - name: "web.hook"
+      email_configs:
+        - to: "{{ admin_email }}"
+          subject: "{{ alertmanager_email_subject | default('HX Infrastructure Alert: {{ .GroupLabels.alertname }}') }}"
+          body: "{{ alertmanager_email_body | default('{{ range .Alerts }}Alert: {{ .Annotations.summary }}\\nDescription: {{ .Annotations.description }}\\n{{ end }}') }}"
+
+  receivers: "{{ alertmanager_receivers | default(receivers_template) }}"
+
+# Elasticsearch Configuration
+elasticsearch:
+  version: "{{ elasticsearch_version | default('8.8') }}"
+  port: "{{ elasticsearch_port | default(9200) }}"
+  data_directory: "{{ elasticsearch_data_directory | default('/data/elasticsearch') }}"
+  config_directory: "{{ elasticsearch_config_directory | default('/etc/elasticsearch') }}"
+  
+  # Cluster Configuration
+  cluster:
+    name: "{{ elasticsearch_cluster_name | default('hx-logging') }}"
+    initial_master_nodes: "{{ elasticsearch_initial_master_nodes | default(groups['logging'] | map('extract', hostvars, 'inventory_hostname') | list) }}"
+    
+  # Node Configuration
+  node:
+    name: "{{ elasticsearch_node_name | default(inventory_hostname) }}"
+    master: "{{ elasticsearch_node_master | default(true) }}"
+    data: "{{ elasticsearch_node_data | default(true) }}"
+    ingest: "{{ elasticsearch_node_ingest | default(true) }}"
+    
+  # Network Configuration
+  network:
+    host: "{{ elasticsearch_network_host | default('0.0.0.0') }}"
+    port: "{{ elasticsearch_network_port | default(9200) }}"
+    
+  # Discovery Configuration
+  discovery:
+    seed_hosts: "{{ elasticsearch_discovery_seed_hosts | default(groups['logging'] | map('extract', hostvars, 'ansible_host') | list) }}"
+    
+  # Memory Configuration (Dynamic based on system memory)
+  memory:
+    heap_size: "{{ elasticsearch_heap_size | default((ansible_memtotal_mb * 0.5) | int) }}m"
+    
+  # Index Configuration Template
+  indices_template:
+    - name: "logs-*"
+      settings:
+        number_of_shards: "{{ elasticsearch_logs_shards | default(1) }}"
+        number_of_replicas: "{{ elasticsearch_logs_replicas | default(1) }}"
+        refresh_interval: "{{ elasticsearch_logs_refresh_interval | default('5s') }}"
+      mappings:
+        properties:
+          "@timestamp":
+            type: "date"
+          message:
+            type: "text"
+          level:
+            type: "keyword"
+          service:
+            type: "keyword"
+          host:
+            type: "keyword"
+
+  indices: "{{ elasticsearch_indices | default(indices_template) }}"
+
+# Logstash Configuration
+logstash:
+  version: "{{ logstash_version | default('8.8') }}"
+  port: "{{ logstash_port | default(5044) }}"
+  config_directory: "{{ logstash_config_directory | default('/etc/logstash') }}"
+  
+  # Pipeline Configuration
+  pipeline:
+    workers: "{{ logstash_pipeline_workers | default(ansible_processor_vcpus) }}"
+    batch_size: "{{ logstash_pipeline_batch_size | default(125) }}"
+    batch_delay: "{{ logstash_pipeline_batch_delay | default(50) }}"
+    
+  # Input Configuration
+  input:
+    beats:
+      port: "{{ logstash_input_beats_port | default(5044) }}"
+      
+  # Filter Configuration
+  filter:
+    grok:
+      patterns_dir: "{{ logstash_filter_grok_patterns_dir | default('/etc/logstash/patterns') }}"
+      
+  # Output Configuration
+  output:
+    elasticsearch:
+      hosts: "{{ logstash_output_elasticsearch_hosts | default(groups['logging'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', '\\1:9200') | list) }}"
+      index: "{{ logstash_output_elasticsearch_index | default('logs-%{+YYYY.MM.dd}') }}"
+
+# Kibana Configuration
+kibana:
+  version: "{{ kibana_version | default('8.8') }}"
+  port: "{{ kibana_port | default(5601) }}"
+  config_directory: "{{ kibana_config_directory | default('/etc/kibana') }}"
+  
+  # Server Configuration
+  server:
+    host: "{{ kibana_server_host | default('0.0.0.0') }}"
+    port: "{{ kibana_server_port | default(5601) }}"
+    name: "{{ kibana_server_name | default(inventory_hostname) }}"
+    
+  # Elasticsearch Configuration
+  elasticsearch:
+    hosts: "{{ kibana_elasticsearch_hosts | default(groups['logging'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '^(.*)$', 'http://\\1:9200') | list) }}"
+    
+  # Logging Configuration
+  logging:
+    dest: "{{ kibana_logging_dest | default('/var/log/kibana/kibana.log') }}"
+    silent: "{{ kibana_logging_silent | default(false) }}"
+    quiet: "{{ kibana_logging_quiet | default(false) }}"
+    verbose: "{{ kibana_logging_verbose | default(false) }}"
+
+# Backup Configuration
+backup:
+  # Database Backups
+  databases:
+    enabled: "{{ operations_backup_databases_enabled | default(true) }}"
+    schedule: "{{ operations_backup_databases_schedule | default('0 2 * * *') }}"
+    retention_days: "{{ operations_backup_databases_retention_days | default(30) }}"
+    compression: "{{ operations_backup_databases_compression | default(true) }}"
+    encryption: "{{ operations_backup_databases_encryption | default(true) }}"
+    
+  # Configuration Backups
+  configurations:
+    enabled: "{{ operations_backup_configurations_enabled | default(true) }}"
+    schedule: "{{ operations_backup_configurations_schedule | default('0 1 * * *') }}"
+    retention_days: "{{ operations_backup_configurations_retention_days | default(90) }}"
+    
+  # Log Backups
+  logs:
+    enabled: "{{ operations_backup_logs_enabled | default(true) }}"
+    schedule: "{{ operations_backup_logs_schedule | default('0 4 * * 0') }}"
+    retention_weeks: "{{ operations_backup_logs_retention_weeks | default(12) }}"
+    compression: "{{ operations_backup_logs_compression | default(true) }}"
+
+# Monitoring Configuration
+monitoring:
+  # System Metrics
+  node_exporter:
+    enabled: "{{ operations_node_exporter_enabled | default(true) }}"
+    port: "{{ operations_node_exporter_port | default(9100) }}"
+    
+  # Custom Metrics Template
+  custom_metrics_template:
+    - name: "database_connections"
+      type: "gauge"
+      description: "Number of active database connections"
+    - name: "cache_hit_ratio"
+      type: "gauge"
+      description: "Cache hit ratio percentage"
+    - name: "log_ingestion_rate"
+      type: "counter"
+      description: "Log ingestion rate per second"
+    - name: "backup_success"
+      type: "gauge"
+      description: "Last backup success status"
+
+  custom_metrics: "{{ operations_custom_metrics | default(custom_metrics_template) }}"
+
+# Security Configuration
+security:
+  # Database Security
+  database_security:
+    ssl_enabled: "{{ operations_database_ssl_enabled | default(true) }}"
+    ssl_cert_file: "{{ operations_database_ssl_cert_file | default('/etc/ssl/certs/postgresql.crt') }}"
+    ssl_key_file: "{{ operations_database_ssl_key_file | default('/etc/ssl/private/postgresql.key') }}"
+    ssl_ca_file: "{{ operations_database_ssl_ca_file | default('/etc/ssl/certs/ca-certificates.crt') }}"
+    
+  # Cache Security
+  cache_security:
+    auth_enabled: "{{ operations_cache_auth_enabled | default(true) }}"
+    ssl_enabled: "{{ operations_cache_ssl_enabled | default(false) }}"
+    
+  # Monitoring Security
+  monitoring_security:
+    basic_auth_enabled: "{{ operations_monitoring_basic_auth_enabled | default(true) }}"
+    ssl_enabled: "{{ operations_monitoring_ssl_enabled | default(true) }}"
+    
+  # Logging Security
+  logging_security:
+    ssl_enabled: "{{ operations_logging_ssl_enabled | default(true) }}"
+    authentication_enabled: "{{ operations_logging_authentication_enabled | default(true) }}"
+
+# Environment-specific Configuration Overrides
+operations_environment_config:
+  development:
+    debug_mode: "{{ operations_debug_mode | default(true) }}"
+    log_level: "{{ operations_dev_log_level | default('DEBUG') }}"
+    retention_days: "{{ operations_dev_retention_days | default(7) }}"
+    backup_enabled: "{{ operations_dev_backup_enabled | default(false) }}"
+    
+  test:
+    debug_mode: "{{ operations_debug_mode | default(true) }}"
+    log_level: "{{ operations_test_log_level | default('INFO') }}"
+    retention_days: "{{ operations_test_retention_days | default(14) }}"
+    backup_enabled: "{{ operations_test_backup_enabled | default(true) }}"
+    
+  production:
+    debug_mode: "{{ operations_debug_mode | default(false) }}"
+    log_level: "{{ operations_prod_log_level | default('WARN') }}"
+    retention_days: "{{ operations_prod_retention_days | default(90) }}"
+    backup_enabled: "{{ operations_prod_backup_enabled | default(true) }}"
+    high_availability: "{{ operations_prod_high_availability | default(true) }}"
+    performance_monitoring: "{{ operations_prod_performance_monitoring | default(true) }}"

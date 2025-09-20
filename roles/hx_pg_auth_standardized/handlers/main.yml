@@ -1,0 +1,107 @@
+
+---
+# HX PostgreSQL Authentication Handlers
+# Service management and configuration reload handlers
+
+- name: reload postgresql config
+  systemd:
+    name: "{{ hx_pg_service_name }}"
+    state: reloaded
+  listen: "reload postgresql config"
+
+- name: restart postgresql
+  systemd:
+    name: "{{ hx_pg_service_name }}"
+    state: restarted
+    daemon_reload: yes
+  listen: "restart postgresql"
+
+- name: backup postgresql config
+  shell: |
+    set -euo pipefail
+    backup_dir="{{ hx_pg_backup_dir }}/handler-backup-{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}"
+    mkdir -p "$backup_dir"
+
+    config_files=(
+      "{{ hx_pg_conf_path }}"
+      "{{ hx_pg_hba_path }}"
+      "{{ hx_pg_ident_path }}"
+    )
+
+    for config_file in "${config_files[@]}"; do
+      if [ -f "$config_file" ]; then
+        cp "$config_file" "$backup_dir/$(basename $config_file).bak"
+      fi
+    done
+
+    echo "Configuration backed up to: $backup_dir"
+  args:
+    executable: /bin/bash
+  when: hx_pg_backup_enabled | bool
+  listen: "backup postgresql config"
+
+- name: validate postgresql config
+  shell: |
+    set -euo pipefail
+    sudo -u postgres /usr/lib/postgresql/{{ hx_pg_cluster_version }}/bin/postgres \
+      --check-config -D "{{ hx_pg_data_dir }}"
+    echo "PostgreSQL configuration validation passed"
+  args:
+    executable: /bin/bash
+  register: config_validation
+  failed_when: config_validation.rc != 0
+  listen: "validate postgresql config"
+
+- name: validate hba config
+  shell: |
+    set -euo pipefail
+    error_count=$(sudo -u postgres psql -tAc "SELECT COUNT(*) FROM pg_hba_file_rules WHERE error IS NOT NULL;")
+    if [ "$error_count" -ne 0 ]; then
+      echo "HBA configuration has $error_count errors"
+      exit 1
+    else
+      echo "HBA configuration validation passed"
+    fi
+  args:
+    executable: /bin/bash
+  register: hba_validation
+  failed_when: hba_validation.rc != 0
+  listen: "validate hba config"
+
+- name: log postgresql changes
+  lineinfile:
+    path: "{{ hx_pg_log_dir }}/changes.log"
+    line: "{{ ansible_date_time.iso8601 }} - PostgreSQL configuration changed, service reloaded"
+    create: yes
+    owner: postgres
+    group: postgres
+    mode: '0644'
+  when: hx_pg_audit_logging_enabled | bool
+  listen: "log postgresql changes"
+
+- name: update ssl certificates
+  shell: |
+    set -euo pipefail
+    cert_dir="{{ hx_pg_conf_dir }}"
+
+    # Set proper permissions on SSL files
+    if [ -f "$cert_dir/{{ hx_pg_ssl_cert_file }}" ]; then
+      chown postgres:postgres "$cert_dir/{{ hx_pg_ssl_cert_file }}"
+      chmod 644 "$cert_dir/{{ hx_pg_ssl_cert_file }}"
+    fi
+
+    if [ -f "$cert_dir/{{ hx_pg_ssl_key_file }}" ]; then
+      chown postgres:postgres "$cert_dir/{{ hx_pg_ssl_key_file }}"
+      chmod 600 "$cert_dir/{{ hx_pg_ssl_key_file }}"
+    fi
+
+    if [ -f "$cert_dir/{{ hx_pg_ssl_ca_file }}" ]; then
+      chown postgres:postgres "$cert_dir/{{ hx_pg_ssl_ca_file }}"
+      chmod 644 "$cert_dir/{{ hx_pg_ssl_ca_file }}"
+    fi
+
+    echo "SSL certificate permissions updated"
+  args:
+    executable: /bin/bash
+  when: hx_pg_ssl_enabled | bool
+  listen: "update ssl certificates"

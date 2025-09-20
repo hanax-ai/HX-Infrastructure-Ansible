@@ -1,0 +1,107 @@
+
+---
+# Variable Validation Tasks for HX Domain Join
+
+- name: Load validation rules
+  set_fact:
+    hx_domain_validation_rules: "{{ lookup('file', role_path + '/vars/validation.yml') | from_yaml }}"
+  tags: [validation]
+
+- name: Validate boolean variables
+  assert:
+    that:
+      - item.value is boolean
+    fail_msg: "Variable {{ item.key }} must be a boolean value"
+    success_msg: "Variable {{ item.key }} validation passed"
+  loop:
+    - { key: "hx_domain_join_enabled", value: "{{ hx_domain_join_enabled }}" }
+    - { key: "hx_domain_security_enabled", value: "{{ hx_domain_security_enabled }}" }
+    - { key: "hx_sssd_enabled", value: "{{ hx_sssd_enabled }}" }
+    - { key: "hx_krb5_enabled", value: "{{ hx_krb5_enabled }}" }
+  tags: [validation]
+
+- name: Validate required string variables
+  assert:
+    that:
+      - item is defined
+      - item | length > 0
+    fail_msg: "Required variable {{ item }} is not defined or empty"
+    success_msg: "Required variable validation passed"
+  loop:
+    - "{{ hx_ad_domain }}"
+    - "{{ hx_ad_admin_user }}"
+    - "{{ hx_ad_realm }}"
+    - "{{ hx_ad_computer_name }}"
+  tags: [validation]
+
+- name: Validate domain name format
+  assert:
+    that:
+      - hx_ad_domain | regex_search('^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    fail_msg: "Domain name '{{ hx_ad_domain }}' is not a valid FQDN"
+    success_msg: "Domain name format validation passed"
+  tags: [validation]
+
+- name: Validate realm format (should be uppercase)
+  assert:
+    that:
+      - hx_ad_realm | regex_search('^[A-Z0-9.-]+$')
+      - hx_ad_realm == hx_ad_realm | upper
+    fail_msg: "Realm '{{ hx_ad_realm }}' must be uppercase"
+    success_msg: "Realm format validation passed"
+  tags: [validation]
+
+- name: Validate computer name format
+  assert:
+    that:
+      - hx_ad_computer_name | regex_search('^[A-Z0-9-]{1,15}$')
+      - hx_ad_computer_name | length <= 15
+    fail_msg: "Computer name '{{ hx_ad_computer_name }}' must be uppercase, max 15 chars, alphanumeric and hyphens only"
+    success_msg: "Computer name format validation passed"
+  tags: [validation]
+
+- name: Validate admin username format
+  assert:
+    that:
+      - hx_ad_admin_user | regex_search('^[a-zA-Z0-9._-]+$')
+    fail_msg: "Admin username '{{ hx_ad_admin_user }}' contains invalid characters"
+    success_msg: "Admin username format validation passed"
+  tags: [validation]
+
+- name: Validate admin password is provided
+  assert:
+    that:
+      - hx_ad_admin_password is defined
+      - hx_ad_admin_password | length >= 8
+    fail_msg: "Admin password must be provided and at least 8 characters long"
+    success_msg: "Admin password validation passed"
+  no_log: true
+  tags: [validation]
+
+- name: Validate timeout values
+  assert:
+    that:
+      - item.value | int > 0
+      - item.value | int <= 3600
+    fail_msg: "Timeout value {{ item.key }} must be between 1 and 3600 seconds"
+    success_msg: "Timeout validation passed"
+  loop:
+    - { key: "hx_domain_join_timeout", value: "{{ hx_domain_join_timeout }}" }
+    - { key: "hx_domain_discovery_timeout", value: "{{ hx_domain_discovery_timeout }}" }
+  tags: [validation]
+
+- name: Check if already joined to a domain
+  command: "{{ hx_realm_list_cmd }}"
+  register: hx_current_realm_status
+  changed_when: false
+  failed_when: false
+  tags: [validation]
+
+- name: Display current domain status
+  debug:
+    msg:
+      - "Current domain status check completed"
+      - "Target domain: {{ hx_ad_domain }}"
+      - "Computer name: {{ hx_ad_computer_name }}"
+      - "Current realm status: {{ 'Joined' if hx_current_realm_status.stdout | length > 0 else 'Not joined' }}"
+  tags: [validation]

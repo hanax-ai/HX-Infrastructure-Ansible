@@ -1,0 +1,137 @@
+
+---
+# HX PostgreSQL Authentication Role Default Variables
+# PostgreSQL Authentication and Security Management
+
+# Core Service Settings
+hx_pg_auth_enabled: true
+hx_pg_auth_version: "1.0.0"
+
+# PostgreSQL Cluster Configuration
+hx_pg_cluster_version: 17
+hx_pg_cluster_name: "main"
+hx_pg_service_name: "postgresql"
+
+# Database Configuration
+hx_pg_db: "hx_app_db"
+hx_pg_app_user: "hx_app"
+hx_pg_gss_user: "agent0"
+hx_pg_realm: "DEV-TEST.HANA-X.AI"
+
+# Network Configuration
+hx_pg_subnet: "192.168.10.0/24"
+hx_pg_listen_addresses: "localhost,{{ ansible_default_ipv4.address }}"
+hx_pg_port: 5432
+
+# SSL/TLS Configuration
+hx_pg_ssl_enabled: true
+hx_pg_ssl_cert_file: "server.crt"
+hx_pg_ssl_key_file: "server.key"
+hx_pg_ssl_ca_file: "ca.crt"
+hx_pg_ssl_crl_file: ""
+hx_pg_ssl_min_protocol_version: "TLSv1.2"
+hx_pg_ssl_max_protocol_version: ""
+hx_pg_ssl_ciphers: "HIGH:MEDIUM:+3DES:!aNULL"
+hx_pg_ssl_prefer_server_ciphers: true
+
+# Authentication Configuration
+hx_pg_password_encryption: "scram-sha-256"
+hx_pg_auth_methods:
+  local_connections: "peer"
+  host_connections: "scram-sha-256"
+  gss_connections: "gss"
+  ssl_connections: "cert"
+
+# Security Settings
+hx_pg_security_enabled: true
+hx_pg_hardening_enabled: true
+hx_pg_reject_nossl: true
+hx_pg_enforce_tls_floor: true
+hx_pg_require_ssl: true
+hx_pg_log_connections: true
+hx_pg_log_disconnections: true
+hx_pg_log_failed_connections: true
+
+# HBA (Host-Based Authentication) Configuration
+hx_pg_hba_entries:
+  - type: "local"
+    database: "all"
+    user: "postgres"
+    method: "peer"
+    comment: "Local postgres superuser access"
+
+  - type: "local"
+    database: "all"
+    user: "all"
+    method: "peer"
+    comment: "Local user access"
+
+  - type: "hostssl"
+    database: "{{ hx_pg_db }}"
+    user: "{{ hx_pg_app_user }}"
+    address: "{{ hx_pg_subnet }}"
+    method: "scram-sha-256"
+    comment: "Application database access"
+
+  - type: "hostgssenc"
+    database: "{{ hx_pg_db }}"
+    user: "{{ hx_pg_gss_user }}"
+    address: "{{ hx_pg_subnet }}"
+    method: "gss"
+    options: "include_realm=1 krb_realm={{ hx_pg_realm }}"
+    comment: "Kerberos authentication"
+
+# Certificate Authority Configuration
+hx_pg_ca_enabled: true
+hx_pg_ca_path: "/usr/local/share/ca-certificates/hx-root-ca.crt"
+hx_pg_keytab_path: ""  # Auto-computed if empty
+
+# User Management
+hx_pg_app_password: ""  # Supply via vault
+hx_pg_create_app_user: true
+hx_pg_create_app_database: true
+hx_pg_app_user_privileges:
+  - "CONNECT"
+  - "CREATE"
+hx_pg_app_database_owner: "{{ hx_pg_app_user }}"
+
+# Backup Configuration
+hx_pg_backup_enabled: true
+hx_pg_backup_dir: "/var/backups/hx/pg"
+hx_pg_backup_retention_days: 7
+
+# Logging Configuration
+hx_pg_log_enabled: true
+hx_pg_log_dir: "/var/log/hx/postgresql"
+hx_pg_log_level: "info"
+hx_pg_log_statement: "mod"
+hx_pg_log_duration: true
+hx_pg_log_line_prefix: "%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h "
+
+# Performance Settings
+hx_pg_max_connections: 100
+hx_pg_shared_buffers: "128MB"
+hx_pg_effective_cache_size: "4GB"
+hx_pg_maintenance_work_mem: "64MB"
+hx_pg_checkpoint_completion_target: 0.9
+hx_pg_wal_buffers: "16MB"
+hx_pg_default_statistics_target: 100
+
+# Feature Flags
+hx_pg_monitoring_enabled: false
+hx_pg_audit_logging_enabled: true
+hx_pg_health_checks_enabled: true
+hx_pg_performance_tuning_enabled: false
+
+# Validation Settings
+hx_pg_validation_enabled: true
+hx_pg_connection_test_enabled: true
+hx_pg_auth_test_enabled: true
+hx_pg_ssl_test_enabled: true
+
+# Timeout Settings
+hx_pg_connection_timeout: 30
+hx_pg_auth_timeout: 10
+hx_pg_backup_timeout: 300
+hx_pg_validation_retries: 3
+hx_pg_validation_delay: 5

@@ -1,0 +1,54 @@
+[DEFAULT]
+# HX Infrastructure Fail2ban Configuration
+bantime = {{ hx_security_fail2ban_bantime }}
+findtime = {{ hx_security_fail2ban_findtime }}
+maxretry = {{ hx_security_fail2ban_maxretry }}
+
+# Email notifications (configure as needed)
+destemail = {{ hx_admin_email | default('admin@hanax.ai') }}
+sender = fail2ban@{{ ansible_fqdn }}
+mta = sendmail
+
+# Action configuration
+action = %(action_mw)s
+
+{% for jail in hx_security_fail2ban_jails %}
+[{{ jail.name }}]
+enabled = {{ jail.enabled | lower }}
+port = {{ jail.port }}
+filter = {{ jail.filter }}
+logpath = {{ jail.logpath }}
+maxretry = {{ jail.maxretry | default(hx_security_fail2ban_maxretry) }}
+bantime = {{ jail.bantime | default(hx_security_fail2ban_bantime) }}
+findtime = {{ jail.findtime | default(hx_security_fail2ban_findtime) }}
+
+{% endfor %}
+
+# Additional jails for HX Infrastructure
+[nginx-http-auth]
+enabled = true
+port = http,https
+filter = nginx-http-auth
+logpath = /var/log/nginx/error.log
+maxretry = 3
+
+[nginx-noscript]
+enabled = true
+port = http,https
+filter = nginx-noscript
+logpath = /var/log/nginx/access.log
+maxretry = 6
+
+[nginx-badbots]
+enabled = true
+port = http,https
+filter = nginx-badbots
+logpath = /var/log/nginx/access.log
+maxretry = 2
+
+[nginx-noproxy]
+enabled = true
+port = http,https
+filter = nginx-noproxy
+logpath = /var/log/nginx/access.log
+maxretry = 2

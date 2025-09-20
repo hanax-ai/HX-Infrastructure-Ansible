@@ -1,0 +1,177 @@
+---
+- name: "Hx | LiteLLM | Verify service is running"
+  service:
+    name: litellm
+    state: started
+    enabled: true
+  when: hx_litellm_install_method != "docker"
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Verify Docker container is running"
+  docker_container_info:
+    name: "{{ hx_litellm_docker_container_name }}"
+  register: hx_litellm_container_info
+  when: hx_litellm_install_method == "docker"
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Assert Docker container is running"
+  assert:
+    that:
+      - hx_litellm_container_info.container.State.Status == "running"
+    fail_msg: "LiteLLM Docker container is not running"
+    success_msg: "LiteLLM Docker container is running"
+  when: hx_litellm_install_method == "docker"
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Test HTTP connection"
+  uri:
+    url: "http://{{ hx_litellm_host }}:{{ hx_litellm_port }}{{ hx_litellm_health_check_path }}"
+    method: GET
+    timeout: 10
+    status_code: 200
+  register: hx_litellm_http_test
+  retries: 3
+  delay: 5
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Test HTTPS connection"
+  uri:
+    url: "https://{{ hx_litellm_host }}:{{ hx_litellm_port }}{{ hx_litellm_health_check_path }}"
+    method: GET
+    timeout: 10
+    status_code: 200
+    validate_certs: false
+  register: hx_litellm_https_test
+  when: hx_litellm_ssl_enabled | default(false) | bool
+  retries: 3
+  delay: 5
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Test API endpoint"
+  uri:
+    url: "http://{{ hx_litellm_host }}:{{ hx_litellm_port }}/v1/models"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ hx_litellm_master_key }}"
+    timeout: 10
+    status_code: 200
+  register: hx_litellm_api_test
+  when: "'CHANGE_ME' not in hx_litellm_master_key"
+  no_log: true
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Verify database connection"
+  postgresql_ping:
+    login_host: "{{ hx_litellm_database_host }}"
+    login_port: "{{ hx_litellm_database_port }}"
+    login_user: "{{ hx_litellm_database_user }}"
+    login_password: "{{ hx_litellm_database_password }}"
+    login_db: "{{ hx_litellm_database_name }}"
+  when: 
+    - hx_litellm_database_enabled | default(false) | bool
+    - hx_litellm_database_type == "postgresql"
+    - "'CHANGE_ME' not in hx_litellm_database_password"
+  no_log: true
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Test Redis connection"
+  command: redis-cli ping
+  register: hx_litellm_redis_test
+  changed_when: false
+  when: 
+    - hx_litellm_caching_enabled | default(false) | bool
+    - hx_litellm_cache_type == "redis"
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Assert Redis is responding"
+  assert:
+    that:
+      - hx_litellm_redis_test.stdout == "PONG"
+    fail_msg: "Redis is not responding"
+    success_msg: "Redis is responding correctly"
+  when: 
+    - hx_litellm_caching_enabled | default(false) | bool
+    - hx_litellm_cache_type == "redis"
+    - hx_litellm_redis_test is defined
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Verify log files are being created"
+  stat:
+    path: "{{ item }}"
+  register: hx_litellm_log_files
+  loop:
+    - "{{ hx_litellm_log_dir }}/litellm.log"
+    - "{{ hx_litellm_log_dir }}/access.log"
+    - "{{ hx_litellm_log_dir }}/error.log"
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Check log file permissions"
+  assert:
+    that:
+      - item.stat.exists
+      - item.stat.pw_name == hx_litellm_user
+      - item.stat.gr_name == hx_litellm_group
+    fail_msg: "Log file {{ item.item }} has incorrect ownership"
+    success_msg: "Log file {{ item.item }} has correct ownership"
+  loop: "{{ hx_litellm_log_files.results }}"
+  when: item.stat.exists
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Test model availability"
+  uri:
+    url: "http://{{ hx_litellm_host }}:{{ hx_litellm_port }}/v1/chat/completions"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ hx_litellm_master_key }}"
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      model: "{{ item.value.models[0].name }}"
+      messages:
+        - role: "user"
+          content: "Hello, this is a test message."
+      max_tokens: 10
+    timeout: 30
+    status_code: 200
+  register: hx_litellm_model_test
+  loop: "{{ hx_litellm_providers | dict2items }}"
+  when: 
+    - item.value.enabled | default(false) | bool
+    - (item.value.models | default([])) | length > 0
+    - "'CHANGE_ME' not in hx_litellm_master_key"
+  failed_when: false
+  no_log: true
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Verify configuration files exist"
+  stat:
+    path: "{{ item }}"
+  register: hx_litellm_config_files
+  loop:
+    - "{{ hx_litellm_config_dir }}/config.yaml"
+    - "{{ hx_litellm_config_dir }}/models.yaml"
+    - "{{ hx_litellm_config_dir }}/.env"
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Assert configuration files exist"
+  assert:
+    that:
+      - item.stat.exists
+    fail_msg: "Configuration file {{ item.item }} does not exist"
+    success_msg: "Configuration file {{ item.item }} exists"
+  loop: "{{ hx_litellm_config_files.results }}"
+  tags: ['verify']
+
+- name: "Hx | LiteLLM | Display verification summary"
+  debug:
+    msg:
+      - "LiteLLM proxy verification completed successfully"
+      - "Installation method: {{ hx_litellm_install_method }}"
+      - "Service port: {{ hx_litellm_port }}"
+      - "HTTP status: {{ hx_litellm_http_test.status | default('unknown') }}"
+      - "HTTPS enabled: {{ hx_litellm_ssl_enabled | default(false) }}"
+      - "Database enabled: {{ hx_litellm_database_enabled | default(false) }}"
+      - "Caching enabled: {{ hx_litellm_caching_enabled | default(false) }}"
+      - "Monitoring enabled: {{ hx_litellm_monitoring_enabled | default(false) }}"
+      - "Active providers: {{ hx_litellm_providers | dict2items | selectattr('value.enabled', 'equalto', true) | map(attribute='key') | list | join(', ') }}"
+  tags: ['verify']

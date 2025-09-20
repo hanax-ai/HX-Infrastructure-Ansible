@@ -1,0 +1,118 @@
+
+---
+# Configuration Tasks for HX Domain Join
+
+- name: Configure realmd for domain discovery
+  template:
+    src: realmd.conf.j2
+    dest: "{{ hx_realmd_conf_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  notify: restart realmd
+  tags: [configure]
+
+- name: Configure Kerberos client
+  template:
+    src: krb5.conf.j2
+    dest: "{{ hx_krb5_conf_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  when: hx_krb5_enabled | bool
+  tags: [configure]
+
+- name: Configure DNS resolution (if nameservers provided)
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  when:
+    - hx_dns_update_enabled | bool
+    - hx_dns_nameservers | length > 0
+  tags: [configure]
+
+- name: Update nsswitch.conf for SSSD integration
+  lineinfile:
+    path: "{{ hx_nsswitch_conf_path }}"
+    regexp: '^{{ item.key }}:'
+    line: "{{ item.key }}: {{ item.value }}"
+    backup: yes
+  loop:
+    - { key: "passwd", value: "files sss" }
+    - { key: "group", value: "files sss" }
+    - { key: "shadow", value: "files sss" }
+    - { key: "hosts", value: "files dns" }
+  notify: restart sssd
+  tags: [configure]
+
+- name: Configure PAM for home directory creation
+  lineinfile:
+    path: "{{ hx_pam_common_session_path }}"
+    line: "session required pam_mkhomedir.so skel=/etc/skel umask={{ hx_home_dir_umask }}"
+    insertafter: "^session.*pam_unix.so"
+  when:
+    - hx_home_dir_enabled | bool
+    - hx_home_dir_create | bool
+  tags: [configure]
+
+- name: Create SSSD configuration directory
+  file:
+    path: /etc/sssd
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  tags: [configure]
+
+- name: Generate initial SSSD configuration
+  template:
+    src: sssd.conf.j2
+    dest: "{{ hx_sssd_conf_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+    backup: yes
+  when: hx_sssd_enabled | bool
+  notify: restart sssd
+  tags: [configure]
+
+- name: Configure sudo access (if enabled)
+  template:
+    src: sudoers_domain.j2
+    dest: /etc/sudoers.d/domain_users
+    owner: root
+    group: root
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  when:
+    - hx_sudo_enabled | bool
+    - (hx_sudo_groups | length > 0 or hx_sudo_users | length > 0)
+  tags: [configure]
+
+- name: Log configuration completion
+  lineinfile:
+    path: "{{ hx_domain_log_dir }}/configuration.log"
+    line: "{{ ansible_date_time.iso8601 }} - Domain join configuration completed"
+    create: yes
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_domain_audit_logging_enabled | bool
+  tags: [configure]
+
+- name: Display configuration summary
+  debug:
+    msg:
+      - "Domain join configuration completed"
+      - "Realmd: Configured"
+      - "Kerberos: {{ hx_krb5_enabled | ternary('Configured', 'Disabled') }}"
+      - "SSSD: {{ hx_sssd_enabled | ternary('Configured', 'Disabled') }}"
+      - "Home directories: {{ hx_home_dir_enabled | ternary('Enabled', 'Disabled') }}"
+      - "Sudo access: {{ hx_sudo_enabled | ternary('Configured', 'Disabled') }}"
+  tags: [configure]

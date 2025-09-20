@@ -1,0 +1,57 @@
+
+---
+# Default variables for backup role
+# Following Ansible variable naming conventions
+
+# Basic backup configuration
+backup_base_dir: /opt/backups
+backup_log_dir: /var/log/backup
+backup_config_dir: /etc/backup
+backup_user: backup
+backup_group: backup
+backup_home_dir: /home/backup
+
+# Backup scheduling (cron format)
+backup_daily_hour: 2
+backup_daily_minute: 0
+backup_weekly_hour: 3
+backup_weekly_minute: 0
+backup_weekly_day: 0  # Sunday
+backup_monthly_hour: 4
+backup_monthly_minute: 0
+backup_monthly_day: 1  # First day of month
+
+# Cleanup scheduling
+backup_cleanup_hour: 5
+backup_cleanup_minute: 30
+
+# Retention policy (days)
+backup_retention_daily: 7
+backup_retention_weekly: 4
+backup_retention_monthly: 12
+
+# Encryption settings
+backup_encryption_enabled: true
+backup_key_file: /etc/backup/encryption.key
+
+# Remote storage settings
+backup_remote_enabled: false
+backup_remote_host: ""
+backup_remote_path: "backups/"
+backup_ssh_key_path: ""
+
+# Service management
+backup_systemd_timer_enabled: false
+backup_monitoring_enabled: false
+
+# Notification settings
+backup_notifications_enabled: false
+backup_notification_email: ""
+
+# System requirements
+backup_min_space_kb: 1048576  # 1GB minimum
+
+# Application-specific settings
+backup_stop_services: []
+backup_application_paths: []
+backup_databases: []

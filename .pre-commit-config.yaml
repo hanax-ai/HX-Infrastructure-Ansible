@@ -1,0 +1,56 @@
+
+# Pre-commit configuration for HX Infrastructure Ansible
+# Ensures code quality and consistency across all commits
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+        args: [-c=.yamllint]
+
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v25.9.0
+    hooks:
+      - id: ansible-lint
+        args: [-c=.ansible-lint]
+
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        language_version: python3
+        files: \.py$
+
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.8.6
+    hooks:
+      - id: bandit
+        args: [-c=.bandit]
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.42.0
+    hooks:
+      - id: markdownlint
+        args: [--config=.markdownlint.json]
+
+  - repo: local
+    hooks:
+      - id: ansible-syntax-check
+        name: Ansible Syntax Check
+        entry: ansible-playbook --syntax-check
+        language: system
+        files: \.yml$
+        args: [--inventory=inventories/dev/hosts.yml]

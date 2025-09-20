@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="HX Infrastructure Team" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>hx_domain_join_standardized - HX Infrastructure Ansible - Exemplary Automation</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "hx_domain_join_standardized";
+        var mkdocs_page_input_path = "roles/hx_domain_join_standardized.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> HX Infrastructure Ansible - Exemplary Automation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Architecture</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../../architecture/overview.md">Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../architecture/diagrams/">Diagrams</a>
+                  </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../">Roles</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Development</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="" href="../../development/guidelines.md">Guidelines</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../development/style-guide/">Style Guide</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">HX Infrastructure Ansible - Exemplary Automation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">hx_domain_join_standardized</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="hx_domain_join_standardized">hx_domain_join_standardized<a class="headerlink" href="#hx_domain_join_standardized" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Professional-grade Active Directory domain integration for HX Infrastructure</p>
+<p><strong>Author:</strong> HX Infrastructure Team<br />
+<strong>Version:</strong> Unknown</p>
+<h2 id="variables">Variables<a class="headerlink" href="#variables" title="Permanent link">&para;</a></h2>
+<p>The following variables can be configured for this role:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">hx_domain_join_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_domain_join_version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0.0</span>
+<span class="nt">hx_ad_domain</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-test.hana-x.ai</span>
+<span class="nt">hx_ad_admin_user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agent0</span>
+<span class="nt">hx_ad_admin_password</span><span class="p">:</span><span class="w"> </span>
+<span class="nt">hx_ad_realm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DEV-TEST.HANA-X.AI</span>
+<span class="nt">hx_ad_domain_controller</span><span class="p">:</span><span class="w"> </span>
+<span class="nt">hx_ad_ou_path</span><span class="p">:</span><span class="w"> </span>
+<span class="nt">hx_ad_computer_name</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="w"> </span><span class="nv">ansible_hostname | upper</span><span class="w"> </span><span class="p p-Indicator">}}</span>
+<span class="nt">hx_ad_computer_description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HX Infrastructure Server - {{ ansible_hostname }}</span>
+<span class="nt">hx_ad_computer_location</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HX Infrastructure</span>
+<span class="nt">hx_domain_security_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_domain_strict_validation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_domain_require_encryption</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_domain_verify_certificates</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_sssd_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_sssd_cache_credentials</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_sssd_enumerate_users</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="nt">hx_sssd_enumerate_groups</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="nt">hx_sssd_case_sensitive</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="nt">hx_sssd_use_fully_qualified_names</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="nt">hx_krb5_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_krb5_default_realm</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="w"> </span><span class="nv">hx_ad_realm</span><span class="w"> </span><span class="p p-Indicator">}}</span>
+<span class="nt">hx_krb5_ticket_lifetime</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24h</span>
+<span class="nt">hx_krb5_renew_lifetime</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7d</span>
+<span class="nt">hx_krb5_forwardable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_dns_update_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_dns_search_domains</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;{{</span><span class="nv"> </span><span class="s">hx_ad_domain</span><span class="nv"> </span><span class="s">}}&#39;</span><span class="p p-Indicator">]</span>
+<span class="nt">hx_dns_nameservers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="nt">hx_domain_packages</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;realmd&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;sssd&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;sssd-tools&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;adcli&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;krb5-user&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;krb5-workstation&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;packagekit&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;samba-common-tools&#39;</span><span class="p p-Indicator">]</span>
+<span class="nt">hx_domain_backup_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_domain_monitoring_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="nt">hx_domain_audit_logging_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_domain_health_checks_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_domain_join_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="nt">hx_domain_validation_retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="nt">hx_domain_validation_delay</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="nt">hx_domain_discovery_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+<span class="nt">hx_home_dir_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="nt">hx_home_dir_base</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/home</span>
+<span class="nt">hx_home_dir_create</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_home_dir_umask</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0077</span>
+<span class="nt">hx_sudo_enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+<span class="nt">hx_sudo_groups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="nt">hx_sudo_users</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="nt">hx_login_shell</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/bin/bash</span>
+<span class="nt">hx_login_create_homedir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="nt">hx_login_fallback_homedir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp</span>
+</code></pre></div>
+
+<h2 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
+<ul>
+<li>{'role': 'hx_ca_trust_standardized', 'when': 'hx_domain_verify_certificates | bool'}</li>
+</ul>
+<h2 id="tasks">Tasks<a class="headerlink" href="#tasks" title="Permanent link">&para;</a></h2>
+<p>The following task files are included:</p>
+<ul>
+<li><code>security.yml</code></li>
+<li><code>configure.yml</code></li>
+<li><code>validate.yml</code></li>
+<li><code>health_checks.yml</code></li>
+<li><code>main.yml</code></li>
+<li><code>join_domain.yml</code></li>
+<li><code>install.yml</code></li>
+</ul>
+<h2 id="handlers">Handlers<a class="headerlink" href="#handlers" title="Permanent link">&para;</a></h2>
+<p>The following handlers are available:</p>
+<ul>
+<li><code>main.yml</code></li>
+</ul>
+<h2 id="templates">Templates<a class="headerlink" href="#templates" title="Permanent link">&para;</a></h2>
+<p>The following templates are provided:</p>
+<ul>
+<li><code>security_audit.j2</code></li>
+<li><code>krb5.conf.j2</code></li>
+<li><code>sudoers_domain.j2</code></li>
+<li><code>resolv.conf.j2</code></li>
+<li><code>realmd.conf.j2</code></li>
+<li><code>sssd.conf.j2</code></li>
+<li><code>health_report.j2</code></li>
+</ul>
+              
+            </div>
+          </div><footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,66 @@
+
+---
+# Network Validation Tasks - Phase 3 Day 1
+
+- name: "Network Validation | Test basic connectivity"
+  wait_for:
+    host: "{{ item.host }}"
+    port: "{{ item.port }}"
+    protocol: "{{ item.protocol | default('tcp') }}"
+    timeout: "{{ item.timeout | default(validation_timeouts.network_timeout) }}"
+  loop: "{{ network_dependencies.connectivity_checks }}"
+  when: network_dependencies.connectivity_checks | length > 0
+
+- name: "Network Validation | Test DNS resolution"
+  command: "nslookup {{ item }}"
+  register: dns_resolution_results
+  changed_when: false
+  failed_when: dns_resolution_results.rc != 0
+  loop: "{{ network_dependencies.dns_resolution_checks }}"
+  when: network_dependencies.dns_resolution_checks | length > 0
+
+- name: "Network Validation | Check required open ports"
+  wait_for:
+    port: "{{ item }}"
+    host: "{{ ansible_default_ipv4.address }}"
+    timeout: 5
+    state: started
+  loop: "{{ network_dependencies.required_ports_open }}"
+  when: network_dependencies.required_ports_open | length > 0
+
+- name: "Network Validation | Check required closed ports"
+  wait_for:
+    port: "{{ item }}"
+    host: "{{ ansible_default_ipv4.address }}"
+    timeout: 5
+    state: stopped
+  loop: "{{ network_dependencies.required_ports_closed }}"
+  when: network_dependencies.required_ports_closed | length > 0
+
+- name: "Network Validation | Test internet connectivity"
+  uri:
+    url: "https://www.google.com"
+    method: HEAD
+    timeout: "{{ validation_timeouts.network_timeout }}"
+  register: internet_connectivity
+  failed_when: false
+
+- name: "Network Validation | Check network interface status"
+  setup:
+    gather_subset: network
+
+- name: "Network Validation | Validate default gateway"
+  command: ip route show default
+  register: default_gateway_check
+  changed_when: false
+
+- name: "Network Validation | Network validation summary"
+  debug:
+    msg:
+      - "Network Validation Summary:"
+      - "  Connectivity Checks: {{ network_dependencies.connectivity_checks | length }} passed ✓"
+      - "  DNS Resolution: {{ network_dependencies.dns_resolution_checks | length }} passed ✓"
+      - "  Internet Access: {{ 'Available' if internet_connectivity.status == 200 else 'Limited' }} {{ '✓' if internet_connectivity.status == 200 else '⚠' }}"
+      - "  Default Gateway: {{ 'Configured' if default_gateway_check.stdout else 'Missing' }} {{ '✓' if default_gateway_check.stdout else '✗' }}"
+      - "  Primary IP: {{ ansible_default_ipv4.address | default('Not configured') }}"
+

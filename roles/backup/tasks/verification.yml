@@ -1,0 +1,47 @@
+
+---
+# Verification tasks for backup automation
+# Validates backup integrity and completeness
+
+- name: Verify backup directories exist
+  stat:
+    path: "{{ backup_base_dir | default('/opt/backups') }}/{{ item }}"
+  register: backup_dir_check
+  loop:
+    - daily
+    - weekly
+    - monthly
+  tags: [backup, verification, directories]
+
+- name: Fail if backup directories are missing
+  fail:
+    msg: "Backup directory {{ item.item }} does not exist"
+  when: not item.stat.exists
+  loop: "{{ backup_dir_check.results }}"
+  tags: [backup, verification, directories]
+
+- name: Generate backup checksums
+  shell: |
+    find {{ backup_base_dir | default('/opt/backups') }} -type f -name "*.tar.gz" -o -name "*.sql" | \
+    xargs -I {} sh -c 'echo "$(sha256sum "{}")" >> {{ backup_base_dir | default('/opt/backups') }}/checksums-{{ ansible_date_time.date }}.txt'
+  tags: [backup, verification, checksums]
+
+- name: Test backup restoration (sample)
+  shell: |
+    # Test restore of latest backup to temp directory
+    LATEST_BACKUP=$(ls -t {{ backup_base_dir | default('/opt/backups') }}/daily/*.tar.gz | head -1)
+    if [ -n "$LATEST_BACKUP" ]; then
+      mkdir -p /tmp/backup-test-{{ ansible_date_time.epoch }}
+      tar -tzf "$LATEST_BACKUP" > /dev/null && echo "Backup integrity verified: $LATEST_BACKUP"
+      rm -rf /tmp/backup-test-{{ ansible_date_time.epoch }}
+    fi
+  register: backup_test_result
+  tags: [backup, verification, restore_test]
+
+- name: Log verification results
+  lineinfile:
+    path: "{{ backup_log_dir | default('/var/log/backup') }}/verification.log"
+    line: "{{ ansible_date_time.iso8601 }} - Backup verification completed: {{ backup_test_result.stdout | default('No backups found') }}"
+    create: yes
+    mode: '0644'
+  tags: [backup, verification, logging]

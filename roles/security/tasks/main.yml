@@ -1,0 +1,225 @@
+---
+# Security role tasks with hx_ prefix standardization
+
+- name: Install security packages
+  package:
+    name:
+      - ufw
+      - fail2ban
+      - auditd
+      - unattended-upgrades
+      - apt-listchanges
+    state: present
+  tags:
+    - hx_security
+    - hx_packages
+
+- name: Configure UFW firewall
+  block:
+    - name: Set UFW default policies
+      ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: "incoming", policy: "deny" }
+        - { direction: "outgoing", policy: "allow" }
+        - { direction: "routed", policy: "deny" }
+
+    - name: Configure UFW rules
+      ufw:
+        rule: "{{ item.rule }}"
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+        comment: "{{ item.comment | default('') }}"
+      loop: "{{ hx_security_firewall_rules }}"
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+  when: hx_security_firewall_enabled
+  tags:
+    - hx_security
+    - hx_firewall
+
+- name: Configure fail2ban
+  block:
+    - name: Create fail2ban local configuration
+      template:
+        src: jail.local.j2
+        dest: /etc/fail2ban/jail.local
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart fail2ban
+
+    - name: Enable and start fail2ban
+      systemd:
+        name: fail2ban
+        enabled: yes
+        state: started
+  when: hx_security_fail2ban_enabled
+  tags:
+    - hx_security
+    - hx_fail2ban
+
+- name: Harden SSH configuration
+  block:
+    - name: Configure SSH security settings
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backup: yes
+      loop:
+        - { regexp: '^#?Port', line: 'Port {{ hx_security_ssh_port }}' }
+        - { regexp: '^#?Protocol', line: 'Protocol {{ hx_security_ssh_protocol }}' }
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin {{ "yes" if hx_security_ssh_permit_root_login else "no" }}' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication {{ "yes" if hx_security_ssh_password_authentication else "no" }}' }
+        - { regexp: '^#?PermitEmptyPasswords', line: 'PermitEmptyPasswords {{ "yes" if hx_security_ssh_permit_empty_passwords else "no" }}' }
+        - { regexp: '^#?ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication {{ "yes" if hx_security_ssh_challenge_response_auth else "no" }}' }
+        - { regexp: '^#?X11Forwarding', line: 'X11Forwarding {{ "yes" if hx_security_ssh_x11_forwarding else "no" }}' }
+        - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries {{ hx_security_ssh_max_auth_tries }}' }
+        - { regexp: '^#?ClientAliveInterval', line: 'ClientAliveInterval {{ hx_security_ssh_client_alive_interval }}' }
+        - { regexp: '^#?ClientAliveCountMax', line: 'ClientAliveCountMax {{ hx_security_ssh_client_alive_count_max }}' }
+      notify: restart sshd
+
+    - name: Configure SSH allowed users
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?AllowUsers'
+        line: 'AllowUsers {{ hx_security_ssh_allowed_users | join(" ") }}'
+        backup: yes
+      when: hx_security_ssh_allowed_users | length > 0
+      notify: restart sshd
+
+    - name: Configure SSH allowed groups
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?AllowGroups'
+        line: 'AllowGroups {{ hx_security_ssh_allowed_groups | join(" ") }}'
+        backup: yes
+      when: hx_security_ssh_allowed_groups | length > 0
+      notify: restart sshd
+  when: hx_security_ssh_hardening
+  tags:
+    - hx_security
+    - hx_ssh
+
+- name: Apply kernel security hardening
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    # Network security
+    - { name: 'net.ipv4.ip_forward', value: '0' }
+    - { name: 'net.ipv4.conf.all.send_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.default.send_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.all.accept_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.default.accept_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.all.secure_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.default.secure_redirects', value: '0' }
+    - { name: 'net.ipv4.conf.all.accept_source_route', value: '0' }
+    - { name: 'net.ipv4.conf.default.accept_source_route', value: '0' }
+    - { name: 'net.ipv4.icmp_echo_ignore_broadcasts', value: '1' }
+    - { name: 'net.ipv4.icmp_ignore_bogus_error_responses', value: '1' }
+    - { name: 'net.ipv4.conf.all.log_martians', value: '1' }
+    - { name: 'net.ipv4.conf.default.log_martians', value: '1' }
+    - { name: 'net.ipv4.tcp_syncookies', value: '1' }
+    # Kernel security
+    - { name: 'kernel.dmesg_restrict', value: '1' }
+    - { name: 'kernel.kptr_restrict', value: '2' }
+    - { name: 'kernel.yama.ptrace_scope', value: '1' }
+    - { name: 'fs.suid_dumpable', value: '0' }
+  when: hx_security_kernel_hardening
+  tags:
+    - hx_security
+    - hx_kernel
+
+- name: Fix sensitive file permissions
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ hx_security_sensitive_files }}"
+  when: hx_security_fix_permissions
+  tags:
+    - hx_security
+    - hx_permissions
+
+- name: Remove insecure packages
+  package:
+    name: "{{ hx_security_remove_packages }}"
+    state: absent
+  tags:
+    - hx_security
+    - hx_packages
+
+- name: Configure unattended upgrades
+  block:
+    - name: Enable unattended upgrades
+      lineinfile:
+        path: /etc/apt/apt.conf.d/20auto-upgrades
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        create: yes
+      loop:
+        - { regexp: '^APT::Periodic::Update-Package-Lists', line: 'APT::Periodic::Update-Package-Lists "1";' }
+        - { regexp: '^APT::Periodic::Unattended-Upgrade', line: 'APT::Periodic::Unattended-Upgrade "1";' }
+        - { regexp: '^APT::Periodic::AutocleanInterval', line: 'APT::Periodic::AutocleanInterval "7";' }
+
+    - name: Configure unattended upgrades security updates only
+      lineinfile:
+        path: /etc/apt/apt.conf.d/50unattended-upgrades
+        regexp: '^\s*"${distro_id}:${distro_codename}-security";'
+        line: '        "${distro_id}:${distro_codename}-security";'
+        backup: yes
+  when: hx_security_unattended_upgrades
+  tags:
+    - hx_security
+    - hx_updates
+
+- name: Configure audit daemon
+  block:
+    - name: Configure auditd
+      lineinfile:
+        path: /etc/audit/auditd.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        backup: yes
+      loop:
+        - { regexp: '^max_log_file\s*=', line: 'max_log_file = {{ hx_security_auditd_max_log_file }}' }
+        - { regexp: '^num_logs\s*=', line: 'num_logs = {{ hx_security_auditd_num_logs }}' }
+      notify: restart auditd
+
+    - name: Add audit rules
+      lineinfile:
+        path: /etc/audit/rules.d/hx-security.rules
+        line: "{{ item }}"
+        create: yes
+      loop: "{{ hx_security_auditd_rules }}"
+      notify: restart auditd
+
+    - name: Enable and start auditd
+      systemd:
+        name: auditd
+        enabled: yes
+        state: started
+  when: hx_security_auditd_enabled
+  tags:
+    - hx_security
+    - hx_audit
+
+- name: Configure security limits
+  pam_limits:
+    domain: "{{ item.domain }}"
+    limit_type: "{{ item.type }}"
+    limit_item: "{{ item.item }}"
+    value: "{{ item.value }}"
+  loop: "{{ hx_security_limits_config }}"
+  when: hx_security_limits_enabled
+  tags:
+    - hx_security
+    - hx_limits

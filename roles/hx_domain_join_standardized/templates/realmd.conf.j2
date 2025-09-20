@@ -1,0 +1,40 @@
+
+# {{ ansible_managed }}
+# Realmd Configuration for HX Domain Join
+
+[users]
+default-home = {{ hx_home_dir_base }}
+default-shell = {{ hx_login_shell }}
+
+[active-directory]
+default-client = sssd
+os-name = {{ ansible_distribution }}
+os-version = {{ ansible_distribution_version }}
+
+[service]
+automatic-install = no
+
+{% if hx_ad_domain_controller %}
+[domain-realm]
+{{ hx_ad_domain_controller }} = {{ hx_ad_realm_upper }}
+.{{ hx_ad_domain_lower }} = {{ hx_ad_realm_upper }}
+{{ hx_ad_domain_lower }} = {{ hx_ad_realm_upper }}
+{% endif %}
+
+{% if hx_ad_computer_name != ansible_hostname | upper %}
+[{{ hx_ad_domain_lower }}]
+computer-name = {{ hx_ad_computer_name }}
+{% endif %}
+
+{% if hx_ad_ou_path %}
+computer-ou = {{ hx_ad_ou_path }}
+{% endif %}
+
+# Security settings
+{% if hx_domain_require_encryption %}
+require-encryption = yes
+{% endif %}
+
+{% if hx_domain_verify_certificates %}
+verify-certificates = yes
+{% endif %}

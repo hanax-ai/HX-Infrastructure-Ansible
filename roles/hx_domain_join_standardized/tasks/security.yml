@@ -1,0 +1,178 @@
+
+---
+# Security Tasks for HX Domain Join
+
+- name: Secure SSSD configuration file permissions
+  file:
+    path: "{{ hx_sssd_conf_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+  when: hx_sssd_enabled | bool
+  tags: [security]
+
+- name: Secure Kerberos configuration file permissions
+  file:
+    path: "{{ hx_krb5_conf_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+  when: hx_krb5_enabled | bool
+  tags: [security]
+
+- name: Secure domain join log directory
+  file:
+    path: "{{ hx_domain_log_dir }}"
+    owner: root
+    group: root
+    mode: '0750'
+  when: hx_domain_audit_logging_enabled | bool
+  tags: [security]
+
+- name: Secure backup directory permissions
+  file:
+    path: "{{ hx_domain_backup_dir }}"
+    owner: root
+    group: root
+    mode: '0700'
+  when: hx_domain_backup_enabled | bool
+  tags: [security]
+
+- name: Verify certificate validation is enabled
+  lineinfile:
+    path: "{{ hx_sssd_conf_path }}"
+    regexp: '^ldap_tls_reqcert'
+    line: 'ldap_tls_reqcert = demand'
+    insertafter: '^\[domain/'
+  when:
+    - hx_sssd_enabled | bool
+    - hx_domain_verify_certificates | bool
+  notify: restart sssd
+  tags: [security]
+
+- name: Enable LDAP encryption
+  lineinfile:
+    path: "{{ hx_sssd_conf_path }}"
+    regexp: '^ldap_id_use_start_tls'
+    line: 'ldap_id_use_start_tls = True'
+    insertafter: '^\[domain/'
+  when:
+    - hx_sssd_enabled | bool
+    - hx_domain_require_encryption | bool
+  notify: restart sssd
+  tags: [security]
+
+- name: Configure Kerberos encryption types
+  lineinfile:
+    path: "{{ hx_krb5_conf_path }}"
+    regexp: '^(\s*)default_tgs_enctypes'
+    line: '\1default_tgs_enctypes = aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96'
+    insertafter: '^\[libdefaults\]'
+  when:
+    - hx_krb5_enabled | bool
+    - hx_domain_require_encryption | bool
+  tags: [security]
+
+- name: Configure Kerberos ticket encryption
+  lineinfile:
+    path: "{{ hx_krb5_conf_path }}"
+    regexp: '^(\s*)default_tkt_enctypes'
+    line: '\1default_tkt_enctypes = aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96'
+    insertafter: '^\[libdefaults\]'
+  when:
+    - hx_krb5_enabled | bool
+    - hx_domain_require_encryption | bool
+  tags: [security]
+
+- name: Disable weak Kerberos encryption
+  lineinfile:
+    path: "{{ hx_krb5_conf_path }}"
+    regexp: '^(\s*)permitted_enctypes'
+    line: '\1permitted_enctypes = aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96'
+    insertafter: '^\[libdefaults\]'
+  when:
+    - hx_krb5_enabled | bool
+    - hx_domain_require_encryption | bool
+  tags: [security]
+
+- name: Validate domain controller certificate
+  shell: |
+    set -euo pipefail
+    # Test LDAPS connection to domain controller
+    if command -v ldapsearch >/dev/null 2>&1; then
+      ldapsearch -H ldaps://{{ hx_ad_domain }}:636 -x -s base -b "" supportedSASLMechanisms
+      echo "LDAPS certificate validation passed"
+    else
+      echo "ldapsearch not available, skipping certificate validation"
+    fi
+  args:
+    executable: /bin/bash
+  register: hx_ldaps_cert_check
+  when:
+    - hx_domain_verify_certificates | bool
+    - hx_domain_strict_validation | bool
+  changed_when: false
+  failed_when: false
+  tags: [security]
+
+- name: Check for weak authentication methods
+  shell: |
+    set -euo pipefail
+    weak_methods=0
+
+    # Check for NTLM in SSSD config
+    if grep -q "auth_provider.*ntlm" "{{ hx_sssd_conf_path }}" 2>/dev/null; then
+      echo "WARNING: NTLM authentication detected"
+      weak_methods=$((weak_methods + 1))
+    fi
+
+    # Check for unencrypted LDAP
+    if grep -q "ldap_uri.*ldap://" "{{ hx_sssd_conf_path }}" 2>/dev/null; then
+      echo "WARNING: Unencrypted LDAP detected"
+      weak_methods=$((weak_methods + 1))
+    fi
+
+    if [ $weak_methods -eq 0 ]; then
+      echo "No weak authentication methods detected"
+    fi
+
+    exit $weak_methods
+  args:
+    executable: /bin/bash
+  register: hx_weak_auth_check
+  when: hx_domain_strict_validation | bool
+  changed_when: false
+  failed_when: hx_weak_auth_check.rc > 0 and hx_domain_strict_validation | bool
+  tags: [security]
+
+- name: Create security audit report
+  template:
+    src: security_audit.j2
+    dest: "{{ hx_domain_log_dir }}/security_audit_{{ hx_domain_backup_timestamp }}.txt"
+    owner: root
+    group: root
+    mode: '0640'
+  when: hx_domain_audit_logging_enabled | bool
+  tags: [security]
+
+- name: Log security configuration completion
+  lineinfile:
+    path: "{{ hx_domain_log_dir }}/security.log"
+    line: "{{ ansible_date_time.iso8601 }} - Domain join security configuration completed"
+    create: yes
+    owner: root
+    group: root
+    mode: '0640'
+  when: hx_domain_audit_logging_enabled | bool
+  tags: [security]
+
+- name: Display security summary
+  debug:
+    msg:
+      - "Security configuration completed"
+      - "File permissions: Secured"
+      - "Certificate validation: {{ hx_domain_verify_certificates | ternary('Enabled', 'Disabled') }}"
+      - "Encryption required: {{ hx_domain_require_encryption | ternary('Yes', 'No') }}"
+      - "LDAPS validation: {{ (hx_ldaps_cert_check is defined and hx_ldaps_cert_check.rc == 0) | ternary('Passed', 'Skipped/Failed') }}"
+      - "Weak auth check: {{ (hx_weak_auth_check is defined and hx_weak_auth_check.rc == 0) | ternary('Passed', 'Issues detected') }}"
+  tags: [security]
