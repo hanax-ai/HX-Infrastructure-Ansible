@@ -483,12 +483,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download classification and remediation artifacts
+    - name: Download classification results
       uses: actions/download-artifact@v4
       with:
         name: classification-results-${{ github.run_number }}
 
-      steps:
     - name: Download remediation results
       uses: actions/download-artifact@v4
       with:
