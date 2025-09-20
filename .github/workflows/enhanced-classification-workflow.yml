@@ -48,7 +48,7 @@ jobs:
       statuses: write
     # P0 FIX: Enhanced bot detection to prevent CI recursion
     if: >
-      github.event.review.body contains 'coderabbit' || github.event.comment.body contains 'coderabbit' || github.event_name == 'workflow_dispatch'
+      contains(github.event.review.body, 'coderabbit') || contains(github.event.comment.body, 'coderabbit') || github.event_name == 'workflow_dispatch'
 
     outputs:
       issues-detected: ${{ steps.classify.outputs.issues-detected }}
