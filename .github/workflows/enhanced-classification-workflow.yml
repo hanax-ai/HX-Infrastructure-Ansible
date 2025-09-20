@@ -488,6 +488,8 @@ jobs:
       with:
         name: classification-results-${{ github.run_number }}
 
+      steps:
+    - name: Download remediation results
       uses: actions/download-artifact@v4
       with:
         name: remediation-results-${{ github.run_number }}
