@@ -1,0 +1,86 @@
+
+---
+# Enterprise Change Management Integration Tasks
+- name: Install change management tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - git
+    - curl
+    - jq
+    - python3-requests
+
+- name: Create change management directory
+  ansible.builtin.file:
+    path: "{{ change_management_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Setup change management scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ change_management_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "change_request.py.j2", dest: "change_request.py" }
+    - { src: "change_approval.sh.j2", dest: "change_approval.sh" }
+    - { src: "change_tracking.py.j2", dest: "change_tracking.py" }
+    - { src: "rollback_manager.sh.j2", dest: "rollback_manager.sh" }
+
+- name: Configure change management policies
+  ansible.builtin.template:
+    src: change_policies.json.j2
+    dest: "{{ change_management_path }}/change_policies.json"
+    mode: '0644'
+
+- name: Setup change approval workflow
+  ansible.builtin.template:
+    src: approval_workflow.json.j2
+    dest: "{{ change_management_path }}/approval_workflow.json"
+    mode: '0644'
+
+- name: Configure ITSM integration
+  ansible.builtin.template:
+    src: itsm_config.json.j2
+    dest: "{{ change_management_path }}/itsm_config.json"
+    mode: '0600'
+  when: itsm_system is defined
+
+- name: Setup change tracking hooks
+  ansible.builtin.template:
+    src: git_hooks.sh.j2
+    dest: "{{ change_management_path }}/git_hooks.sh"
+    mode: '0755'
+
+- name: Configure change notification system
+  ansible.builtin.template:
+    src: change_notifications.py.j2
+    dest: "{{ change_management_path }}/change_notifications.py"
+    mode: '0755'
+
+- name: Setup automated change validation
+  ansible.builtin.template:
+    src: change_validation.sh.j2
+    dest: "{{ change_management_path }}/change_validation.sh"
+    mode: '0755'
+
+- name: Configure change management dashboard
+  ansible.builtin.template:
+    src: change_dashboard.json.j2
+    dest: "{{ change_dashboard_path }}/change_management.json"
+    mode: '0644'
+
+- name: Setup change management monitoring
+  ansible.builtin.cron:
+    name: "Change Management Monitoring"
+    minute: "*/15"
+    hour: "*"
+    job: "{{ change_management_path }}/change_tracking.py monitor >> /var/log/change_management.log 2>&1"
+    user: root
+
+- name: Log change management setup
+  ansible.builtin.lineinfile:
+    path: /var/log/change_management.log
+    line: "{{ ansible_date_time.iso8601 }} - Change management integration completed"
+    create: yes

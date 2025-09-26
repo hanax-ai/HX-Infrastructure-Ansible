@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: HX Infrastructure Team
+  description: Continuous improvement automation with performance optimization and feedback loops
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - continuous-improvement
+    - optimization
+    - automation
+    - feedback-loops
+
+dependencies:
+  - role: common
+  - role: intelligent_monitoring
+  - role: ai_deployment_orchestrator

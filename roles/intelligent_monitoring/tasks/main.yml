@@ -1,0 +1,134 @@
+---
+- name: Create intelligent monitoring directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /opt/hx/intelligent-monitoring
+    - /opt/hx/ai-models/monitoring
+    - /var/log/hx-monitoring
+    - /opt/hx/monitoring-data
+
+- name: Install AI/ML monitoring dependencies
+  pip:
+    name:
+      - scikit-learn>=1.3.0
+      - tensorflow>=2.13.0
+      - pandas>=2.0.0
+      - numpy>=1.24.0
+      - prometheus-client>=0.17.0
+      - influxdb-client>=1.36.0
+      - statsmodels>=0.14.0
+      - plotly>=5.15.0
+      - dash>=2.11.0
+    state: present
+    virtualenv: /opt/hx/venv
+
+- name: Deploy anomaly detection service
+  template:
+    src: anomaly_detector.py.j2
+    dest: /opt/hx/intelligent-monitoring/anomaly_detector.py
+    mode: '0755'
+  notify: restart intelligent monitoring
+
+- name: Deploy predictive scaling service
+  template:
+    src: predictive_scaler.py.j2
+    dest: /opt/hx/intelligent-monitoring/predictive_scaler.py
+    mode: '0755'
+  notify: restart intelligent monitoring
+
+- name: Deploy cost optimization service
+  template:
+    src: cost_optimizer.py.j2
+    dest: /opt/hx/intelligent-monitoring/cost_optimizer.py
+    mode: '0755'
+  notify: restart intelligent monitoring
+
+- name: Deploy monitoring dashboard
+  template:
+    src: monitoring_dashboard.py.j2
+    dest: /opt/hx/intelligent-monitoring/dashboard.py
+    mode: '0755'
+  notify: restart intelligent monitoring
+
+- name: Create intelligent monitoring systemd services
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - src: hx-anomaly-detector.service.j2
+      dest: /etc/systemd/system/hx-anomaly-detector.service
+    - src: hx-predictive-scaler.service.j2
+      dest: /etc/systemd/system/hx-predictive-scaler.service
+    - src: hx-cost-optimizer.service.j2
+      dest: /etc/systemd/system/hx-cost-optimizer.service
+    - src: hx-monitoring-dashboard.service.j2
+      dest: /etc/systemd/system/hx-monitoring-dashboard.service
+  notify:
+    - reload systemd
+    - restart intelligent monitoring
+
+- name: Deploy configuration files
+  template:
+    src: monitoring_config.yml.j2
+    dest: /opt/hx/intelligent-monitoring/config.yml
+    mode: '0644'
+  notify: restart intelligent monitoring
+
+- name: Create model training scripts
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - src: train_anomaly_models.py.j2
+      dest: /opt/hx/intelligent-monitoring/train_anomaly_models.py
+    - src: train_prediction_models.py.j2
+      dest: /opt/hx/intelligent-monitoring/train_prediction_models.py
+
+- name: Set up cron jobs for model training
+  cron:
+    name: "{{ item.name }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    job: "{{ item.job }}"
+    user: root
+  loop:
+    - name: "Anomaly model retraining"
+      minute: "0"
+      hour: "3"
+      job: "/opt/hx/venv/bin/python /opt/hx/intelligent-monitoring/train_anomaly_models.py"
+    - name: "Prediction model retraining"
+      minute: "30"
+      hour: "3"
+      job: "/opt/hx/venv/bin/python /opt/hx/intelligent-monitoring/train_prediction_models.py"
+
+- name: Start and enable intelligent monitoring services
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  loop:
+    - hx-anomaly-detector
+    - hx-predictive-scaler
+    - hx-cost-optimizer
+    - hx-monitoring-dashboard
+
+- name: Verify intelligent monitoring health
+  uri:
+    url: "http://localhost:{{ item.port }}/health"
+    method: GET
+    timeout: 10
+  register: monitoring_health
+  retries: 5
+  delay: 10
+  until: monitoring_health.status == 200
+  loop:
+    - { service: "anomaly-detector", port: 8081 }
+    - { service: "predictive-scaler", port: 8082 }
+    - { service: "cost-optimizer", port: 8083 }
+    - { service: "monitoring-dashboard", port: 8084 }

@@ -1,0 +1,178 @@
+
+---
+# Identity and Access Management Integration Tasks
+- name: Install IAM integration tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - sssd
+    - realmd
+    - adcli
+    - samba-common-tools
+    - krb5-workstation
+    - openldap-clients
+
+- name: Configure SSSD for enterprise authentication
+  ansible.builtin.template:
+    src: sssd.conf.j2
+    dest: /etc/sssd/sssd.conf
+    mode: '0600'
+    backup: yes
+  notify: restart sssd
+
+- name: Configure Kerberos authentication
+  ansible.builtin.template:
+    src: krb5.conf.j2
+    dest: /etc/krb5.conf
+    backup: yes
+  when: enable_kerberos | default(true)
+
+- name: Join domain (if configured)
+  ansible.builtin.shell: |
+    echo "{{ domain_admin_password }}" | realm join --user={{ domain_admin_user }} {{ domain_name }}
+  when: 
+    - join_domain | default(false)
+    - domain_name is defined
+    - domain_admin_user is defined
+    - domain_admin_password is defined
+
+- name: Configure PAM for enterprise authentication
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    backup: yes
+  loop:
+    - { src: "pam_system_auth.j2", dest: "/etc/pam.d/system-auth" }
+    - { src: "pam_password_auth.j2", dest: "/etc/pam.d/password-auth" }
+  when: configure_pam | default(true)
+
+- name: Setup LDAP integration
+  ansible.builtin.template:
+    src: ldap.conf.j2
+    dest: /etc/openldap/ldap.conf
+    backup: yes
+  when: enable_ldap | default(false)
+
+- name: Configure sudo rules for enterprise groups
+  ansible.builtin.template:
+    src: enterprise_sudo.j2
+    dest: /etc/sudoers.d/enterprise_groups
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+- name: Setup role-based access control
+  ansible.builtin.template:
+    src: rbac_config.json.j2
+    dest: "{{ iam_config_path }}/rbac_config.json"
+    mode: '0644'
+
+- name: Create IAM audit logging
+  ansible.builtin.template:
+    src: iam_audit.conf.j2
+    dest: /etc/rsyslog.d/50-iam-audit.conf
+    backup: yes
+  notify: restart rsyslog
+
+- name: Configure SSH for enterprise authentication
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^{{ item.key }}"
+    line: "{{ item.key }} {{ item.value }}"
+    backup: yes
+  loop:
+    - { key: "GSSAPIAuthentication", value: "yes" }
+    - { key: "GSSAPICleanupCredentials", value: "yes" }
+    - { key: "UsePAM", value: "yes" }
+    - { key: "ChallengeResponseAuthentication", value: "yes" }
+  notify: restart sshd
+  when: configure_ssh_enterprise | default(true)
+
+- name: Setup multi-factor authentication
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - google-authenticator
+    - libpam-google-authenticator
+  when: enable_mfa | default(false)
+
+- name: Configure MFA for PAM
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/sshd
+    line: "auth required pam_google_authenticator.so"
+    insertafter: "@include common-auth"
+  when: enable_mfa | default(false)
+
+- name: Create enterprise user management scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ iam_scripts_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "user_sync.sh.j2", dest: "user_sync.sh" }
+    - { src: "group_sync.sh.j2", dest: "group_sync.sh" }
+    - { src: "access_review.sh.j2", dest: "access_review.sh" }
+
+- name: Schedule user synchronization
+  ansible.builtin.cron:
+    name: "Enterprise User Sync"
+    minute: "0"
+    hour: "*/4"
+    job: "{{ iam_scripts_path }}/user_sync.sh >> /var/log/user_sync.log 2>&1"
+    user: root
+
+- name: Schedule access review
+  ansible.builtin.cron:
+    name: "Monthly Access Review"
+    minute: "0"
+    hour: "2"
+    day: "1"
+    job: "{{ iam_scripts_path }}/access_review.sh >> /var/log/access_review.log 2>&1"
+    user: root
+
+- name: Configure session management
+  ansible.builtin.template:
+    src: session_config.conf.j2
+    dest: /etc/security/limits.d/session_limits.conf
+    mode: '0644'
+
+- name: Setup privileged access management
+  ansible.builtin.template:
+    src: pam_config.json.j2
+    dest: "{{ iam_config_path }}/pam_config.json"
+    mode: '0600'
+  when: enable_pam_integration | default(false)
+
+- name: Start and enable IAM services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - sssd
+    - rsyslog
+
+- name: Validate IAM integration
+  ansible.builtin.shell: |
+    # Test domain connectivity
+    if [ "{{ join_domain | default(false) }}" = "true" ]; then
+      realm list
+    fi
+    
+    # Test SSSD
+    sss_cache -E
+    getent passwd | grep -q "@{{ domain_name | default('example.com') }}" || echo "No domain users found"
+    
+    # Test Kerberos
+    if [ "{{ enable_kerberos | default(true) }}" = "true" ]; then
+      klist -k /etc/krb5.keytab 2>/dev/null || echo "No Kerberos keytab found"
+    fi
+  register: iam_validation
+  changed_when: false
+
+- name: Log IAM integration status
+  ansible.builtin.lineinfile:
+    path: /var/log/iam_integration.log
+    line: "{{ ansible_date_time.iso8601 }} - IAM integration completed - Validation: {{ iam_validation.stdout_lines | join(' | ') }}"
+    create: yes

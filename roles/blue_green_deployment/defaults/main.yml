@@ -1,0 +1,37 @@
+
+---
+# Blue-Green Deployment Default Variables
+application_name: "myapp"
+app_port: 8080
+app_user: "app"
+app_group: "app"
+
+# Deployment settings
+deployment_timeout: 300
+health_check_retries: 5
+health_check_delay: 10
+traffic_switch_delay: 30
+
+# Environment settings
+domain_name: "localhost"
+load_balancer_ip: "{{ ansible_default_ipv4.address }}"
+
+# Notification settings
+notification_email: ""
+
+# DNS switching (optional)
+dns_switching_enabled: false
+dns_api_endpoint: ""
+dns_api_token: ""
+
+# Smoke test endpoints
+smoke_test_endpoints:
+  - "/api/status"
+  - "/api/version"
+  - "/health"
+
+# Configuration templates
+config_templates: []
+
+# Database health check
+database_health_check_command: ""

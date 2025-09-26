@@ -1,0 +1,56 @@
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://{{ prometheus_host | default('localhost') }}:{{ prometheus_port | default(9090) }}
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "POST"
+{% if prometheus_basic_auth_user is defined %}
+    basicAuth: true
+    basicAuthUser: {{ prometheus_basic_auth_user }}
+    secureJsonData:
+      basicAuthPassword: {{ prometheus_basic_auth_password }}
+{% endif %}
+
+{% if grafana_additional_datasources is defined %}
+{% for datasource in grafana_additional_datasources %}
+  - name: {{ datasource.name }}
+    type: {{ datasource.type }}
+    access: {{ datasource.access | default('proxy') }}
+    url: {{ datasource.url }}
+    isDefault: {{ datasource.isDefault | default(false) }}
+    editable: {{ datasource.editable | default(true) }}
+{% if datasource.database is defined %}
+    database: {{ datasource.database }}
+{% endif %}
+{% if datasource.user is defined %}
+    user: {{ datasource.user }}
+{% endif %}
+{% if datasource.basicAuth is defined %}
+    basicAuth: {{ datasource.basicAuth }}
+{% endif %}
+{% if datasource.basicAuthUser is defined %}
+    basicAuthUser: {{ datasource.basicAuthUser }}
+{% endif %}
+{% if datasource.jsonData is defined %}
+    jsonData:
+{% for key, value in datasource.jsonData.items() %}
+      {{ key }}: {{ value }}
+{% endfor %}
+{% endif %}
+{% if datasource.secureJsonData is defined %}
+    secureJsonData:
+{% for key, value in datasource.secureJsonData.items() %}
+      {{ key }}: {{ value }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+

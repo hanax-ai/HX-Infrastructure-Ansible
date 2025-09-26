@@ -1,0 +1,116 @@
+---
+- name: Create self-healing directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /opt/hx/self-healing
+    - /opt/hx/ai-models/self-healing
+    - /var/log/hx-self-healing
+    - /opt/hx/remediation-scripts
+
+- name: Install self-healing dependencies
+  pip:
+    name:
+      - scikit-learn>=1.3.0
+      - pandas>=2.0.0
+      - numpy>=1.24.0
+      - requests>=2.31.0
+      - pyyaml>=6.0
+      - psutil>=5.9.0
+      - kubernetes>=27.2.0
+      - docker>=6.1.0
+      - slack-sdk>=3.21.0
+    state: present
+    virtualenv: /opt/hx/venv
+
+- name: Deploy self-healing engine
+  template:
+    src: self_healing_engine.py.j2
+    dest: /opt/hx/self-healing/engine.py
+    mode: '0755'
+  notify: restart self healing
+
+- name: Deploy incident detector
+  template:
+    src: incident_detector.py.j2
+    dest: /opt/hx/self-healing/incident_detector.py
+    mode: '0755'
+  notify: restart self healing
+
+- name: Deploy remediation executor
+  template:
+    src: remediation_executor.py.j2
+    dest: /opt/hx/self-healing/remediation_executor.py
+    mode: '0755'
+  notify: restart self healing
+
+- name: Deploy root cause analyzer
+  template:
+    src: root_cause_analyzer.py.j2
+    dest: /opt/hx/self-healing/root_cause_analyzer.py
+    mode: '0755'
+  notify: restart self healing
+
+- name: Create remediation scripts
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - src: service_restart.sh.j2
+      dest: /opt/hx/remediation-scripts/service_restart.sh
+    - src: resource_scaling.sh.j2
+      dest: /opt/hx/remediation-scripts/resource_scaling.sh
+    - src: failover.sh.j2
+      dest: /opt/hx/remediation-scripts/failover.sh
+    - src: log_cleanup.sh.j2
+      dest: /opt/hx/remediation-scripts/log_cleanup.sh
+
+- name: Create self-healing systemd service
+  template:
+    src: hx-self-healing.service.j2
+    dest: /etc/systemd/system/hx-self-healing.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart self healing
+
+- name: Deploy configuration files
+  template:
+    src: self_healing_config.yml.j2
+    dest: /opt/hx/self-healing/config.yml
+    mode: '0644'
+  notify: restart self healing
+
+- name: Create ML model training script
+  template:
+    src: train_incident_classifier.py.j2
+    dest: /opt/hx/self-healing/train_models.py
+    mode: '0755'
+
+- name: Set up cron job for model training
+  cron:
+    name: "Self-healing model training"
+    minute: "0"
+    hour: "4"
+    job: "/opt/hx/venv/bin/python /opt/hx/self-healing/train_models.py"
+    user: root
+
+- name: Start and enable self-healing service
+  systemd:
+    name: hx-self-healing
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Verify self-healing health
+  uri:
+    url: "http://localhost:8085/health"
+    method: GET
+    timeout: 10
+  register: self_healing_health
+  retries: 5
+  delay: 10
+  until: self_healing_health.status == 200

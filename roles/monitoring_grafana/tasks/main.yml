@@ -1,0 +1,137 @@
+
+---
+- name: Add Grafana APT repository key
+  apt_key:
+    url: https://apt.grafana.com/gpg.key
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Grafana APT repository
+  apt_repository:
+    repo: "deb https://apt.grafana.com stable main"
+    state: present
+    update_cache: true
+  when: ansible_os_family == "Debian"
+
+- name: Add Grafana YUM repository
+  yum_repository:
+    name: grafana
+    description: Grafana Repository
+    baseurl: https://rpm.grafana.com
+    gpgkey: https://rpm.grafana.com/gpg.key
+    gpgcheck: true
+    enabled: true
+  when: ansible_os_family == "RedHat"
+
+- name: Install Grafana
+  package:
+    name: grafana
+    state: present
+
+- name: Create Grafana directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+  loop:
+    - /etc/grafana/provisioning/datasources
+    - /etc/grafana/provisioning/dashboards
+    - /var/lib/grafana/dashboards
+
+- name: Configure Grafana
+  template:
+    src: grafana.ini.j2
+    dest: /etc/grafana/grafana.ini
+    owner: root
+    group: grafana
+    mode: '0640'
+  notify: restart grafana
+
+- name: Configure Grafana datasources
+  template:
+    src: datasources.yml.j2
+    dest: /etc/grafana/provisioning/datasources/datasources.yml
+    owner: root
+    group: grafana
+    mode: '0644'
+  notify: restart grafana
+
+- name: Configure Grafana dashboard provisioning
+  template:
+    src: dashboards.yml.j2
+    dest: /etc/grafana/provisioning/dashboards/dashboards.yml
+    owner: root
+    group: grafana
+    mode: '0644'
+  notify: restart grafana
+
+- name: Copy dashboard files
+  copy:
+    src: "{{ item }}"
+    dest: "/var/lib/grafana/dashboards/{{ item | basename }}"
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  with_fileglob:
+    - "dashboards/*.json"
+  notify: restart grafana
+
+- name: Start and enable Grafana service
+  systemd:
+    name: grafana-server
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Configure firewall for Grafana
+  ufw:
+    rule: allow
+    port: "{{ grafana_port }}"
+    proto: tcp
+  when: configure_firewall | default(true)
+
+- name: Wait for Grafana to start
+  uri:
+    url: "http://localhost:{{ grafana_port }}/api/health"
+    method: GET
+    status_code: 200
+  retries: 10
+  delay: 5
+
+- name: Change default admin password
+  uri:
+    url: "http://localhost:{{ grafana_port }}/api/user/password"
+    method: PUT
+    user: admin
+    password: admin
+    force_basic_auth: true
+    body_format: json
+    body:
+      oldPassword: "admin"
+      newPassword: "{{ grafana_admin_password }}"
+    status_code: 200
+  when: grafana_admin_password is defined and grafana_admin_password != "admin"
+  ignore_errors: true
+
+- name: Create Grafana API key
+  uri:
+    url: "http://localhost:{{ grafana_port }}/api/auth/keys"
+    method: POST
+    user: admin
+    password: "{{ grafana_admin_password | default('admin') }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: "ansible-automation"
+      role: "Admin"
+    status_code: 200
+  register: grafana_api_key_result
+  when: grafana_create_api_key | default(false)
+
+- name: Save Grafana API key
+  set_fact:
+    grafana_api_key: "{{ grafana_api_key_result.json.key }}"
+  when: grafana_create_api_key | default(false) and grafana_api_key_result is succeeded
+
