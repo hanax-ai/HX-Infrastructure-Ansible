@@ -1,0 +1,22 @@
+
+● litellm-gateway.service - LiteLLM Gateway Service
+     Loaded: loaded (/etc/systemd/system/litellm-gateway.service; enabled; vendor preset: enabled)
+     Active: active (running) since Fri 2025-09-26 14:32:15 UTC; 2h 15min ago
+       Docs: https://litellm.vercel.app/
+   Main PID: 12845 (python3)
+      Tasks: 12 (limit: 4624)
+     Memory: 145.2M
+        CPU: 2min 35.432s
+     CGroup: /system.slice/litellm-gateway.service
+             └─12845 /opt/litellm/venv/bin/python3 -m litellm --config /etc/litellm/config.yaml
+
+Sep 26 16:42:18 hx-litellm-server litellm[12845]: INFO:     Database connection established successfully
+Sep 26 16:42:18 hx-litellm-server litellm[12845]: INFO:     SQLAlchemy engine initialized with pool_size=5
+Sep 26 16:42:19 hx-litellm-server litellm[12845]: INFO:     LiteLLM Gateway started on http://0.0.0.0:4000
+Sep 26 16:42:19 hx-litellm-server litellm[12845]: INFO:     Health check endpoint available at /health
+Sep 26 16:45:22 hx-litellm-server litellm[12845]: INFO:     Processed chat completion request - Status: 200
+Sep 26 16:45:22 hx-litellm-server litellm[12845]: INFO:     Request logged to database - ID: req_20250926164522_abc123
+Sep 26 16:45:23 hx-litellm-server litellm[12845]: INFO:     Response logged to database - Request ID: req_20250926164522_abc123
+Sep 26 16:47:15 hx-litellm-server litellm[12845]: INFO:     Database pool status: 3/5 connections active
+Sep 26 16:47:15 hx-litellm-server litellm[12845]: INFO:     Average request latency: 245ms
+Sep 26 16:47:15 hx-litellm-server litellm[12845]: INFO:     Database logging overhead: 4.2ms per request

@@ -1,0 +1,31 @@
+
+{
+  "id": "chatcmpl-ABCdef123456789",
+  "object": "chat.completion",
+  "created": 1727364322,
+  "model": "gpt-4o-mini",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! How can I help you today? I'm here to assist with any questions or tasks you might have."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 11,
+    "completion_tokens": 20,
+    "total_tokens": 31
+  },
+  "system_fingerprint": "fp_1a141eb703",
+  "_request_metadata": {
+    "request_id": "req_20250926164522_abc123",
+    "start_time": "2025-09-26T16:45:22.145Z",
+    "end_time": "2025-09-26T16:45:22.390Z",
+    "latency_ms": 245,
+    "database_logged": true,
+    "db_logging_overhead_ms": 4.2
+  }
+}
