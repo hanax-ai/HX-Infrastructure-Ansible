@@ -1,0 +1,16 @@
+---
+# Test Environment Global Variables
+environment: test
+domain_suffix: test.hanax.local
+log_level: info
+backup_retention_days: 14
+
+# Security settings for testing
+security_level: standard
+ssl_enabled: true
+firewall_strict_mode: true
+
+# Performance settings
+max_connections: 200
+cache_enabled: true
+monitoring_enabled: true

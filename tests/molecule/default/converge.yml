@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include common role"
+      include_role:
+        name: "common"
+      vars:
+        some_var: some_value

@@ -1,0 +1,26 @@
+---
+# Security Hardening Playbook
+- name: Security Hardening
+  hosts: all
+  become: yes
+  gather_facts: yes
+  
+  roles:
+    - geerlingguy.security
+    - geerlingguy.firewall
+  
+  tasks:
+    - name: Ensure SSH key-based authentication
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+      notify: restart ssh
+      when: security_level == "high"
+      
+  handlers:
+    - name: restart ssh
+      service:
+        name: ssh
+        state: restarted
