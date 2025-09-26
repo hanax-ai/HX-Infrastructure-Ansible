@@ -1,0 +1,142 @@
+
+---
+# Performance Optimization Tasks
+- name: Optimize kernel parameters
+  ansible.builtin.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop: "{{ kernel_optimizations | default([]) }}"
+
+- name: Configure CPU governor for performance
+  ansible.builtin.shell: |
+    for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+      if [ -f "$cpu" ]; then
+        echo "{{ cpu_governor | default('performance') }}" > "$cpu"
+      fi
+    done
+  when: optimize_cpu_governor | default(true)
+
+- name: Optimize network settings
+  ansible.builtin.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - { name: "net.core.rmem_max", value: "134217728" }
+    - { name: "net.core.wmem_max", value: "134217728" }
+    - { name: "net.ipv4.tcp_rmem", value: "4096 87380 134217728" }
+    - { name: "net.ipv4.tcp_wmem", value: "4096 65536 134217728" }
+    - { name: "net.core.netdev_max_backlog", value: "5000" }
+    - { name: "net.ipv4.tcp_congestion_control", value: "bbr" }
+  when: optimize_network | default(true)
+
+- name: Optimize disk I/O settings
+  ansible.builtin.shell: |
+    # Set I/O scheduler
+    for disk in /sys/block/*/queue/scheduler; do
+      if [ -f "$disk" ]; then
+        echo "{{ io_scheduler | default('mq-deadline') }}" > "$disk"
+      fi
+    done
+    
+    # Set read-ahead values
+    for disk in /sys/block/*/queue/read_ahead_kb; do
+      if [ -f "$disk" ]; then
+        echo "{{ read_ahead_kb | default('128') }}" > "$disk"
+      fi
+    done
+  when: optimize_disk_io | default(true)
+
+- name: Configure memory optimization
+  ansible.builtin.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - { name: "vm.swappiness", value: "{{ swappiness | default('10') }}" }
+    - { name: "vm.dirty_ratio", value: "{{ dirty_ratio | default('15') }}" }
+    - { name: "vm.dirty_background_ratio", value: "{{ dirty_background_ratio | default('5') }}" }
+    - { name: "vm.vfs_cache_pressure", value: "{{ vfs_cache_pressure | default('50') }}" }
+  when: optimize_memory | default(true)
+
+- name: Optimize application-specific settings
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    backup: yes
+  loop: "{{ app_config_optimizations | default([]) }}"
+  notify: restart application services
+
+- name: Configure database performance tuning
+  ansible.builtin.template:
+    src: "{{ item.template }}"
+    dest: "{{ item.config_path }}"
+    backup: yes
+  loop: "{{ database_optimizations | default([]) }}"
+  notify: restart database services
+
+- name: Setup performance tuning profiles
+  ansible.builtin.template:
+    src: tuned_profile.conf.j2
+    dest: "/etc/tuned/{{ performance_profile_name }}/tuned.conf"
+    mode: '0644'
+  vars:
+    performance_profile_name: "{{ tuned_profile | default('hx-optimized') }}"
+
+- name: Activate performance tuning profile
+  ansible.builtin.shell: |
+    tuned-adm profile {{ tuned_profile | default('hx-optimized') }}
+  when: use_tuned_profiles | default(true)
+
+- name: Create performance optimization validation script
+  ansible.builtin.template:
+    src: validate_optimizations.sh.j2
+    dest: "{{ performance_scripts_path }}/validate_optimizations.sh"
+    mode: '0755'
+
+- name: Run performance optimization validation
+  ansible.builtin.shell: "{{ performance_scripts_path }}/validate_optimizations.sh"
+  register: optimization_validation
+
+- name: Configure application connection pooling
+  ansible.builtin.template:
+    src: connection_pool.conf.j2
+    dest: "{{ app_config_path }}/connection_pool.conf"
+    backup: yes
+  when: configure_connection_pooling | default(false)
+  notify: restart application services
+
+- name: Setup caching optimization
+  ansible.builtin.template:
+    src: cache_config.conf.j2
+    dest: "{{ cache_config_path }}/cache.conf"
+    backup: yes
+  when: configure_caching | default(false)
+  notify: restart cache services
+
+- name: Optimize web server configuration
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    backup: yes
+  loop:
+    - { src: "nginx_performance.conf.j2", dest: "/etc/nginx/conf.d/performance.conf" }
+    - { src: "apache_performance.conf.j2", dest: "/etc/httpd/conf.d/performance.conf" }
+  when: optimize_web_server | default(false)
+  notify: restart web server
+
+- name: Create performance benchmark script
+  ansible.builtin.template:
+    src: performance_benchmark.sh.j2
+    dest: "{{ performance_scripts_path }}/performance_benchmark.sh"
+    mode: '0755'
+
+- name: Log performance optimization completion
+  ansible.builtin.lineinfile:
+    path: /var/log/performance_optimization.log
+    line: "{{ ansible_date_time.iso8601 }} - Performance optimization completed - Validation: {{ optimization_validation.stdout_lines[-1] if optimization_validation.stdout_lines else 'No output' }}"
+    create: yes

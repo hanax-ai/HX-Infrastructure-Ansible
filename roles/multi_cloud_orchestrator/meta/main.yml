@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  author: HX Infrastructure Team
+  description: Multi-cloud orchestration and management with intelligent workload placement
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - multi-cloud
+    - orchestration
+    - workload-placement
+    - cost-optimization
+
+dependencies:
+  - role: common
+  - role: intelligent_monitoring

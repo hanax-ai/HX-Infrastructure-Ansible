@@ -1,0 +1,89 @@
+---
+- name: Create AI orchestrator directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /opt/hx/ai-orchestrator
+    - /opt/hx/ai-models
+    - /opt/hx/deployment-logs
+    - /var/log/hx-orchestrator
+
+- name: Install AI/ML dependencies
+  pip:
+    name:
+      - scikit-learn>=1.3.0
+      - pandas>=2.0.0
+      - numpy>=1.24.0
+      - tensorflow>=2.13.0
+      - prometheus-client>=0.17.0
+      - kubernetes>=27.2.0
+    state: present
+    virtualenv: /opt/hx/venv
+
+- name: Deploy AI decision engine
+  template:
+    src: ai_decision_engine.py.j2
+    dest: /opt/hx/ai-orchestrator/decision_engine.py
+    mode: '0755'
+  notify: restart ai orchestrator
+
+- name: Deploy deployment orchestrator service
+  template:
+    src: deployment_orchestrator.py.j2
+    dest: /opt/hx/ai-orchestrator/orchestrator.py
+    mode: '0755'
+  notify: restart ai orchestrator
+
+- name: Create orchestrator systemd service
+  template:
+    src: hx-ai-orchestrator.service.j2
+    dest: /etc/systemd/system/hx-ai-orchestrator.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart ai orchestrator
+
+- name: Deploy configuration files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - src: orchestrator_config.yml.j2
+      dest: /opt/hx/ai-orchestrator/config.yml
+    - src: deployment_strategies.yml.j2
+      dest: /opt/hx/ai-orchestrator/strategies.yml
+  notify: restart ai orchestrator
+
+- name: Create AI model training script
+  template:
+    src: train_deployment_model.py.j2
+    dest: /opt/hx/ai-orchestrator/train_model.py
+    mode: '0755'
+
+- name: Set up cron job for model retraining
+  cron:
+    name: "AI model retraining"
+    minute: "0"
+    hour: "2"
+    job: "/opt/hx/venv/bin/python /opt/hx/ai-orchestrator/train_model.py"
+    user: root
+
+- name: Start and enable AI orchestrator service
+  systemd:
+    name: hx-ai-orchestrator
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Verify AI orchestrator health
+  uri:
+    url: "http://localhost:8080/health"
+    method: GET
+    timeout: 10
+  register: orchestrator_health
+  retries: 5
+  delay: 10
+  until: orchestrator_health.status == 200

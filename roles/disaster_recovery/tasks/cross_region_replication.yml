@@ -1,0 +1,50 @@
+
+---
+# Cross-Region Replication Tasks
+- name: Setup cross-region replication configuration
+  ansible.builtin.template:
+    src: replication_config.json.j2
+    dest: /etc/dr/replication_config.json
+    mode: '0600'
+
+- name: Create replication scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ dr_scripts_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "replicate_to_dr.sh.j2", dest: "replicate_to_dr.sh" }
+    - { src: "sync_validation.sh.j2", dest: "sync_validation.sh" }
+
+- name: Setup cross-region backup replication
+  ansible.builtin.shell: |
+    {% if backup_storage_type == 'aws_s3' %}
+    # Setup S3 cross-region replication
+    aws s3api put-bucket-replication --bucket {{ backup_s3_bucket }} --replication-configuration file:///etc/dr/s3_replication_config.json
+    {% elif backup_storage_type == 'azure_blob' %}
+    # Setup Azure blob replication
+    az storage account update --name {{ backup_storage_account }} --resource-group {{ backup_resource_group }} --enable-geo-redundant-backup true
+    {% elif backup_storage_type == 'gcp_storage' %}
+    # Setup GCP storage replication
+    gsutil rsync -r -d gs://{{ backup_gcp_bucket }}/ gs://{{ backup_gcp_bucket_dr }}/
+    {% endif %}
+  when: enable_automated_replication | default(true)
+
+- name: Schedule cross-region replication
+  ansible.builtin.cron:
+    name: "Cross-region backup replication"
+    minute: "0"
+    hour: "*/6"
+    job: "{{ dr_scripts_path }}/replicate_to_dr.sh >> /var/log/dr_replication.log 2>&1"
+    user: root
+
+- name: Validate cross-region replication
+  ansible.builtin.shell: "{{ dr_scripts_path }}/sync_validation.sh"
+  register: replication_validation
+  changed_when: false
+
+- name: Log replication status
+  ansible.builtin.lineinfile:
+    path: /var/log/dr_replication.log
+    line: "{{ ansible_date_time.iso8601 }} - Cross-region replication setup completed - Status: {{ replication_validation.stdout }}"
+    create: yes

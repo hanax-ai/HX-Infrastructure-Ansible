@@ -1,0 +1,22 @@
+
+---
+# Performance Optimization and Auto-scaling Role - Main Tasks
+- name: Include performance monitoring setup tasks
+  include_tasks: performance_monitoring.yml
+  tags: [monitoring, performance]
+
+- name: Include auto-scaling configuration tasks
+  include_tasks: auto_scaling.yml
+  tags: [scaling, performance]
+
+- name: Include performance optimization tasks
+  include_tasks: optimize_performance.yml
+  tags: [optimization, performance]
+
+- name: Include capacity planning tasks
+  include_tasks: capacity_planning.yml
+  tags: [capacity, performance]
+
+- name: Include cost optimization tasks
+  include_tasks: cost_optimization.yml
+  tags: [cost, optimization]

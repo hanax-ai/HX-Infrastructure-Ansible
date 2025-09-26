@@ -1,0 +1,198 @@
+
+---
+# Enterprise Logging Integration Tasks
+- name: Install enterprise logging tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - rsyslog
+    - logrotate
+    - filebeat
+    - rsyslog-elasticsearch
+    - rsyslog-kafka
+
+- name: Configure centralized logging
+  ansible.builtin.template:
+    src: rsyslog_enterprise.conf.j2
+    dest: /etc/rsyslog.d/10-enterprise-logging.conf
+    backup: yes
+  notify: restart rsyslog
+
+- name: Configure log forwarding to SIEM
+  ansible.builtin.template:
+    src: siem_forwarding.conf.j2
+    dest: /etc/rsyslog.d/20-siem-forwarding.conf
+    backup: yes
+  notify: restart rsyslog
+  when: siem_endpoint is defined
+
+- name: Setup Filebeat for log shipping
+  ansible.builtin.template:
+    src: filebeat.yml.j2
+    dest: /etc/filebeat/filebeat.yml
+    backup: yes
+  notify: restart filebeat
+
+- name: Configure log parsing and enrichment
+  ansible.builtin.template:
+    src: log_parser.conf.j2
+    dest: /etc/rsyslog.d/30-log-parsing.conf
+    backup: yes
+  notify: restart rsyslog
+
+- name: Setup application log collection
+  ansible.builtin.template:
+    src: app_log_collection.conf.j2
+    dest: /etc/rsyslog.d/40-application-logs.conf
+    backup: yes
+  notify: restart rsyslog
+
+- name: Configure security log monitoring
+  ansible.builtin.template:
+    src: security_log_monitor.conf.j2
+    dest: /etc/rsyslog.d/50-security-monitoring.conf
+    backup: yes
+  notify: restart rsyslog
+
+- name: Setup log retention policies
+  ansible.builtin.template:
+    src: enterprise_logrotate.j2
+    dest: /etc/logrotate.d/enterprise_logs
+    mode: '0644'
+
+- name: Create log analysis scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ logging_scripts_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "log_analyzer.py.j2", dest: "log_analyzer.py" }
+    - { src: "security_event_detector.sh.j2", dest: "security_event_detector.sh" }
+    - { src: "log_health_check.sh.j2", dest: "log_health_check.sh" }
+    - { src: "log_report_generator.py.j2", dest: "log_report_generator.py" }
+
+- name: Configure log correlation rules
+  ansible.builtin.template:
+    src: correlation_rules.json.j2
+    dest: "{{ logging_config_path }}/correlation_rules.json"
+    mode: '0644'
+
+- name: Setup real-time log monitoring
+  ansible.builtin.cron:
+    name: "Security Event Detection"
+    minute: "*/5"
+    hour: "*"
+    job: "{{ logging_scripts_path }}/security_event_detector.sh >> /var/log/security_events.log 2>&1"
+    user: root
+
+- name: Schedule log health checks
+  ansible.builtin.cron:
+    name: "Log Health Check"
+    minute: "*/15"
+    hour: "*"
+    job: "{{ logging_scripts_path }}/log_health_check.sh >> /var/log/log_health.log 2>&1"
+    user: root
+
+- name: Schedule daily log analysis
+  ansible.builtin.cron:
+    name: "Daily Log Analysis"
+    minute: "0"
+    hour: "6"
+    job: "{{ logging_scripts_path }}/log_analyzer.py daily >> /var/log/log_analysis.log 2>&1"
+    user: root
+
+- name: Configure log encryption
+  ansible.builtin.template:
+    src: log_encryption.conf.j2
+    dest: /etc/rsyslog.d/60-log-encryption.conf
+    backup: yes
+  notify: restart rsyslog
+  when: enable_log_encryption | default(false)
+
+- name: Setup log integrity monitoring
+  ansible.builtin.template:
+    src: log_integrity.sh.j2
+    dest: "{{ logging_scripts_path }}/log_integrity.sh"
+    mode: '0755'
+
+- name: Schedule log integrity checks
+  ansible.builtin.cron:
+    name: "Log Integrity Check"
+    minute: "0"
+    hour: "2"
+    job: "{{ logging_scripts_path }}/log_integrity.sh >> /var/log/log_integrity.log 2>&1"
+    user: root
+
+- name: Configure log backup and archival
+  ansible.builtin.template:
+    src: log_backup.sh.j2
+    dest: "{{ logging_scripts_path }}/log_backup.sh"
+    mode: '0755'
+
+- name: Schedule log backup
+  ansible.builtin.cron:
+    name: "Daily Log Backup"
+    minute: "0"
+    hour: "1"
+    job: "{{ logging_scripts_path }}/log_backup.sh >> /var/log/log_backup.log 2>&1"
+    user: root
+
+- name: Setup log dashboard
+  ansible.builtin.template:
+    src: logging_dashboard.json.j2
+    dest: "{{ logging_dashboard_path }}/enterprise_logging.json"
+    mode: '0644'
+
+- name: Configure log alerting
+  ansible.builtin.template:
+    src: log_alerts.py.j2
+    dest: "{{ logging_scripts_path }}/log_alerts.py"
+    mode: '0755'
+
+- name: Setup log alerting cron
+  ansible.builtin.cron:
+    name: "Log Alerting"
+    minute: "*/10"
+    hour: "*"
+    job: "{{ logging_scripts_path }}/log_alerts.py >> /var/log/log_alerts.log 2>&1"
+    user: root
+
+- name: Create log directories with proper permissions
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner | default('syslog') }}"
+    group: "{{ item.group | default('adm') }}"
+    mode: "{{ item.mode | default('0755') }}"
+  loop: "{{ enterprise_log_directories | default([]) }}"
+
+- name: Start and enable logging services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - rsyslog
+    - filebeat
+
+- name: Validate logging configuration
+  ansible.builtin.shell: |
+    # Test rsyslog configuration
+    rsyslogd -N1
+    
+    # Test filebeat configuration
+    filebeat test config
+    
+    # Check log forwarding
+    logger "Test message from {{ inventory_hostname }}"
+    sleep 2
+    tail -n 1 /var/log/messages | grep "Test message"
+  register: logging_validation
+  changed_when: false
+
+- name: Log enterprise logging setup completion
+  ansible.builtin.lineinfile:
+    path: /var/log/enterprise_logging_setup.log
+    line: "{{ ansible_date_time.iso8601 }} - Enterprise logging setup completed - Validation: {{ 'SUCCESS' if logging_validation.rc == 0 else 'PARTIAL' }}"
+    create: yes

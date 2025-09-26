@@ -1,0 +1,16 @@
+---
+# Development Environment Global Variables
+environment: development
+domain_suffix: dev.hanax.local
+log_level: debug
+backup_retention_days: 7
+
+# Security settings for development
+security_level: basic
+ssl_enabled: false
+firewall_strict_mode: false
+
+# Performance settings
+max_connections: 100
+cache_enabled: true
+monitoring_enabled: true

@@ -1,0 +1,26 @@
+---
+galaxy_info:
+  author: HX Infrastructure Team
+  description: AI-driven deployment orchestration with intelligent decision making
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: CentOS
+      versions:
+        - 8
+        - 9
+  galaxy_tags:
+    - ai
+    - deployment
+    - orchestration
+    - automation
+
+dependencies:
+  - role: common
+  - role: health_monitoring
+  - role: blue_green_deployment

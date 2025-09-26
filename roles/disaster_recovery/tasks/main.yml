@@ -1,0 +1,24 @@
+
+---
+# Disaster Recovery Role - Main Tasks
+- name: Include backup tasks
+  include_tasks: backup.yml
+  tags: [backup, dr]
+
+- name: Include disaster recovery preparation tasks
+  include_tasks: dr_preparation.yml
+  tags: [dr_prep, dr]
+
+- name: Include recovery tasks
+  include_tasks: recovery.yml
+  tags: [recovery, dr]
+  when: dr_mode == "recovery"
+
+- name: Include backup validation tasks
+  include_tasks: validate_backups.yml
+  tags: [validation, dr]
+
+- name: Include cross-region replication tasks
+  include_tasks: cross_region_replication.yml
+  tags: [replication, dr]
+  when: enable_cross_region_replication | default(false)
