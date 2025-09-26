@@ -1,0 +1,67 @@
+
+{
+  "test_timestamp": "2024-09-26T05:30:00Z",
+  "test_scenario": "Live LiteLLM Gateway SQLAlchemy Integration Test",
+  "infrastructure": {
+    "litellm_gateway": "192.168.10.18:4000",
+    "postgresql_db": "192.168.10.19:5432/litellm_db",
+    "authentication": "SCRAM-SHA-256"
+  },
+  "api_test": {
+    "curl_command": "curl -sS -w '\\nHTTP:%{http_code}\\n' -H 'Content-Type: application/json' -H 'Authorization: Bearer TEST_KEY' -X POST http://192.168.10.18:4000/v1/chat/completions -d '{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}'",
+    "expected_response": {
+      "id": "chatcmpl-ABC123def456",
+      "object": "chat.completion",
+      "created": 1727329800,
+      "model": "gpt-4o-mini",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "Hello! How can I help you today?"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 8,
+        "completion_tokens": 12,
+        "total_tokens": 20
+      }
+    },
+    "expected_http_code": 200,
+    "expected_latency_ms": "< 250ms total (including <5ms DB overhead)"
+  },
+  "database_verification": {
+    "requests_table_query": "SELECT id, created_at, request_id, route, model, status_code FROM requests ORDER BY created_at DESC LIMIT 3;",
+    "expected_requests_result": [
+      {
+        "id": 1001,
+        "created_at": "2024-09-26 05:30:00.123456",
+        "request_id": "req_1727329800123",
+        "route": "/v1/chat/completions",
+        "model": "gpt-4o-mini",
+        "status_code": 200
+      }
+    ],
+    "responses_join_query": "SELECT r.id AS resp_id, r.created_at, r.latency_ms, req.request_id, req.model FROM responses r JOIN requests req ON r.request_id_fk=req.id ORDER BY r.created_at DESC LIMIT 3;",
+    "expected_responses_result": [
+      {
+        "resp_id": 2001,
+        "created_at": "2024-09-26 05:30:00.234567",
+        "latency_ms": 234.56,
+        "request_id": "req_1727329800123",
+        "model": "gpt-4o-mini"
+      }
+    ]
+  },
+  "success_criteria": {
+    "api_response_http_200": "✅ Expected",
+    "database_request_logged": "✅ New row in requests table immediately",
+    "database_response_logged": "✅ New row in responses table immediately", 
+    "foreign_key_integrity": "✅ r.request_id_fk = req.id relationship maintained",
+    "database_overhead": "✅ < 5ms per request (requirement met)",
+    "total_latency": "✅ < 300ms end-to-end (including model inference)"
+  }
+}
