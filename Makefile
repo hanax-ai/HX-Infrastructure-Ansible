@@ -1,6 +1,7 @@
+
 # HX Infrastructure Ansible Makefile
 
-.PHONY: help install lint syntax-check test security-test deploy-dev deploy-test deploy-prod
+.PHONY: help install lint syntax-check test security-test deploy-dev deploy-test deploy-prod gate-integration gate-performance gate-security
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -43,3 +44,33 @@ clean: ## Clean temporary files
 	find . -name "*.retry" -delete
 	find . -name "__pycache__" -type d -exec rm -rf {} +
 	find . -name "*.pyc" -delete
+
+# Phase 2C Machine-Checkable Gates
+gate-integration: ## Run integration gate validation
+	@echo "Running integration gate validation..."
+	./scripts/gates/gate_integration.sh
+
+gate-performance: ## Run performance gate validation
+	@echo "Running performance gate validation..."
+	./scripts/gates/gate_performance.sh
+
+gate-security: ## Run security gate validation
+	@echo "Running security gate validation..."
+	./scripts/gates/gate_security.sh
+
+# Phase 2C Golden Path Tests
+golden-path-all: ## Run all golden path tests
+	@echo "Running all golden path tests..."
+	./tests/golden_path/blue_green.sh
+	./tests/golden_path/monitoring.sh
+	./tests/golden_path/self_healing.sh
+
+# Phase 2C Performance Benchmarks
+benchmark: ## Run performance benchmarks
+	@echo "Running performance benchmarks..."
+	./scripts/perf_benchmark.sh
+
+# Phase 2C Monitoring Validation
+monitor-validate: ## Validate monitoring pipeline
+	@echo "Validating monitoring pipeline..."
+	./scripts/monitor_validate.sh
