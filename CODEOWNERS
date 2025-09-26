@@ -1,0 +1,51 @@
+# CODEOWNERS - Repository Cleanup Phase 1A
+# This file defines code ownership and review requirements for the HX-Infrastructure-Ansible repository
+# Format: path-pattern @owner1 @owner2 @team
+
+# Global ownership - Infrastructure Team has oversight of all changes
+* @hanax-ai
+
+# Critical infrastructure files require Infrastructure Team review
+/ansible.cfg @hanax-ai
+/site.yml @hanax-ai
+/requirements.yml @hanax-ai
+/Makefile @hanax-ai
+
+# Security-sensitive files require additional review
+/vars/secrets.yml.template @hanax-ai
+/files/ssh_keys/ @hanax-ai
+/roles/*/tasks/security.yml @hanax-ai
+/roles/*/handlers/security.yml @hanax-ai
+
+# CI/CD and automation workflows
+/.github/ @hanax-ai
+/.pre-commit-config.yaml @hanax-ai
+/apply_audit_fixes.sh @hanax-ai
+/implement_phase2_components.sh @hanax-ai
+
+# Documentation requires review for accuracy
+/docs/ @hanax-ai
+/README.md @hanax-ai
+/USER_GUIDE.md @hanax-ai
+/DEVELOPMENT_GUIDE.md @hanax-ai
+/ARCHITECTURE.md @hanax-ai
+
+# Role-specific ownership
+/roles/hx_*/ @hanax-ai
+/inventories/ @hanax-ai
+/group_vars/ @hanax-ai
+/host_vars/ @hanax-ai
+
+# Quality and testing files
+/molecule/ @hanax-ai
+/.ansible-lint @hanax-ai
+/.yamllint @hanax-ai
+/.yamllint.yml @hanax-ai
+/requirements-dev.txt @hanax-ai
+
+# Repository governance and cleanup
+/REPOSITORY_CLEANUP_EXECUTION_PLAN.md @hanax-ai
+/CODEOWNERS @hanax-ai
+
+# Fallback - any unmatched files default to Infrastructure Team
+# This ensures no changes go unreviewed

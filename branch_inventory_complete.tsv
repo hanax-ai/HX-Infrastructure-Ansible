@@ -1,0 +1,36 @@
+origin/phase1a-safety|2025-09-26 13:28:51 +0000|hanax-ai|Add comprehensive Repository Cleanup Execution Plan
+origin/main|2025-09-26 05:46:31 +0000|hanax-ai|Enhance POC-1: Add Python Backend, Testing Framework & Live Infrastructure Test
+origin/phase-1.0-deployment|2025-09-26 05:25:09 +0000|hanax-ai|Update POC-1/RUNBOOK.pdf - Final version
+origin/HEAD|2025-09-26 05:25:09 +0000|hanax-ai|Update POC-1/RUNBOOK.pdf - Final version
+origin/temp/workflow-validation|2025-09-20 17:24:28 -0400|Manus|Fix: Update if condition to include pull_request event
+origin/hotfix/workflow-fixes-2025-09-20|2025-09-20 16:51:20 -0400|Manus|Fix: Address all five Must-Fix items from code review
+origin/fix-ci-pipeline|2025-09-19 15:30:58 +0000|hanax-ai|CI/CD: Fix pipeline failures
+origin/feature/sprint4-final-production|2025-09-19 10:41:13 -0500|HANA-X|Merge pull request #30 from hanax-ai/fix-ci-pipeline
+origin/feature/sprint3-operational-excellence|2025-09-19 06:36:32 +0000|hanax-ai|Sprint 3: Operational Excellence & Advanced Features Implementation
+origin/feature/sprint2-advanced|2025-09-19 06:00:00 +0000|hanax-ai|Sprint 2: Advanced Capabilities Implementation
+origin/emergency-security-merge|2025-09-18 20:22:19 +0000|hanax-ai|📋 EMERGENCY REPORT: Phase 1 Security Action Completion
+origin/feature/coderabbit-remediation|2025-09-18 18:08:58 +0000|hanax-ai|Fix dev inventory YAML syntax error
+origin/feature/pin-critical-directive|2025-09-18 14:54:15 +0000|hanax-ai|CRITICAL: Pin directive & implement Phase 1 fixes
+origin/feature/phase2-security|2025-09-18 14:16:48 -0500|HANA-X|Merge pull request #25 from hanax-ai/feature/coderabbit-remediation
+origin/phase4/quality-standards-complete|2025-09-18 13:04:25 +0000|hanax-ai|Remove workflow files due to GitHub App permissions - will be added manually
+origin/feature/phase-3-4-production-ops|2025-09-18 05:28:23 +0000|HX Infrastructure Team|Phase 3.4 comprehensive implementation: Complete Production Operations & Maintenance Automation
+origin/remediation-phase3_4-comprehensive|2025-09-18 04:59:09 +0000|HX Infrastructure Team|Comprehensive Phase 3.4 Remediation: Critical Security & Configuration Fixes
+origin/fix/phase3_4_remediation|2025-09-18 04:26:08 +0000|HX Infrastructure Team|Fix Critical/Major Issues Per Engineering Code Review
+origin/phase-3.3-backup-automation|2025-09-18 03:55:34 +0000|HX Infrastructure Team|feat: Phase 3.3 - Comprehensive Backup Automation Implementation
+origin/merge-fix-12|2025-09-18 01:22:45 +0000|HX Infrastructure Team|Merge branch 'pr-12' into merge-fix-12
+origin/merge-fix-4|2025-09-18 01:20:53 +0000|HX Infrastructure Team|Merge branch 'pr-4' into merge-fix-4
+origin/merge-fix-11|2025-09-18 01:19:05 +0000|HX Infrastructure Team|Merge branch 'pr-11' into merge-fix-11
+origin/merge-fix-10|2025-09-18 01:17:30 +0000|HX Infrastructure Team|Merge branch 'pr-10' into merge-fix-10
+origin/merge-fix-8|2025-09-18 01:14:38 +0000|HX Infrastructure Team|Merge branch 'pr-8' into merge-fix-8
+origin/fix/critical-missing-remediation-items|2025-09-17 23:11:52 +0000|HX Infrastructure Team|Fix Makefile formatting and duplicate targets
+origin/remediate-r6-r7-feedback|2025-09-17 20:18:15 +0000|HX Infrastructure Team|Remove CI workflow due to GitHub App permissions
+origin/copilot/fix-9c6518a7-e915-4237-9d53-1d294fe9a28e|2025-09-17 19:19:51 +0000|copilot-swe-agent[bot]|Add CodeRabbit AI Review workflow for automated PR reviews
+origin/audit-fixes-20250917-191153|2025-09-17 19:15:01 +0000|HX Infrastructure Team|CRITICAL: Complete audit fixes - security hardening and quality improvements
+origin/phase2-role-standardization|2025-09-17 18:52:43 +0000|HX Infrastructure Team|Phase 2: Complete Role Standardization and Address All Missing Components
+origin/feature/repo-recovery-phase2|2025-09-17 16:27:23 +0000|HX Infrastructure Team|Phase 2: Role Standardization - Major Progress
+origin/feature/repo-recovery-phase1|2025-09-17 16:12:17 +0000|HX Infrastructure Team|Remove workflow README to resolve GitHub App permissions
+origin/transfer-work-20250917-1542|2025-09-17 15:54:54 +0000|HX Infrastructure Team|CRITICAL: Transfer Core Work to Correct Repository
+origin/doc-refactor/feedback-consolidation|2025-09-17 06:48:26 +0000|HX Infrastructure Agent|Docs: Address comprehensive feedback - consolidate ansible.cfg, standardize inventory YAML, integrate discovery process, enhance prompt guide with living examples, establish documentation standards
+origin/feat/var-templates-phase3|2025-09-17 05:38:51 +0000|HX Infrastructure Agent|Phase 3.1: Comprehensive variable templates, defaults, and validation system
+origin/phase-2-ansible-standards|2025-09-17 05:19:05 +0000|HX Infrastructure Team|feat: update ansible.cfg and documentation for Ansible standards compliance
+origin/env-inventories-phase2|2025-09-17 04:52:09 +0000|HX Infrastructure Agent|Phase 2.1: Add comprehensive environment-specific inventories with host groupings
