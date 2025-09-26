@@ -1,4 +1,4 @@
-_# .github/workflows/ansible-ci.yml
+# .github/workflows/ansible-ci.yml
 name: Ansible CI/CD Pipeline
 
 on:
@@ -106,4 +106,3 @@ jobs:
             --extra-vars "target_env=staging" \
             --user ${{ secrets.STAGING_USER }}
           # The insecure ANSIBLE_HOST_KEY_CHECKING variable is no longer needed.
-

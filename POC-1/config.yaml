@@ -1,0 +1,246 @@
+
+# LiteLLM Gateway Configuration for PostgreSQL Integration
+# This configuration demonstrates SQLAlchemy + PostgreSQL backend integration
+
+# Server configuration
+server:
+  host: 0.0.0.0
+  port: 4000
+  log_level: info
+  # Enable detailed logging for debugging
+  debug: false
+  # Request timeout in seconds
+  timeout: 300
+
+# Database configuration for PostgreSQL with SQLAlchemy
+database:
+  # PostgreSQL connection URL with psycopg2 driver
+  url: postgresql+psycopg2://litellm_user:REDACTED_PASSWORD@192.168.10.19/litellm_db
+  
+  # Connection pool settings
+  pool_size: 5
+  max_overflow: 5
+  pool_recycle_seconds: 1800
+  pool_pre_ping: true
+  
+  # Connection timeout settings
+  connect_timeout: 30
+  
+  # Enable SQL query logging (set to false in production)
+  echo: false
+
+# Telemetry and logging configuration
+telemetry:
+  # Enable request logging to database
+  request_logging_enabled: true
+  
+  # Persist all requests to database
+  persist_requests: true
+  
+  # Log response data
+  log_responses: true
+  
+  # Enable metrics collection
+  metrics_enabled: true
+  
+  # Callback configuration for custom logging
+  callbacks:
+    - callback_type: "database"
+      callback_vars:
+        database_url: postgresql+psycopg2://litellm_user:REDACTED_PASSWORD@192.168.10.19/litellm_db
+
+# Authentication configuration
+auth:
+  # Static API keys for testing
+  static_api_keys:
+    - TEST_KEY
+    - DEMO_KEY_001
+    - POC_VALIDATION_KEY
+  
+  # Optional: Enable user tracking
+  track_user_id: true
+
+# Model configuration
+models:
+  # OpenAI GPT-4o-mini model configuration
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: REDACTED_MODEL_API_KEY
+      api_base: https://api.openai.com/v1
+    
+  # Additional model for testing (if needed)
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: openai/gpt-3.5-turbo
+      api_key: REDACTED_MODEL_API_KEY
+      api_base: https://api.openai.com/v1
+
+# Router configuration
+router_settings:
+  # Enable request routing
+  routing_strategy: "simple-shuffle"
+  
+  # Retry configuration
+  num_retries: 2
+  timeout: 300
+  
+  # Fallback models
+  fallbacks:
+    - gpt-3.5-turbo
+
+# General settings
+general_settings:
+  # Master key for admin operations (optional)
+  master_key: REDACTED_MASTER_KEY
+  
+  # Enable CORS for web applications
+  enable_cors: true
+  
+  # Allowed origins for CORS
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://192.168.10.18:3000"
+  
+  # Request size limits
+  max_request_size_mb: 10
+  
+  # Enable streaming responses
+  stream: true
+
+# Health check configuration
+health_check:
+  # Enable health check endpoint
+  enabled: true
+  
+  # Health check endpoint path
+  endpoint: "/health"
+  
+  # Include database connectivity in health check
+  check_database: true
+
+# Logging configuration
+logging:
+  # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  level: INFO
+  
+  # Log format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # Enable file logging
+  file_logging: true
+  log_file: "/var/log/litellm/gateway.log"
+  
+  # Log rotation
+  max_log_file_size_mb: 100
+  backup_count: 5
+
+# Rate limiting (optional)
+rate_limiting:
+  # Enable rate limiting
+  enabled: false
+  
+  # Requests per minute per API key
+  requests_per_minute: 100
+
+# Cost tracking
+cost_tracking:
+  # Enable cost tracking
+  enabled: true
+  
+  # Track costs per user/API key
+  track_cost_per_key: true
+
+# Environment-specific overrides
+environment:
+  # Environment name (development, staging, production)
+  name: "poc"
+  
+  # Environment-specific settings
+  settings:
+    # Enable debug mode for POC
+    debug_mode: true
+    
+    # Verbose logging for troubleshooting
+    verbose_logging: true
+
+# Callback hooks for custom processing
+callbacks:
+  # Pre-request callback
+  pre_call_hook: null
+  
+  # Post-request callback  
+  post_call_hook: null
+  
+  # Success callback
+  success_callback: null
+  
+  # Failure callback
+  failure_callback: null
+
+# Cache configuration (optional)
+cache:
+  # Enable response caching
+  enabled: false
+  
+  # Cache type (redis, memory)
+  type: "memory"
+  
+  # Cache TTL in seconds
+  ttl: 3600
+
+# Proxy configuration (if needed)
+proxy:
+  # HTTP proxy settings
+  http_proxy: null
+  https_proxy: null
+  no_proxy: null
+
+# SSL/TLS configuration (for production)
+ssl:
+  # Enable SSL
+  enabled: false
+  
+  # SSL certificate paths
+  cert_file: null
+  key_file: null
+  
+  # SSL verification
+  verify_ssl: true
+
+# Monitoring and alerting
+monitoring:
+  # Enable monitoring
+  enabled: true
+  
+  # Metrics endpoint
+  metrics_endpoint: "/metrics"
+  
+  # Prometheus integration
+  prometheus_enabled: false
+
+# Custom headers
+custom_headers:
+  # Add custom headers to responses
+  "X-LiteLLM-Version": "latest"
+  "X-Database-Backend": "PostgreSQL-SQLAlchemy"
+  "X-POC-Environment": "true"
+
+# Feature flags
+feature_flags:
+  # Enable experimental features
+  experimental_features: false
+  
+  # Enable beta features
+  beta_features: false
+
+# Backup and recovery (for production)
+backup:
+  # Enable automatic backups
+  enabled: false
+  
+  # Backup schedule
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  
+  # Backup retention days
+  retention_days: 30

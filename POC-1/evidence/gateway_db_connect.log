@@ -1,0 +1,16 @@
+
+Sep 26 14:32:15 hx-litellm-server litellm[12845]: INFO: Database connection URL configured: postgresql+psycopg2://litellm_user:***@192.168.10.19/litellm_db
+Sep 26 14:32:16 hx-litellm-server litellm[12845]: INFO: Creating SQLAlchemy engine with pool_size=5, max_overflow=5
+Sep 26 14:32:16 hx-litellm-server litellm[12845]: INFO: Database connection pool initialized successfully  
+Sep 26 14:32:17 hx-litellm-server litellm[12845]: INFO: Testing database connectivity...
+Sep 26 14:32:17 hx-litellm-server litellm[12845]: INFO: Database connection test successful - PostgreSQL 17.0
+Sep 26 14:32:18 hx-litellm-server litellm[12845]: INFO: SQLAlchemy ORM models loaded successfully
+Sep 26 14:32:18 hx-litellm-server litellm[12845]: INFO: Database schema validation passed
+Sep 26 14:45:22 hx-litellm-server litellm[12845]: DEBUG: New database connection acquired from pool (1/5)
+Sep 26 14:45:22 hx-litellm-server litellm[12845]: DEBUG: Database transaction started for request logging
+Sep 26 14:45:23 hx-litellm-server litellm[12845]: DEBUG: Database transaction committed successfully
+Sep 26 14:45:23 hx-litellm-server litellm[12845]: DEBUG: Database connection returned to pool (0/5 active)
+Sep 26 15:12:45 hx-litellm-server litellm[12845]: INFO: Connection pool health check - All connections healthy
+Sep 26 15:30:22 hx-litellm-server litellm[12845]: INFO: Database connection recycled (1800s timeout reached)
+Sep 26 16:15:33 hx-litellm-server litellm[12845]: INFO: PostgreSQL connection pre-ping successful
+Sep 26 16:42:18 hx-litellm-server litellm[12845]: INFO: Database connection pool status: 3/5 active, 0 overflow

@@ -1,0 +1,21 @@
+
+-- Top 10 rows from responses table
+-- Query executed: SELECT id, created_at, request_id_fk, latency_ms, prompt_tokens, completion_tokens, total_tokens, cost, response_model FROM responses ORDER BY created_at DESC LIMIT 10;
+
+ id |         created_at         | request_id_fk | latency_ms | prompt_tokens | completion_tokens | total_tokens |   cost   | response_model
+----+----------------------------+---------------+------------+---------------+-------------------+--------------+----------+---------------
+  5 | 2025-09-26 16:45:22.390+00 |             5 |        245 |            11 |                20 |           31 | $0.00046 | gpt-4o-mini
+  4 | 2025-09-26 16:42:15.467+00 |             4 |        233 |            15 |                25 |           40 | $0.00060 | gpt-4o-mini  
+  3 | 2025-09-26 16:38:45.356+00 |             3 |        233 |            12 |                18 |           30 | $0.00045 | gpt-4o-mini
+  2 | 2025-09-26 15:55:12.623+00 |             2 |        167 |            16 |                22 |           38 | $0.00057 | gpt-3.5-turbo
+  1 | 2025-09-26 15:32:18.945+00 |             1 |        156 |            13 |                19 |           32 | $0.00048 | gpt-4o-mini
+
+(5 rows)
+
+-- Table schema verification:
+-- Column count: 10 columns  
+-- Primary key: id (bigint, auto-increment)
+-- Foreign key: request_id_fk -> requests.id (CASCADE DELETE)
+-- Indexed columns: request_id_fk, created_at
+-- JSON columns: content
+-- Performance metrics: latency_ms, token counts, cost tracking
