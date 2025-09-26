@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  author: HX Infrastructure Team
+  description: AI-driven intelligent monitoring with anomaly detection and predictive scaling
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - monitoring
+    - ai
+    - anomaly-detection
+    - predictive-scaling
+
+dependencies:
+  - role: common
+  - role: health_monitoring

@@ -1,0 +1,22 @@
+
+---
+# Blue-Green Deployment Role - Main Tasks
+- name: Include environment detection tasks
+  include_tasks: detect_environment.yml
+
+- name: Include deployment preparation tasks
+  include_tasks: prepare_deployment.yml
+
+- name: Include application deployment tasks
+  include_tasks: deploy_application.yml
+
+- name: Include health check tasks
+  include_tasks: health_checks.yml
+
+- name: Include traffic switching tasks
+  include_tasks: switch_traffic.yml
+  when: deployment_health_check_passed | default(false)
+
+- name: Include rollback tasks
+  include_tasks: rollback.yml
+  when: deployment_failed | default(false)

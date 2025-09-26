@@ -1,0 +1,166 @@
+
+---
+# Operational Dashboards Tasks
+- name: Create operational dashboards directory
+  ansible.builtin.file:
+    path: "{{ operational_dashboards_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Install dashboard dependencies
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python3-flask
+    - python3-plotly
+    - nginx
+
+- name: Install Python dashboard libraries
+  ansible.builtin.pip:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - flask
+    - plotly
+    - dash
+    - pandas
+    - numpy
+
+- name: Create operational dashboard application
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ operational_dashboards_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "dashboard_app.py.j2", dest: "dashboard_app.py" }
+    - { src: "dashboard_data.py.j2", dest: "dashboard_data.py" }
+    - { src: "dashboard_charts.py.j2", dest: "dashboard_charts.py" }
+    - { src: "dashboard_utils.py.j2", dest: "dashboard_utils.py" }
+
+- name: Create Grafana dashboard configurations
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ operational_dashboards_path }}/grafana/{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - { src: "operational_overview.json.j2", dest: "operational_overview.json" }
+    - { src: "sla_dashboard.json.j2", dest: "sla_dashboard.json" }
+    - { src: "incident_dashboard.json.j2", dest: "incident_dashboard.json" }
+    - { src: "performance_dashboard.json.j2", dest: "performance_dashboard.json" }
+    - { src: "capacity_dashboard.json.j2", dest: "capacity_dashboard.json" }
+
+- name: Create dashboard templates
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ operational_dashboards_path }}/templates/{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - { src: "dashboard_index.html.j2", dest: "index.html" }
+    - { src: "dashboard_layout.html.j2", dest: "layout.html" }
+    - { src: "dashboard_metrics.html.j2", dest: "metrics.html" }
+
+- name: Create dashboard static files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ operational_dashboards_path }}/static/{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - { src: "dashboard_styles.css.j2", dest: "styles.css" }
+    - { src: "dashboard_scripts.js.j2", dest: "scripts.js" }
+
+- name: Configure nginx for dashboard hosting
+  ansible.builtin.template:
+    src: dashboard_nginx.conf.j2
+    dest: /etc/nginx/sites-available/operational_dashboards
+    backup: yes
+
+- name: Enable dashboard nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/operational_dashboards
+    dest: /etc/nginx/sites-enabled/operational_dashboards
+    state: link
+  notify: restart nginx
+
+- name: Create dashboard service file
+  ansible.builtin.template:
+    src: dashboard_service.j2
+    dest: /etc/systemd/system/operational-dashboard.service
+    mode: '0644'
+  notify: reload systemd
+
+- name: Create dashboard configuration
+  ansible.builtin.template:
+    src: dashboard_config.json.j2
+    dest: "{{ operational_dashboards_path }}/config.json"
+    mode: '0644'
+
+- name: Setup dashboard data refresh scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ operational_dashboards_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "refresh_dashboard_data.py.j2", dest: "refresh_dashboard_data.py" }
+    - { src: "dashboard_health_check.sh.j2", dest: "dashboard_health_check.sh" }
+
+- name: Schedule dashboard data refresh
+  ansible.builtin.cron:
+    name: "Dashboard Data Refresh"
+    minute: "*/5"
+    hour: "*"
+    job: "{{ operational_dashboards_path }}/refresh_dashboard_data.py >> /var/log/dashboard_refresh.log 2>&1"
+    user: root
+
+- name: Schedule dashboard health check
+  ansible.builtin.cron:
+    name: "Dashboard Health Check"
+    minute: "*/10"
+    hour: "*"
+    job: "{{ operational_dashboards_path }}/dashboard_health_check.sh >> /var/log/dashboard_health.log 2>&1"
+    user: root
+
+- name: Create dashboard backup script
+  ansible.builtin.template:
+    src: dashboard_backup.sh.j2
+    dest: "{{ operational_dashboards_path }}/dashboard_backup.sh"
+    mode: '0755'
+
+- name: Schedule daily dashboard backup
+  ansible.builtin.cron:
+    name: "Daily Dashboard Backup"
+    minute: "0"
+    hour: "3"
+    job: "{{ operational_dashboards_path }}/dashboard_backup.sh >> /var/log/dashboard_backup.log 2>&1"
+    user: root
+
+- name: Start and enable dashboard services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  loop:
+    - operational-dashboard
+    - nginx
+
+- name: Create dashboard access documentation
+  ansible.builtin.template:
+    src: dashboard_access.md.j2
+    dest: "{{ operational_dashboards_path }}/README.md"
+    mode: '0644'
+
+- name: Test dashboard accessibility
+  ansible.builtin.uri:
+    url: "http://localhost:{{ dashboard_port | default('8080') }}"
+    method: GET
+    status_code: 200
+  register: dashboard_test
+  retries: 3
+  delay: 10
+
+- name: Log operational dashboards setup
+  ansible.builtin.lineinfile:
+    path: /var/log/operational_dashboards.log
+    line: "{{ ansible_date_time.iso8601 }} - Operational dashboards setup completed - Status: {{ 'SUCCESS' if dashboard_test.status == 200 else 'PARTIAL' }}"
+    create: yes

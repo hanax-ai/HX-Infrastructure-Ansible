@@ -5,8 +5,20 @@
 upstream hx_infrastructure_backend {
     {% if active_environment == 'green' %}
     server {{ ansible_default_ipv4.address }}:{{ green_port | default(8081) }} weight=1 max_fails=3 fail_timeout=30s;
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     {% else %}
     server {{ ansible_default_ipv4.address }}:{{ blue_port | default(8080) }} weight=1 max_fails=3 fail_timeout=30s;
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     {% endif %}
     
     # Health check configuration
@@ -17,6 +29,12 @@ upstream hx_infrastructure_backend {
 
 # Health check endpoint
 server {
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     listen 80;
     server_name {{ ansible_fqdn | default(ansible_hostname) }};
     

@@ -1,0 +1,36 @@
+{
+  "datacenter": "{{ consul_datacenter | default('dc1') }}",
+  "data_dir": "/opt/consul/data",
+  "log_level": "{{ consul_log_level | default('INFO') }}",
+  "node_name": "{{ inventory_hostname }}",
+  "bind_addr": "{{ ansible_default_ipv4.address }}",
+  "client_addr": "{{ consul_client_addr | default('127.0.0.1') }}",
+  "retry_join": {{ consul_retry_join | default(['127.0.0.1']) | to_json }},
+  "server": {{ consul_server_mode | default(false) | lower }},
+  "bootstrap_expect": {{ consul_bootstrap_expect | default(1) }},
+  "ui_config": {
+    "enabled": {{ consul_ui_enabled | default(true) | lower }}
+  },
+  "connect": {
+    "enabled": {{ consul_connect_enabled | default(true) | lower }}
+  },
+  "ports": {
+    "grpc": {{ consul_grpc_port | default(8502) }},
+    "https": {{ consul_https_port | default(8501) }}
+  },
+  "encrypt": "{{ consul_encrypt_key | default('') }}",
+  "verify_incoming": {{ consul_verify_incoming | default(true) | lower }},
+  "verify_outgoing": {{ consul_verify_outgoing | default(true) | lower }},
+  "verify_server_hostname": {{ consul_verify_server_hostname | default(true) | lower }},
+  "ca_file": "{{ consul_ca_file | default('/etc/consul.d/consul-agent-ca.pem') }}",
+  "cert_file": "{{ consul_cert_file | default('/etc/consul.d/consul-agent.pem') }}",
+  "key_file": "{{ consul_key_file | default('/etc/consul.d/consul-agent-key.pem') }}",
+  "acl": {
+    "enabled": {{ consul_acl_enabled | default(true) | lower }},
+    "default_policy": "{{ consul_acl_default_policy | default('deny') }}",
+    "enable_token_persistence": {{ consul_acl_token_persistence | default(true) | lower }}
+  },
+  "performance": {
+    "raft_multiplier": {{ consul_raft_multiplier | default(1) }}
+  }
+}

@@ -1,0 +1,25 @@
+---
+# Security Validation Tests
+- name: Security Compliance Tests
+  hosts: all
+  gather_facts: yes
+  
+  tasks:
+    - name: Check SSH configuration
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+      check_mode: yes
+      register: ssh_config
+      
+    - name: Verify firewall status
+      command: ufw status
+      register: firewall_status
+      ignore_errors: yes
+      
+    - name: Check for unauthorized users
+      getent:
+        database: passwd
+      register: system_users

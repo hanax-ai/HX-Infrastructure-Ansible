@@ -1,0 +1,80 @@
+
+---
+# Performance Optimization Default Variables
+
+# Paths
+performance_scripts_path: "/opt/performance/scripts"
+performance_dashboard_path: "/opt/performance/dashboards"
+performance_baseline_file: "/opt/performance/baseline.txt"
+autoscaling_config_path: "/etc/autoscaling"
+autoscaling_scripts_path: "/opt/autoscaling/scripts"
+capacity_planning_path: "/opt/capacity"
+cost_optimization_path: "/opt/cost"
+
+# Performance Monitoring
+enable_pcp: true
+enable_collectd: true
+monitoring_interval: 60
+
+# Auto-scaling Settings
+cloud_provider: "aws"  # aws, azure, gcp
+min_instances: 2
+max_instances: 10
+desired_instances: 3
+scale_out_threshold: 70
+scale_in_threshold: 30
+scaling_cooldown: 300
+
+# Performance Optimization
+optimize_cpu_governor: true
+optimize_network: true
+optimize_disk_io: true
+optimize_memory: true
+cpu_governor: "performance"
+io_scheduler: "mq-deadline"
+read_ahead_kb: "128"
+
+# Memory Settings
+swappiness: "10"
+dirty_ratio: "15"
+dirty_background_ratio: "5"
+vfs_cache_pressure: "50"
+
+# Kernel Optimizations
+kernel_optimizations:
+  - { name: "fs.file-max", value: "2097152" }
+  - { name: "net.core.somaxconn", value: "65535" }
+  - { name: "net.ipv4.ip_local_port_range", value: "1024 65535" }
+  - { name: "kernel.pid_max", value: "4194304" }
+
+# System Limits
+system_limits:
+  - { domain: "*", type: "soft", item: "nofile", value: "65535" }
+  - { domain: "*", type: "hard", item: "nofile", value: "65535" }
+  - { domain: "*", type: "soft", item: "nproc", value: "32768" }
+  - { domain: "*", type: "hard", item: "nproc", value: "32768" }
+
+# Tuned Profile
+use_tuned_profiles: true
+tuned_profile: "hx-optimized"
+
+# Cost Optimization
+enable_cost_tagging: true
+enable_resource_scheduling: false
+cost_center: "IT"
+project_name: "HX-Infrastructure"
+
+# Capacity Planning
+capacity_forecast_days: 90
+capacity_alert_threshold: 80
+
+# Application Optimizations
+configure_connection_pooling: false
+configure_caching: false
+optimize_web_server: false
+configure_load_balancer: false
+
+# Notification Settings
+performance_alert_email: ""
+cost_alert_email: ""
+capacity_alert_email: ""

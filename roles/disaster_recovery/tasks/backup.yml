@@ -1,0 +1,97 @@
+
+---
+# Comprehensive Backup Tasks
+- name: Create backup directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ backup_user | default('backup') }}"
+    group: "{{ backup_group | default('backup') }}"
+  loop:
+    - "{{ backup_base_path }}/{{ ansible_date_time.date }}"
+    - "{{ backup_base_path }}/{{ ansible_date_time.date }}/databases"
+    - "{{ backup_base_path }}/{{ ansible_date_time.date }}/configs"
+    - "{{ backup_base_path }}/{{ ansible_date_time.date }}/applications"
+    - "{{ backup_base_path }}/{{ ansible_date_time.date }}/logs"
+
+- name: Backup databases
+  ansible.builtin.shell: |
+    {% for db in databases_to_backup %}
+    {% if db.type == 'mysql' %}
+    mysqldump -h {{ db.host }} -u {{ db.username }} -p{{ db.password }} {{ db.name }} > {{ backup_base_path }}/{{ ansible_date_time.date }}/databases/{{ db.name }}_{{ ansible_date_time.epoch }}.sql
+    {% elif db.type == 'postgresql' %}
+    PGPASSWORD={{ db.password }} pg_dump -h {{ db.host }} -U {{ db.username }} {{ db.name }} > {{ backup_base_path }}/{{ ansible_date_time.date }}/databases/{{ db.name }}_{{ ansible_date_time.epoch }}.sql
+    {% elif db.type == 'mongodb' %}
+    mongodump --host {{ db.host }} --db {{ db.name }} --out {{ backup_base_path }}/{{ ansible_date_time.date }}/databases/{{ db.name }}_{{ ansible_date_time.epoch }}
+    {% endif %}
+    {% endfor %}
+  when: databases_to_backup is defined and databases_to_backup | length > 0
+
+- name: Backup configuration files
+  ansible.builtin.archive:
+    path: "{{ item.path }}"
+    dest: "{{ backup_base_path }}/{{ ansible_date_time.date }}/configs/{{ item.name }}_{{ ansible_date_time.epoch }}.tar.gz"
+    format: gz
+  loop: "{{ config_paths_to_backup | default([]) }}"
+
+- name: Backup application data
+  ansible.builtin.synchronize:
+    src: "{{ item.src }}"
+    dest: "{{ backup_base_path }}/{{ ansible_date_time.date }}/applications/{{ item.name }}/"
+    delete: no
+    recursive: yes
+  loop: "{{ application_paths_to_backup | default([]) }}"
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Backup system logs
+  ansible.builtin.archive:
+    path: "{{ item }}"
+    dest: "{{ backup_base_path }}/{{ ansible_date_time.date }}/logs/system_logs_{{ ansible_date_time.epoch }}.tar.gz"
+    format: gz
+  loop:
+    - "/var/log"
+    - "/opt/*/logs"
+  ignore_errors: yes
+
+- name: Create backup manifest
+  ansible.builtin.template:
+    src: backup_manifest.json.j2
+    dest: "{{ backup_base_path }}/{{ ansible_date_time.date }}/backup_manifest.json"
+    mode: '0644'
+
+- name: Calculate backup checksums
+  ansible.builtin.shell: |
+    find {{ backup_base_path }}/{{ ansible_date_time.date }} -type f -exec sha256sum {} \; > {{ backup_base_path }}/{{ ansible_date_time.date }}/checksums.txt
+  
+- name: Compress daily backup
+  ansible.builtin.archive:
+    path: "{{ backup_base_path }}/{{ ansible_date_time.date }}"
+    dest: "{{ backup_base_path }}/backup_{{ ansible_date_time.date }}_{{ ansible_date_time.epoch }}.tar.gz"
+    format: gz
+    remove: yes
+  when: compress_backups | default(true)
+
+- name: Upload backup to remote storage
+  ansible.builtin.shell: |
+    {% if backup_storage_type == 'aws_s3' %}
+    aws s3 cp {{ backup_base_path }}/backup_{{ ansible_date_time.date }}_{{ ansible_date_time.epoch }}.tar.gz s3://{{ backup_s3_bucket }}/{{ inventory_hostname }}/
+    {% elif backup_storage_type == 'azure_blob' %}
+    az storage blob upload --file {{ backup_base_path }}/backup_{{ ansible_date_time.date }}_{{ ansible_date_time.epoch }}.tar.gz --container-name {{ backup_container }} --name {{ inventory_hostname }}/backup_{{ ansible_date_time.date }}_{{ ansible_date_time.epoch }}.tar.gz
+    {% elif backup_storage_type == 'gcp_storage' %}
+    gsutil cp {{ backup_base_path }}/backup_{{ ansible_date_time.date }}_{{ ansible_date_time.epoch }}.tar.gz gs://{{ backup_gcp_bucket }}/{{ inventory_hostname }}/
+    {% endif %}
+  when: backup_storage_type is defined
+
+- name: Clean old local backups
+  ansible.builtin.find:
+    paths: "{{ backup_base_path }}"
+    age: "{{ backup_retention_days | default(7) }}d"
+    patterns: "backup_*.tar.gz"
+  register: old_backups
+
+- name: Remove old local backups
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ old_backups.files }}"

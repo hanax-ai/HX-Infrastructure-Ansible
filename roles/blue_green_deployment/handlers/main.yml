@@ -1,0 +1,12 @@
+
+---
+# Blue-Green Deployment Handlers
+- name: reload nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded
+
+- name: restart application
+  ansible.builtin.systemd:
+    name: "{{ application_name }}-{{ deploy_color | default('blue') }}"
+    state: restarted
