@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  author: HX Infrastructure Team
+  description: Self-healing infrastructure with automated remediation and intelligent incident response
+  company: Hanax AI
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - self-healing
+    - automation
+    - incident-response
+    - remediation
+
+dependencies:
+  - role: common
+  - role: health_monitoring
+  - role: intelligent_monitoring

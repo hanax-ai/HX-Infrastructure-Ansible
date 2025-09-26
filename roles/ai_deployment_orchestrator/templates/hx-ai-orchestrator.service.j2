@@ -1,0 +1,25 @@
+[Unit]
+Description=HX AI Deployment Orchestrator
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/hx/ai-orchestrator
+Environment=PYTHONPATH=/opt/hx/ai-orchestrator
+ExecStart=/opt/hx/venv/bin/python /opt/hx/ai-orchestrator/orchestrator.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/hx /var/log/hx-orchestrator /tmp
+
+[Install]
+WantedBy=multi-user.target
