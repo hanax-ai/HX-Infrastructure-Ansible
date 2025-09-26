@@ -1,0 +1,54 @@
+
+name: CI
+on:
+  pull_request: { branches: [ main ] }
+  push:        { branches: [ main ] }
+jobs:
+  ansible-lint:
+    name: CI / ansible-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install --upgrade pip ansible ansible-lint
+      - run: ansible-lint -v
+
+  yamllint:
+    name: CI / yamllint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx install yamllint || pip install yamllint
+      - run: yamllint .
+
+  syntax-check:
+    name: CI / syntax-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install ansible
+      - run: |
+          ansible-playbook -i inventories/development playbooks/deployment.yml --syntax-check
+          ansible-playbook -i inventories/staging     playbooks/deployment.yml --syntax-check
+
+  gate-integration:
+    name: CI / gate-integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make gate-integration
+
+  gate-performance:
+    name: CI / gate-performance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make gate-performance
+
+  gate-security:
+    name: CI / gate-security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make gate-security
