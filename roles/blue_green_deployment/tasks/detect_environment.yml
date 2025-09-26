@@ -1,0 +1,23 @@
+
+---
+# Environment Detection Tasks
+- name: Get current deployment color from parameter store
+  ansible.builtin.set_fact:
+    current_deploy_color: "{{ lookup('env', 'CURRENT_DEPLOY_COLOR') | default('blue') }}"
+
+- name: Determine new deployment color
+  ansible.builtin.set_fact:
+    new_deploy_color: "{{ 'green' if current_deploy_color == 'blue' else 'blue' }}"
+
+- name: Set deployment variables
+  ansible.builtin.set_fact:
+    current_environment: "{{ application_name }}-{{ current_deploy_color }}"
+    new_environment: "{{ application_name }}-{{ new_deploy_color }}"
+    deployment_timestamp: "{{ ansible_date_time.epoch }}"
+
+- name: Display deployment information
+  ansible.builtin.debug:
+    msg:
+      - "Current Environment: {{ current_environment }}"
+      - "New Environment: {{ new_environment }}"
+      - "Deployment Timestamp: {{ deployment_timestamp }}"

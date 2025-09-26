@@ -1,0 +1,125 @@
+
+---
+# Performance Monitoring Setup Tasks
+- name: Install performance monitoring tools
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - htop
+    - iotop
+    - nethogs
+    - sysstat
+    - pcp
+    - pcp-system-tools
+    - collectd
+
+- name: Configure Performance Co-Pilot (PCP)
+  ansible.builtin.template:
+    src: pcp.conf.j2
+    dest: /etc/pcp.conf
+    backup: yes
+  notify: restart pcp
+
+- name: Setup PCP logging
+  ansible.builtin.template:
+    src: pmlogger.config.j2
+    dest: /etc/pcp/pmlogger/config.default
+    backup: yes
+  notify: restart pmlogger
+
+- name: Configure collectd for metrics collection
+  ansible.builtin.template:
+    src: collectd.conf.j2
+    dest: /etc/collectd/collectd.conf
+    backup: yes
+  notify: restart collectd
+
+- name: Create performance monitoring scripts
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ performance_scripts_path }}/{{ item.dest }}"
+    mode: '0755'
+  loop:
+    - { src: "system_metrics.sh.j2", dest: "system_metrics.sh" }
+    - { src: "application_metrics.sh.j2", dest: "application_metrics.sh" }
+    - { src: "performance_alert.sh.j2", dest: "performance_alert.sh" }
+
+- name: Setup performance monitoring cron jobs
+  ansible.builtin.cron:
+    name: "{{ item.name }}"
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    job: "{{ item.job }}"
+    user: root
+  loop:
+    - name: "System Metrics Collection"
+      minute: "*/1"
+      hour: "*"
+      job: "{{ performance_scripts_path }}/system_metrics.sh >> /var/log/system_metrics.log 2>&1"
+    - name: "Application Metrics Collection"
+      minute: "*/5"
+      hour: "*"
+      job: "{{ performance_scripts_path }}/application_metrics.sh >> /var/log/app_metrics.log 2>&1"
+    - name: "Performance Alert Check"
+      minute: "*/2"
+      hour: "*"
+      job: "{{ performance_scripts_path }}/performance_alert.sh"
+
+- name: Configure system resource limits
+  ansible.builtin.lineinfile:
+    path: /etc/security/limits.conf
+    regexp: "^{{ item.domain }}\\s+{{ item.type }}\\s+{{ item.item }}"
+    line: "{{ item.domain }} {{ item.type }} {{ item.item }} {{ item.value }}"
+    backup: yes
+  loop: "{{ system_limits | default([]) }}"
+
+- name: Setup performance dashboards directory
+  ansible.builtin.file:
+    path: "{{ performance_dashboard_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Deploy Grafana dashboard configurations
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ performance_dashboard_path }}/{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - { src: "system_performance_dashboard.json.j2", dest: "system_performance.json" }
+    - { src: "application_performance_dashboard.json.j2", dest: "application_performance.json" }
+    - { src: "infrastructure_overview_dashboard.json.j2", dest: "infrastructure_overview.json" }
+
+- name: Start and enable monitoring services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  loop:
+    - pmcd
+    - pmlogger
+    - collectd
+
+- name: Create performance baseline
+  ansible.builtin.shell: |
+    # Collect baseline metrics
+    echo "=== Performance Baseline - {{ ansible_date_time.iso8601 }} ===" > {{ performance_baseline_file }}
+    echo "CPU Info:" >> {{ performance_baseline_file }}
+    lscpu >> {{ performance_baseline_file }}
+    echo -e "\nMemory Info:" >> {{ performance_baseline_file }}
+    free -h >> {{ performance_baseline_file }}
+    echo -e "\nDisk Info:" >> {{ performance_baseline_file }}
+    df -h >> {{ performance_baseline_file }}
+    echo -e "\nNetwork Info:" >> {{ performance_baseline_file }}
+    ip addr show >> {{ performance_baseline_file }}
+    echo -e "\nLoad Average:" >> {{ performance_baseline_file }}
+    uptime >> {{ performance_baseline_file }}
+  args:
+    creates: "{{ performance_baseline_file }}"
+
+- name: Log performance monitoring setup
+  ansible.builtin.lineinfile:
+    path: /var/log/performance_setup.log
+    line: "{{ ansible_date_time.iso8601 }} - Performance monitoring setup completed on {{ inventory_hostname }}"
+    create: yes
