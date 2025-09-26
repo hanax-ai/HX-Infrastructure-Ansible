@@ -1,6 +1,5 @@
-
 ---
-# Service Discovery and Registration
+# Service Discovery and Registration with Enhanced Security
 - name: Install service discovery tools
   package:
     name: "{{ item }}"
@@ -9,29 +8,73 @@
     - consul
     - consul-template
   when: service_discovery_enabled | default(true)
+  register: consul_install_result
+  retries: 3
+  delay: 5
 
-- name: Configure Consul agent
+- name: Create Consul directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: consul
+    group: consul
+    mode: '0755'
+  loop:
+    - /etc/consul.d
+    - /opt/consul/data
+    - /var/log/consul
+  when: service_discovery_enabled | default(true)
+
+- name: Configure Consul agent with TLS and ACL
   template:
     src: consul.json.j2
     dest: /etc/consul.d/consul.json
-    mode: '0644'
+    owner: consul
+    group: consul
+    mode: '0640'
+    backup: yes
   vars:
     datacenter: "{{ consul_datacenter | default('dc1') }}"
     node_name: "{{ inventory_hostname }}"
     bind_addr: "{{ ansible_default_ipv4.address }}"
   notify: restart consul
+  when: service_discovery_enabled | default(true)
+
+- name: Validate Consul configuration
+  command: consul validate /etc/consul.d/consul.json
+  register: consul_config_validation
+  failed_when: consul_config_validation.rc != 0
+  when: service_discovery_enabled | default(true)
 
 - name: Start and enable Consul service
   systemd:
     name: consul
     state: started
     enabled: yes
+    daemon_reload: yes
+  when: service_discovery_enabled | default(true)
 
-- name: Register services with Consul
+- name: Wait for Consul to be ready
   uri:
-    url: "https://{{ consul_host | default('localhost') }}:8500/v1/agent/service/register"
+    url: "{{ 'https' if consul_tls_enabled | default(true) else 'http' }}://{{ consul_host | default('localhost') }}:{{ consul_port | default(8500) }}/v1/status/leader"
+    method: GET
+    validate_certs: "{{ consul_verify_ssl | default(true) }}"
+    timeout: 10
+  register: consul_ready_check
+  retries: 30
+  delay: 2
+  until: consul_ready_check.status == 200
+  when: service_discovery_enabled | default(true)
+
+- name: Register services with Consul (with authentication and retries)
+  uri:
+    url: "{{ 'https' if consul_tls_enabled | default(true) else 'http' }}://{{ consul_host | default('localhost') }}:{{ consul_port | default(8500) }}/v1/agent/service/register"
     method: PUT
     body_format: json
+    headers:
+      X-Consul-Token: "{{ consul_acl_token | default('') }}"
+    validate_certs: "{{ consul_verify_ssl | default(true) }}"
+    timeout: 30
     body:
       ID: "{{ item.name }}-{{ inventory_hostname }}"
       Name: "{{ item.name }}"
@@ -39,24 +82,51 @@
       Address: "{{ ansible_default_ipv4.address }}"
       Port: "{{ item.port }}"
       Check:
-        HTTP: "https://{{ ansible_default_ipv4.address }}:{{ item.port }}{{ item.health_endpoint | default('/health') }}"
+        HTTP: "{{ 'https' if item.tls_enabled | default(false) else 'http' }}://{{ ansible_default_ipv4.address }}:{{ item.port }}{{ item.health_endpoint | default('/health') }}"
         Interval: "{{ item.check_interval | default('30s') }}"
         Timeout: "{{ item.check_timeout | default('10s') }}"
+        TLSSkipVerify: "{{ not (item.verify_tls | default(true)) }}"
   loop: "{{ services_to_register | default([]) }}"
+  register: service_registration_result
+  retries: 3
+  delay: 5
   when: service_discovery_enabled | default(true)
 
-- name: Query service health from Consul
+- name: Query service health from Consul (with proper JSON parsing)
   uri:
-    url: "https://{{ consul_host | default('localhost') }}:8500/v1/health/service/{{ item }}"
+    url: "{{ 'https' if consul_tls_enabled | default(true) else 'http' }}://{{ consul_host | default('localhost') }}:{{ consul_port | default(8500) }}/v1/health/service/{{ item }}"
     method: GET
+    headers:
+      X-Consul-Token: "{{ consul_acl_token | default('') }}"
+    validate_certs: "{{ consul_verify_ssl | default(true) }}"
+    timeout: 30
   register: service_health_query
   loop: "{{ services_to_monitor | default([]) }}"
+  retries: 2
+  delay: 3
   when: service_discovery_enabled | default(true)
 
-- name: Update service discovery status
+- name: Parse and validate service health responses
+  set_fact:
+    parsed_health_results: "{{ parsed_health_results | default([]) + [{'service': item.item, 'healthy': (item.json | length > 0), 'status': item.status}] }}"
+  loop: "{{ service_health_query.results | default([]) }}"
+  when: 
+    - service_discovery_enabled | default(true)
+    - item.json is defined
+
+- name: Update service discovery status with comprehensive metrics
   set_fact:
     service_discovery_status:
       timestamp: "{{ ansible_date_time.iso8601 }}"
+      consul_version: "{{ consul_install_result.results[0].version | default('unknown') }}"
       registered_services: "{{ services_to_register | default([]) | length }}"
-      healthy_services: "{{ service_health_query.results | selectattr('json', 'defined') | selectattr('json', 'length', '>', 0) | list | length }}"
+      healthy_services: "{{ parsed_health_results | selectattr('healthy', 'equalto', true) | list | length }}"
+      total_monitored_services: "{{ services_to_monitor | default([]) | length }}"
       consul_available: "{{ service_health_query is succeeded }}"
+      consul_leader_available: "{{ consul_ready_check is succeeded }}"
+      configuration_valid: "{{ consul_config_validation is succeeded }}"
+
+- name: Log service discovery status
+  debug:
+    var: service_discovery_status
+  when: service_discovery_enabled | default(true)
