@@ -1,0 +1,76 @@
+
+---
+# Cleanup Idle Environment Playbook
+# Usage: ansible-playbook -i inventories/production playbooks/cleanup_idle.yml -e "idle_color=blue"
+
+- name: Cleanup Idle Environment
+  hosts: "prod_{{ idle_color | default('blue') }}"
+  become: yes
+  serial: "25%"
+  
+  vars:
+    cleanup_timestamp: "{{ ansible_date_time.epoch }}"
+    preserve_data: true
+    
+  pre_tasks:
+    - name: Validate idle color parameter
+      fail:
+        msg: "idle_color must be 'blue' or 'green'"
+      when: idle_color not in ['blue', 'green']
+      
+    - name: Confirm cleanup operation
+      pause:
+        prompt: "This will cleanup the {{ idle_color }} environment. Continue? (yes/no)"
+      when: not (auto_confirm | default(false))
+      delegate_to: localhost
+      run_once: yes
+      
+    - name: Create cleanup log entry
+      local_action:
+        module: lineinfile
+        path: "/tmp/cleanup_{{ cleanup_timestamp }}.log"
+        line: "{{ ansible_date_time.iso8601 }} - Starting cleanup of {{ idle_color }} environment"
+        create: yes
+      run_once: yes
+      
+  tasks:
+    - name: Stop application services
+      service:
+        name: "{{ app_service_name | default('app') }}"
+        state: stopped
+      ignore_errors: yes
+      
+    - name: Clear application cache
+      file:
+        path: "{{ app_cache_dir | default('/tmp/app_cache') }}"
+        state: absent
+      when: not preserve_data
+      
+    - name: Clear temporary files
+      find:
+        paths: /tmp
+        patterns: "app_*"
+        age: 1h
+      register: temp_files
+      
+    - name: Remove temporary files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      with_items: "{{ temp_files.files }}"
+      
+    - name: Reset application state
+      command: "{{ app_reset_command | default('echo No reset command defined') }}"
+      ignore_errors: yes
+      
+  post_tasks:
+    - name: Validate cleanup completion
+      stat:
+        path: "{{ app_cache_dir | default('/tmp/app_cache') }}"
+      register: cache_check
+      
+    - name: Log cleanup completion
+      local_action:
+        module: lineinfile
+        path: "/tmp/cleanup_{{ cleanup_timestamp }}.log"
+        line: "{{ ansible_date_time.iso8601 }} - Cleanup completed on {{ inventory_hostname }}"
