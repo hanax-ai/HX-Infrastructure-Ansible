@@ -2,22 +2,22 @@
 # Basic Integration Tests
 - name: Basic Infrastructure Tests
   hosts: all
-  gather_facts: yes
-  
+  gather_facts: true
+
   tasks:
     - name: Test connectivity
       ping:
-      
+
     - name: Verify system packages
       package_facts:
-      
+
     - name: Check service status
       service_facts:
-      
+
     - name: Validate disk space
       shell: df -h
       register: disk_usage
-      
+
     - name: Display disk usage
       debug:
         var: disk_usage.stdout_lines

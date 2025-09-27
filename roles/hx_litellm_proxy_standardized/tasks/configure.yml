@@ -14,7 +14,7 @@
   command: >
     {{ hx_litellm_venv_path }}/bin/litellm --config {{ hx_litellm_config_dir }}/config.yaml --create_db
   become_user: "{{ hx_litellm_user }}"
-  when: 
+  when:
     - hx_litellm_database_enabled | default(false) | bool
     - hx_litellm_install_method == "pip"
   changed_when: false

@@ -11,7 +11,7 @@
   systemd:
     name: fail2ban
     state: restarted
-    enabled: yes
+    enabled: true
   listen: restart fail2ban
 
 - name: restart cron
@@ -22,7 +22,7 @@
 
 - name: reload systemd
   systemd:
-    daemon_reload: yes
+    daemon_reload: true
   listen: reload systemd
 
 - name: restart rsyslog

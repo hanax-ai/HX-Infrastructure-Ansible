@@ -1,9 +1,8 @@
-
 ---
 # Security Tasks for HX CA Trust
 
 - name: Verify certificate file permissions
-  file:
+  ansible.builtin.file:
     path: "{{ hx_ca_cert_full_path }}"
     owner: "{{ hx_ca_cert_owner }}"
     group: "{{ hx_ca_cert_group }}"
@@ -12,7 +11,7 @@
   tags: [security]
 
 - name: Secure backup directory permissions
-  file:
+  ansible.builtin.file:
     path: "{{ hx_ca_backup_dir }}"
     owner: root
     group: root
@@ -21,7 +20,7 @@
   tags: [security]
 
 - name: Secure log directory permissions
-  file:
+  ansible.builtin.file:
     path: "{{ hx_ca_log_dir }}"
     owner: root
     group: root
@@ -63,10 +62,10 @@
   tags: [security]
 
 - name: Log security warnings
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "{{ hx_ca_log_dir }}/security.log"
     line: "{{ ansible_date_time.iso8601 }} - {{ hx_ca_expiry_check.stdout }}"
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0640'
@@ -96,7 +95,7 @@
   tags: [security]
 
 - name: Create security audit report
-  template:
+  ansible.builtin.template:
     src: security_audit.j2
     dest: "{{ hx_ca_log_dir }}/security_audit_{{ hx_ca_backup_timestamp }}.txt"
     owner: root
@@ -106,7 +105,7 @@
   tags: [security]
 
 - name: Display security summary
-  debug:
+  ansible.builtin.debug:
     msg:
       - "Security validation completed"
       - "File permissions: {{ hx_ca_strict_permissions | ternary('Enforced', 'Standard') }}"

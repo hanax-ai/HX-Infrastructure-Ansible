@@ -35,7 +35,7 @@
       - hx_pg_ssl_status.query_result[0].ssl == "on"
     fail_msg: "SSL is not enabled in PostgreSQL"
     success_msg: "SSL is properly enabled in PostgreSQL"
-  when: 
+  when:
     - hx_pg_ssl_enabled | default(false) | bool
     - hx_pg_ssl_status is defined
   tags: ['verify']
@@ -48,7 +48,7 @@
     login_password: "{{ item.password }}"
     login_db: "{{ item.db | default('postgres') }}"
   loop: "{{ hx_pg_users }}"
-  when: 
+  when:
     - hx_pg_users | length > 0
     - "'CHANGE_ME' not in item.password"
   no_log: true

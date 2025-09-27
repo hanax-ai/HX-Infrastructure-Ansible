@@ -1,4 +1,3 @@
-
 ---
 - name: Converge
   hosts: all
@@ -6,22 +5,22 @@
   gather_facts: true
   vars:
     ansible_python_interpreter: "{{ ansible_playbook_python }}"
-  
+
   pre_tasks:
     - name: Update package cache (Ubuntu/Debian)
-      apt:
+      ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
       when: ansible_os_family == "Debian"
-    
+
     - name: Update package cache (CentOS/RHEL)
-      yum:
+      ansible.builtin.yum:
         update_cache: true
       when: ansible_os_family == "RedHat"
 
   tasks:
     - name: Install basic packages
-      package:
+      ansible.builtin.package:
         name:
           - curl
           - wget
@@ -30,21 +29,21 @@
         state: present
 
     - name: Create test user
-      user:
+      ansible.builtin.user:
         name: testuser
         shell: /bin/bash
         create_home: true
         state: present
 
     - name: Ensure service is running (systemd)
-      systemd:
+      ansible.builtin.systemd:
         name: ssh
         state: started
         enabled: true
       when: ansible_service_mgr == "systemd"
 
     - name: Test idempotency marker
-      file:
+      ansible.builtin.file:
         path: /tmp/molecule-test
         state: touch
         mode: '0644'

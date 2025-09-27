@@ -1,4 +1,3 @@
-
 ---
 # Incident Management Tasks
 - name: Create incident management directory
@@ -131,4 +130,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/incident_management.log
     line: "{{ ansible_date_time.iso8601 }} - Incident management setup completed"
-    create: yes
+    create: true

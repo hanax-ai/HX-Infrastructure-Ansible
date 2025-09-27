@@ -1,9 +1,8 @@
-
 ---
 # Installation Tasks for HX CA Trust
 
 - name: Create required directories
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     owner: root
@@ -13,7 +12,7 @@
   tags: [install]
 
 - name: Install required packages
-  apt:
+  ansible.builtin.apt:
     name: "{{ hx_ca_packages }}"
     state: present
     update_cache: true
@@ -41,10 +40,10 @@
   tags: [install]
 
 - name: Fetch root CA certificate from CA server
-  fetch:
+  ansible.builtin.fetch:
     src: "{{ hx_ca_root_ca_path_on_ca }}"
     dest: "/tmp/{{ hx_ca_root_ca_filename }}"
-    flat: yes
+    flat: true
   delegate_to: "{{ hx_ca_host }}"
   register: hx_ca_fetch_result
   retries: "{{ hx_ca_validation_retries }}"
@@ -60,28 +59,28 @@
   tags: [install]
 
 - name: Deploy root CA certificate to system trust store
-  copy:
+  ansible.builtin.copy:
     src: "/tmp/{{ hx_ca_root_ca_filename }}"
     dest: "{{ hx_ca_cert_full_path }}"
     owner: "{{ hx_ca_cert_owner }}"
     group: "{{ hx_ca_cert_group }}"
     mode: "{{ hx_ca_cert_mode }}"
-    backup: yes
+    backup: true
   notify: update ca trust store
   register: hx_ca_deploy_result
   tags: [install]
 
 - name: Clean up temporary certificate file
-  file:
+  ansible.builtin.file:
     path: "/tmp/{{ hx_ca_root_ca_filename }}"
     state: absent
   tags: [install]
 
 - name: Log certificate deployment
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "{{ hx_ca_log_dir }}/deployment.log"
     line: "{{ ansible_date_time.iso8601 }} - Certificate {{ hx_ca_root_ca_filename }} deployed from {{ hx_ca_host }}"
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0644'
@@ -89,7 +88,7 @@
   tags: [install]
 
 - name: Display installation summary
-  debug:
+  ansible.builtin.debug:
     msg:
       - "Certificate installation completed"
       - "Source: {{ hx_ca_host }}:{{ hx_ca_root_ca_path_on_ca }}"

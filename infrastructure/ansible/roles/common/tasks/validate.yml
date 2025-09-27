@@ -1,4 +1,3 @@
-
 ---
 # Common role - validation tasks
 # Pre-flight checks before system configuration
@@ -30,11 +29,11 @@
 - name: "common : Validate disk space requirements"
   ansible.builtin.assert:
     that:
-      - ansible_mounts | selectattr('mount', 'equalto', '/') | 
+      - ansible_mounts | selectattr('mount', 'equalto', '/') |
         map(attribute='size_available') | first > common_min_disk_space
     fail_msg: >
-      Insufficient disk space. Required: {{ common_min_disk_space }}, 
-      Available: {{ ansible_mounts | selectattr('mount', 'equalto', '/') | 
+      Insufficient disk space. Required: {{ common_min_disk_space }},
+      Available: {{ ansible_mounts | selectattr('mount', 'equalto', '/') |
       map(attribute='size_available') | first }}
   when: common_min_disk_space is defined
   tags:

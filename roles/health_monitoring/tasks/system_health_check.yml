@@ -1,4 +1,3 @@
-
 ---
 # Comprehensive System Health Checks
 - name: Check CPU usage
@@ -34,8 +33,8 @@
         "disk_usage": {{ disk_usage.stdout | int }},
         "system_load": {{ system_load.stdout | float }},
         "timestamp": "{{ ansible_date_time.iso8601 }}",
-        "healthy": {{ (cpu_usage.stdout | float < alert_thresholds.cpu_usage) and 
-                     (memory_usage.stdout | float < alert_thresholds.memory_usage) and 
+        "healthy": {{ (cpu_usage.stdout | float < alert_thresholds.cpu_usage) and
+                     (memory_usage.stdout | float < alert_thresholds.memory_usage) and
                      (disk_usage.stdout | int < alert_thresholds.disk_usage) }}
       }
 
@@ -50,4 +49,4 @@
   vars:
     alert_type: "system_health"
     alert_message: "System health check failed on {{ inventory_hostname }}"
-  when: not (system_health_status | from_json).healthy
+  when: falset (system_health_status | from_json).healthy

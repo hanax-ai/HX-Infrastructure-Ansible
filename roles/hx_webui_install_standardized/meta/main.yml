@@ -5,7 +5,7 @@ galaxy_info:
   company: HX AI
   license: MIT
   min_ansible_version: "2.12"
-  
+
   platforms:
     - name: Ubuntu
       versions:
@@ -31,7 +31,7 @@ dependencies:
       nginx_remove_default_vhost: true
       nginx_vhosts: []
       nginx_upstreams: []
-  
+
   - role: geerlingguy.apache
     when: hx_webui_server_type == "apache"
     vars:

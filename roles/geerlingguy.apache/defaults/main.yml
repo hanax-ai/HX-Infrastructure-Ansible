@@ -50,7 +50,7 @@ apache_mods_disabled: []
 apache_state: started
 
 # Set initial apache service status. Recommended values: `yes` or `no`
-apache_enabled: yes
+apache_enabled: true
 
 # Set apache state when configuration changes are made. Recommended values:
 # `restarted` or `reloaded`

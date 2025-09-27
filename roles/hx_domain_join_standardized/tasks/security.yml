@@ -1,4 +1,3 @@
-
 ---
 # Security Tasks for HX Domain Join
 
@@ -159,7 +158,7 @@
   lineinfile:
     path: "{{ hx_domain_log_dir }}/security.log"
     line: "{{ ansible_date_time.iso8601 }} - Domain join security configuration completed"
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0640'

@@ -4,7 +4,7 @@
     rule: allow
     port: "{{ hx_litellm_port }}"
     proto: tcp
-  when: 
+  when:
     - hx_litellm_firewall_enabled | default(false) | bool
     - ansible_facts['os_family'] == "Debian"
     - (hx_litellm_allowed_ips | default([]) | length == 0)
@@ -15,7 +15,7 @@
     rule: deny
     src: "{{ item }}"
   loop: "{{ hx_litellm_blocked_ips }}"
-  when: 
+  when:
     - hx_litellm_firewall_enabled | default(false) | bool
     - hx_litellm_blocked_ips | length > 0
   tags: ['security']
@@ -27,7 +27,7 @@
     src: "{{ item }}"
     proto: tcp
   loop: "{{ hx_litellm_allowed_ips }}"
-  when: 
+  when:
     - hx_litellm_firewall_enabled | default(false) | bool
     - hx_litellm_allowed_ips | length > 0
   tags: ['security']
@@ -142,7 +142,7 @@
       line: "unixsocket /var/run/redis/redis-server.sock"
     - regexp: "^unixsocketperm"
       line: "unixsocketperm 770"
-  when: 
+  when:
     - hx_litellm_caching_enabled | default(false) | bool
     - hx_litellm_cache_type == "redis"
   notify: restart redis
@@ -161,7 +161,7 @@
     - "SHUTDOWN"
     - "DEBUG"
     - "EVAL"
-  when: 
+  when:
     - hx_litellm_caching_enabled | default(false) | bool
     - hx_litellm_cache_type == "redis"
   notify: restart redis

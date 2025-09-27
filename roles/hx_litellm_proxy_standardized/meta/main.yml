@@ -5,7 +5,7 @@ galaxy_info:
   company: HX AI
   license: MIT
   min_ansible_version: "2.12"
-  
+
   platforms:
     - name: Ubuntu
       versions:

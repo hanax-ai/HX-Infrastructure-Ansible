@@ -1,9 +1,9 @@
 ---
 - name: reload systemd
-  systemd:
-    daemon_reload: yes
+  ansible.builtin.systemd:
+    daemon_reload: true
 
 - name: restart multi cloud orchestrator
-  systemd:
+  ansible.builtin.systemd:
     name: hx-multi-cloud-orchestrator
     state: restarted

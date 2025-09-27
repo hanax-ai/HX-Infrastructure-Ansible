@@ -70,7 +70,7 @@
     owner: root
     group: root
     mode: "0644"
-  notify: 
+  notify:
     - reload systemd
     - restart webui service
   when: hx_webui_server_type == "custom"

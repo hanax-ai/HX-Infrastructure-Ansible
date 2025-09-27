@@ -1,4 +1,5 @@
-_# .github/workflows/phase3-cursor-integration.yml
+---
+# .github/workflows/phase3-cursor-integration.yml
 name: Phase 3 - Advanced Cursor AI Integration
 
 on:
@@ -93,7 +94,7 @@ jobs:
         violations=$(echo '$changed' | grep -v '^$' | grep -Ev '$allowlist_pattern' || true)
 
         if [ -n '$violations' ]; then
-          echo '❌ ERROR: Non-allowlisted paths modified by automation:'
+          echo '❌ ERROR: falsen-allowlisted paths modified by automation:'
           echo '$violations'
           echo ''
           echo 'Allowed paths for automation:'
@@ -140,9 +141,9 @@ jobs:
         gh pr view $PR_NUMBER --json reviews,comments > pr_data.json
 
         # Parse CodeRabbit comments
-        python scripts/automation/parse_coderabbit_comments.py \
-          --input-file pr_data.json \
-          --output-file coderabbit_comments.json \
+        python scripts/automation/parse_coderabbit_comments.py 
+          --input-file pr_data.json 
+          --output-file coderabbit_comments.json 
           --pr-number $PR_NUMBER
 
         # Check if we have comments to process
@@ -156,9 +157,9 @@ jobs:
       run: |
         echo '=== AI Classification of Issues ===='
 
-        python scripts/automation/classification/ai_classifier.py \
-          --input-file coderabbit_comments.json \
-          --output-file classified_issues.json \
+        python scripts/automation/classification/ai_classifier.py 
+          --input-file coderabbit_comments.json 
+          --output-file classified_issues.json 
           --config-file scripts/automation/config/classification_config.yml
 
         # Check classification results
@@ -167,7 +168,7 @@ jobs:
         echo 'classified-count=$CLASSIFIED_COUNT' >> $GITHUB_OUTPUT
 
         # Generate classification summary
-        jq -r '.[] | '\(.severity):\(.category):\(.complexity)'' classified_issues.json | \
+        jq -r '.[] | '\(.severity):\(.category):\(.complexity)'' classified_issues.json | 
           sort | uniq -c | sort -nr > classification_summary.txt
 
         echo 'Classification Summary:'
@@ -180,9 +181,9 @@ jobs:
         echo '=== Cursor AI Integration ===='
 
         # Process issues with Cursor AI engine
-        python scripts/automation/cursor/cursor_ai_engine.py \
-          --issues-file classified_issues.json \
-          --config-file scripts/automation/config/classification_config.yml \
+        python scripts/automation/cursor/cursor_ai_engine.py 
+          --issues-file classified_issues.json 
+          --config-file scripts/automation/config/classification_config.yml 
           --output-file cursor_results.json
 
         # Extract results
@@ -212,10 +213,10 @@ jobs:
         echo '=== Creating GitHub Issues for Manual Review ===='
 
         # Create issues for failed and skipped items
-        python scripts/automation/create_github_issues.py \
-          --input-file classified_issues.json \
-          --cursor-results cursor_results.json \
-          --repository ${{ github.repository }} \
+        python scripts/automation/create_github_issues.py 
+          --input-file classified_issues.json 
+          --cursor-results cursor_results.json 
+          --repository ${{ github.repository }} 
           --pr-number ${{ steps.extract-comments.outputs.pr-number }}
 
         echo 'GitHub issues created for manual review items'
@@ -278,13 +279,13 @@ jobs:
         cat > cursor_status_comment.md << EOF
         ## 🤖 Cursor AI Integration Status
 
-        **Workflow:** Phase 3 - Advanced Cursor AI Integration  
-        **Triggered by:** ${{ github.event_name }}  
+        **Workflow:** Phase 3 - Advanced Cursor AI Integration
+        **Triggered by:** ${{ github.event_name }}
         **Processing Time:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')
 
         ### Results Summary
         - **Requests Sent to Cursor:** $REQUESTS_SENT
-        - **Requests Failed:** $REQUESTS_FAILED  
+        - **Requests Failed:** $REQUESTS_FAILED
         - **Processing Status:** $SUMMARY
 
         ### Workflow Visualization
@@ -350,9 +351,9 @@ jobs:
           echo 'webhook-status=unhealthy' >> $GITHUB_OUTPUT
 
           # Create issue for webhook server problem
-          gh issue create \
-            --title '🚨 Cursor Webhook Server Unavailable' \
-            --body 'The Cursor webhook server at $WEBHOOK_URL is not responding to health checks. This may prevent remediation status updates from being processed.' \
+          gh issue create 
+            --title '🚨 Cursor Webhook Server Unavailable' 
+            --body 'The Cursor webhook server at $WEBHOOK_URL is not responding to health checks. This may prevent remediation status updates from being processed.' 
             --label 'infrastructure,urgent,cursor-integration'
         fi
 

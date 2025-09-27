@@ -64,7 +64,7 @@
     name: "{{ ntp_daemon }}"
     state: stopped
     enabled: false
-  when: not (ntp_enabled | bool)
+  when: falset (ntp_enabled | bool)
   ignore_errors: "{{ ansible_check_mode }}"
 
 - name: Generate ntp configuration file.

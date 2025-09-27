@@ -1,16 +1,15 @@
-
 ---
 - name: Verify
   hosts: all
   become: true
   tasks:
     - name: Check if certificate file exists
-      stat:
+      ansible.builtin.stat:
         path: /usr/local/share/ca-certificates/hx-root-ca.crt
       register: cert_file
 
     - name: Assert certificate file exists
-      assert:
+      ansible.builtin.assert:
         that:
           - cert_file.stat.exists
           - cert_file.stat.isreg
@@ -18,7 +17,7 @@
         success_msg: "Certificate file exists"
 
     - name: Check certificate file permissions
-      assert:
+      ansible.builtin.assert:
         that:
           - cert_file.stat.mode == "0644"
           - cert_file.stat.pw_name == "root"
@@ -32,7 +31,7 @@
       changed_when: false
 
     - name: Assert certificate parsing succeeded
-      assert:
+      ansible.builtin.assert:
         that:
           - cert_parse.rc == 0
           - "'HX Test CA' in cert_parse.stdout"
@@ -47,14 +46,14 @@
       changed_when: false
 
     - name: Assert certificate is in trust store
-      assert:
+      ansible.builtin.assert:
         that:
           - trust_store_check.rc == 0
         fail_msg: "Certificate not found in system trust store"
         success_msg: "Certificate is in system trust store"
 
     - name: Check required directories exist
-      stat:
+      ansible.builtin.stat:
         path: "{{ item }}"
       register: required_dirs
       loop:
@@ -62,7 +61,7 @@
         - /var/log/hx/ca-trust
 
     - name: Assert required directories exist
-      assert:
+      ansible.builtin.assert:
         that:
           - item.stat.exists
           - item.stat.isdir
@@ -71,25 +70,25 @@
       loop: "{{ required_dirs.results }}"
 
     - name: Check log files were created
-      stat:
+      ansible.builtin.stat:
         path: /var/log/hx/ca-trust/deployment.log
       register: log_file
 
     - name: Assert log file exists
-      assert:
+      ansible.builtin.assert:
         that:
           - log_file.stat.exists
         fail_msg: "Deployment log file does not exist"
         success_msg: "Deployment log file exists"
 
     - name: Verify certificate monitoring script (if monitoring enabled)
-      stat:
+      ansible.builtin.stat:
         path: /usr/local/bin/hx-ca-monitor
       register: monitor_script
       when: hx_ca_monitoring_enabled | default(false)
 
     - name: Assert monitoring script exists (if enabled)
-      assert:
+      ansible.builtin.assert:
         that:
           - monitor_script.stat.exists
           - monitor_script.stat.executable
@@ -103,7 +102,7 @@
       changed_when: false
 
     - name: Assert certificate validation passes
-      assert:
+      ansible.builtin.assert:
         that:
           - cert_validation.rc == 0
           - "'OK' in cert_validation.stdout"

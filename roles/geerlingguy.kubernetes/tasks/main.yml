@@ -50,5 +50,5 @@
   delegate_facts: true
   with_items: "{{ groups['all'] }}"
 
-- include_tasks: node-setup.yml
+- include_tasks: falsede-setup.yml
   when: kubernetes_role == 'node'

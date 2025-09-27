@@ -2,7 +2,7 @@
 # Multi-Cloud Orchestrator Configuration
 multi_cloud:
   enabled: true
-  
+
   cloud_providers:
     aws:
       enabled: true
@@ -19,7 +19,7 @@ multi_cloud:
         - s3
         - lambda
         - ecs
-    
+
     azure:
       enabled: true
       regions:
@@ -36,7 +36,7 @@ multi_cloud:
         - storage_account
         - functions
         - container_instances
-    
+
     gcp:
       enabled: true
       regions:
@@ -73,7 +73,7 @@ multi_cloud:
           - sla_guarantee
           - redundancy_level
           - disaster_recovery
-    
+
     placement_rules:
       - workload_type: "database"
         preferred_clouds: ["aws", "azure"]
@@ -97,7 +97,7 @@ multi_cloud:
         clouds: ["aws", "gcp"]
         load_distribution: [0.6, 0.4]
         sync_interval: 60
-    
+
     backup_policies:
       - name: "critical_data"
         frequency: "hourly"
@@ -120,7 +120,7 @@ multi_cloud:
       - name: "right_sizing"
         analysis_period: 7  # days
         utilization_threshold: 30
-    
+
     budget_controls:
       daily_limit: 2000
       monthly_limit: 50000
@@ -139,7 +139,7 @@ multi_cloud:
       - name: "sox"
         change_approval: true
         segregation_of_duties: true
-    
+
     security_policies:
       - name: "encryption_at_rest"
         mandatory: true
@@ -159,10 +159,10 @@ orchestration:
     aws: "s3"
     azure: "storage_account"
     gcp: "cloud_storage"
-  
+
   workflow_engine: "airflow"
   workflow_scheduling: "cron"
-  
+
   monitoring_integration:
     prometheus: true
     grafana: true
@@ -178,7 +178,7 @@ ai_integration:
       - seasonal_patterns
       - business_metrics
     prediction_horizon: 7  # days
-  
+
   cost_predictor:
     enabled: true
     model_type: "regression"
@@ -187,7 +187,7 @@ ai_integration:
       - pricing_trends
       - demand_patterns
     prediction_horizon: 30  # days
-  
+
   anomaly_detector:
     enabled: true
     model_type: "isolation_forest"

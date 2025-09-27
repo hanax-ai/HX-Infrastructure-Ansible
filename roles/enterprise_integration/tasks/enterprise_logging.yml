@@ -1,4 +1,3 @@
-
 ---
 # Enterprise Logging Integration Tasks
 - name: Install enterprise logging tools
@@ -16,14 +15,14 @@
   ansible.builtin.template:
     src: rsyslog_enterprise.conf.j2
     dest: /etc/rsyslog.d/10-enterprise-logging.conf
-    backup: yes
+    backup: true
   notify: restart rsyslog
 
 - name: Configure log forwarding to SIEM
   ansible.builtin.template:
     src: siem_forwarding.conf.j2
     dest: /etc/rsyslog.d/20-siem-forwarding.conf
-    backup: yes
+    backup: true
   notify: restart rsyslog
   when: siem_endpoint is defined
 
@@ -31,28 +30,28 @@
   ansible.builtin.template:
     src: filebeat.yml.j2
     dest: /etc/filebeat/filebeat.yml
-    backup: yes
+    backup: true
   notify: restart filebeat
 
 - name: Configure log parsing and enrichment
   ansible.builtin.template:
     src: log_parser.conf.j2
     dest: /etc/rsyslog.d/30-log-parsing.conf
-    backup: yes
+    backup: true
   notify: restart rsyslog
 
 - name: Setup application log collection
   ansible.builtin.template:
     src: app_log_collection.conf.j2
     dest: /etc/rsyslog.d/40-application-logs.conf
-    backup: yes
+    backup: true
   notify: restart rsyslog
 
 - name: Configure security log monitoring
   ansible.builtin.template:
     src: security_log_monitor.conf.j2
     dest: /etc/rsyslog.d/50-security-monitoring.conf
-    backup: yes
+    backup: true
   notify: restart rsyslog
 
 - name: Setup log retention policies
@@ -106,7 +105,7 @@
   ansible.builtin.template:
     src: log_encryption.conf.j2
     dest: /etc/rsyslog.d/60-log-encryption.conf
-    backup: yes
+    backup: true
   notify: restart rsyslog
   when: enable_log_encryption | default(false)
 
@@ -171,7 +170,7 @@
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: started
-    enabled: yes
+    enabled: true
   loop:
     - rsyslog
     - filebeat
@@ -180,10 +179,10 @@
   ansible.builtin.shell: |
     # Test rsyslog configuration
     rsyslogd -N1
-    
+
     # Test filebeat configuration
     filebeat test config
-    
+
     # Check log forwarding
     logger "Test message from {{ inventory_hostname }}"
     sleep 2
@@ -195,4 +194,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/enterprise_logging_setup.log
     line: "{{ ansible_date_time.iso8601 }} - Enterprise logging setup completed - Validation: {{ 'SUCCESS' if logging_validation.rc == 0 else 'PARTIAL' }}"
-    create: yes
+    create: true

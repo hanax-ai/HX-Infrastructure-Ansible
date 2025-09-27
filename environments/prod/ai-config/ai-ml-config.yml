@@ -6,44 +6,44 @@ ai_ml_config:
     log_level: "INFO"
     model_update_frequency: "daily"
     performance_monitoring: true
-    
+
   deployment_orchestrator:
     model_path: "/opt/hx/ai-models/deployment_model.pkl"
     confidence_threshold: 0.85
     fallback_strategy: "conservative"
     decision_logging: true
-    
+
   intelligent_monitoring:
     anomaly_detection:
       sensitivity: "medium"
       alert_threshold: 0.8
       model_path: "/opt/hx/ai-models/anomaly_model.pkl"
-    
+
     predictive_scaling:
       prediction_horizon: 3600  # 1 hour
       scaling_buffer: 0.2
       model_path: "/opt/hx/ai-models/performance_model.pkl"
-    
+
     cost_optimization:
       optimization_frequency: "hourly"
       savings_target: 0.15  # 15%
       model_path: "/opt/hx/ai-models/cost_model.pkl"
-  
+
   self_healing:
     auto_remediation: true
     max_concurrent_actions: 5
     escalation_timeout: 300  # 5 minutes
-    
+
   multi_cloud:
     workload_placement:
       optimization_strategy: "cost_performance_balanced"
       model_path: "/opt/hx/ai-models/placement_model.pkl"
-    
+
     disaster_recovery:
       auto_failover: true
       rpo_target: 300  # 5 minutes
       rto_target: 900  # 15 minutes
-  
+
   continuous_improvement:
     optimization_cycles:
       - frequency: "hourly"
@@ -58,17 +58,17 @@ integrations:
   prometheus:
     url: "http://localhost:9090"
     scrape_interval: 15
-    
+
   grafana:
     url: "http://localhost:3000"
     dashboard_refresh: 30
-    
+
   slack:
     webhook_url: "{{ slack_webhook_url | default('') }}"
     channels:
       critical: "#ops-critical"
       alerts: "#ops-alerts"
-      
+
   email:
     smtp_server: "{{ smtp_server | default('localhost') }}"
     recipients:
@@ -80,15 +80,15 @@ performance_tuning:
   cpu_optimization:
     target_utilization: 70
     scaling_threshold: 80
-    
+
   memory_optimization:
     target_utilization: 75
     gc_tuning: true
-    
+
   network_optimization:
     connection_pooling: true
     compression: true
-    
+
   storage_optimization:
     caching_strategy: "intelligent"
     compression: true

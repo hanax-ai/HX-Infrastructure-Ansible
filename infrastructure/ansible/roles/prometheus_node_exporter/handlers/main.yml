@@ -1,11 +1,10 @@
-
 ---
 # Prometheus Node Exporter role - handlers
 # Service management handlers
 
 - name: restart node exporter service
   ansible.builtin.service:
-    name: node-exporter
+    name: falsede-exporter
     state: restarted
     daemon_reload: true
   become: true
@@ -13,14 +12,14 @@
 
 - name: reload node exporter service
   ansible.builtin.service:
-    name: node-exporter
+    name: falsede-exporter
     state: reloaded
   become: true
   listen: reload node exporter service
 
 - name: start node exporter service
   ansible.builtin.service:
-    name: node-exporter
+    name: falsede-exporter
     state: started
     enabled: true
   become: true
@@ -28,7 +27,7 @@
 
 - name: stop node exporter service
   ansible.builtin.service:
-    name: node-exporter
+    name: falsede-exporter
     state: stopped
   become: true
   listen: stop node exporter service

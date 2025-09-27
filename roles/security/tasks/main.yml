@@ -55,7 +55,7 @@
     - name: Enable and start fail2ban
       systemd:
         name: fail2ban
-        enabled: yes
+        enabled: true
         state: started
   when: hx_security_fail2ban_enabled
   tags:
@@ -69,7 +69,7 @@
         path: /etc/ssh/sshd_config
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
-        backup: yes
+        backup: true
       loop:
         - { regexp: '^#?Port', line: 'Port {{ hx_security_ssh_port }}' }
         - { regexp: '^#?Protocol', line: 'Protocol {{ hx_security_ssh_protocol }}' }
@@ -88,7 +88,7 @@
         path: /etc/ssh/sshd_config
         regexp: '^#?AllowUsers'
         line: 'AllowUsers {{ hx_security_ssh_allowed_users | join(" ") }}'
-        backup: yes
+        backup: true
       when: hx_security_ssh_allowed_users | length > 0
       notify: restart sshd
 
@@ -97,7 +97,7 @@
         path: /etc/ssh/sshd_config
         regexp: '^#?AllowGroups'
         line: 'AllowGroups {{ hx_security_ssh_allowed_groups | join(" ") }}'
-        backup: yes
+        backup: true
       when: hx_security_ssh_allowed_groups | length > 0
       notify: restart sshd
   when: hx_security_ssh_hardening
@@ -110,7 +110,7 @@
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     state: present
-    reload: yes
+    reload: true
   loop:
     # Network security
     - { name: 'net.ipv4.ip_forward', value: '0' }
@@ -164,7 +164,7 @@
         path: /etc/apt/apt.conf.d/20auto-upgrades
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
-        create: yes
+        create: true
       loop:
         - { regexp: '^APT::Periodic::Update-Package-Lists', line: 'APT::Periodic::Update-Package-Lists "1";' }
         - { regexp: '^APT::Periodic::Unattended-Upgrade', line: 'APT::Periodic::Unattended-Upgrade "1";' }
@@ -175,7 +175,7 @@
         path: /etc/apt/apt.conf.d/50unattended-upgrades
         regexp: '^\s*"${distro_id}:${distro_codename}-security";'
         line: '        "${distro_id}:${distro_codename}-security";'
-        backup: yes
+        backup: true
   when: hx_security_unattended_upgrades
   tags:
     - hx_security
@@ -188,7 +188,7 @@
         path: /etc/audit/auditd.conf
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
-        backup: yes
+        backup: true
       loop:
         - { regexp: '^max_log_file\s*=', line: 'max_log_file = {{ hx_security_auditd_max_log_file }}' }
         - { regexp: '^num_logs\s*=', line: 'num_logs = {{ hx_security_auditd_num_logs }}' }
@@ -198,14 +198,14 @@
       lineinfile:
         path: /etc/audit/rules.d/hx-security.rules
         line: "{{ item }}"
-        create: yes
+        create: true
       loop: "{{ hx_security_auditd_rules }}"
       notify: restart auditd
 
     - name: Enable and start auditd
       systemd:
         name: auditd
-        enabled: yes
+        enabled: true
         state: started
   when: hx_security_auditd_enabled
   tags:

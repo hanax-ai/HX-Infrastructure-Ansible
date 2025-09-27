@@ -1,4 +1,3 @@
-
 ---
 # Performance Optimization Tasks
 - name: Optimize kernel parameters
@@ -6,7 +5,7 @@
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     state: present
-    reload: yes
+    reload: true
   loop: "{{ kernel_optimizations | default([]) }}"
 
 - name: Configure CPU governor for performance
@@ -23,7 +22,7 @@
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     state: present
-    reload: yes
+    reload: true
   loop:
     - { name: "net.core.rmem_max", value: "134217728" }
     - { name: "net.core.wmem_max", value: "134217728" }
@@ -41,7 +40,7 @@
         echo "{{ io_scheduler | default('mq-deadline') }}" > "$disk"
       fi
     done
-    
+
     # Set read-ahead values
     for disk in /sys/block/*/queue/read_ahead_kb; do
       if [ -f "$disk" ]; then
@@ -55,7 +54,7 @@
     name: "{{ item.name }}"
     value: "{{ item.value }}"
     state: present
-    reload: yes
+    reload: true
   loop:
     - { name: "vm.swappiness", value: "{{ swappiness | default('10') }}" }
     - { name: "vm.dirty_ratio", value: "{{ dirty_ratio | default('15') }}" }
@@ -67,7 +66,7 @@
   ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
-    backup: yes
+    backup: true
   loop: "{{ app_config_optimizations | default([]) }}"
   notify: restart application services
 
@@ -75,7 +74,7 @@
   ansible.builtin.template:
     src: "{{ item.template }}"
     dest: "{{ item.config_path }}"
-    backup: yes
+    backup: true
   loop: "{{ database_optimizations | default([]) }}"
   notify: restart database services
 
@@ -106,7 +105,7 @@
   ansible.builtin.template:
     src: connection_pool.conf.j2
     dest: "{{ app_config_path }}/connection_pool.conf"
-    backup: yes
+    backup: true
   when: configure_connection_pooling | default(false)
   notify: restart application services
 
@@ -114,7 +113,7 @@
   ansible.builtin.template:
     src: cache_config.conf.j2
     dest: "{{ cache_config_path }}/cache.conf"
-    backup: yes
+    backup: true
   when: configure_caching | default(false)
   notify: restart cache services
 
@@ -122,7 +121,7 @@
   ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
-    backup: yes
+    backup: true
   loop:
     - { src: "nginx_performance.conf.j2", dest: "/etc/nginx/conf.d/performance.conf" }
     - { src: "apache_performance.conf.j2", dest: "/etc/httpd/conf.d/performance.conf" }
@@ -139,4 +138,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/performance_optimization.log
     line: "{{ ansible_date_time.iso8601 }} - Performance optimization completed - Validation: {{ optimization_validation.stdout_lines[-1] if optimization_validation.stdout_lines else 'No output' }}"
-    create: yes
+    create: true
