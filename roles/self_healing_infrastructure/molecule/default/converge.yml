@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include self_healing_infrastructure"
+      include_role:
+        name: "self_healing_infrastructure"

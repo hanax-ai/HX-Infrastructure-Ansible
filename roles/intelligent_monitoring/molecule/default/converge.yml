@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include intelligent_monitoring"
+      include_role:
+        name: "intelligent_monitoring"
