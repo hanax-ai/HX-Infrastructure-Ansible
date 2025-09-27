@@ -1,0 +1,62 @@
+
+---
+# Main site playbook - infrastructure deployment orchestration
+# Follows SOLID principles and phased deployment approach
+
+- name: "Deploy common baseline to all hosts"
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: common
+  tags:
+    - baseline
+    - common
+    - phase:foundation
+
+- name: "Configure SSH access and security"
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: ssh
+  tags:
+    - access
+    - ssh
+    - security
+    - phase:foundation
+
+- name: "Manage user accounts and access control"
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: users
+  tags:
+    - users
+    - access-control
+    - phase:foundation
+
+- name: "Deploy Docker runtime (container hosts)"
+  hosts: container_hosts
+  become: true
+  gather_facts: true
+  roles:
+    - role: docker_engine
+  tags:
+    - docker
+    - containers
+    - runtime
+    - phase:runtime
+
+- name: "Deploy monitoring and observability"
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: prometheus_node_exporter
+  tags:
+    - monitoring
+    - observability
+    - metrics
+    - phase:observability

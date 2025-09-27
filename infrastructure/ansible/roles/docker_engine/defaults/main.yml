@@ -1,0 +1,67 @@
+
+---
+# Docker Engine role - default variables
+# Container runtime configuration with security defaults
+
+# Docker installation configuration
+docker_engine_edition: "ce"  # ce (Community Edition) or ee (Enterprise Edition)
+docker_engine_channel: "stable"  # stable, test, or edge
+docker_engine_version: ""  # Empty for latest, or specific version like "20.10.21"
+
+# Package management
+docker_engine_package_state: "present"  # present or latest
+docker_engine_remove_old_versions: true
+
+# Repository configuration
+docker_engine_apt_repository: >
+  deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release }} {{ docker_engine_channel }}
+docker_engine_apt_gpg_key: "https://download.docker.com/linux/{{ ansible_distribution|lower }}/gpg"
+docker_engine_yum_repository: "https://download.docker.com/linux/centos/docker-ce.repo"
+
+# Docker daemon configuration
+docker_engine_daemon_config:
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  storage-driver: "overlay2"
+  live-restore: true
+  userland-proxy: false
+  no-new-privileges: true
+  experimental: false
+
+# Security configuration
+docker_engine_enable_content_trust: false
+docker_engine_daemon_environment: {}
+docker_engine_selinux_enabled: true
+
+# Network configuration
+docker_engine_bridge_name: "docker0"
+docker_engine_bridge_ip: "172.17.0.1/16"
+docker_engine_fixed_cidr: ""
+docker_engine_default_gateway: ""
+
+# Registry configuration
+docker_engine_insecure_registries: []
+docker_engine_registry_mirrors: []
+
+# User management
+docker_engine_users: []
+# Example:
+# docker_engine_users:
+#   - alice
+#   - bob
+
+# Service configuration
+docker_engine_service_enabled: true
+docker_engine_service_state: "started"
+docker_engine_service_restart_handler_state: "restarted"
+
+# Docker Compose installation
+docker_engine_install_compose: true
+docker_engine_compose_version: "2.21.0"
+docker_engine_compose_path: "/usr/local/bin/docker-compose"
+
+# Cleanup configuration
+docker_engine_prune_system: false
+docker_engine_prune_schedule: "0 2 * * 0"  # Weekly on Sunday at 2 AM

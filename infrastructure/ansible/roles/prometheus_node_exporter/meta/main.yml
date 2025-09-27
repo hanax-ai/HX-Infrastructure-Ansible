@@ -1,0 +1,42 @@
+
+---
+# Prometheus Node Exporter role - metadata
+# Role information and dependencies
+
+galaxy_info:
+  role_name: prometheus_node_exporter
+  author: HX Infrastructure Team
+  description: Prometheus Node Exporter for system metrics collection
+  company: Hana-X AI
+  license: MIT
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - monitoring
+    - prometheus
+    - metrics
+    - observability
+
+dependencies:
+  - role: common
+  - role: users
+
+# Collections used by this role
+collections:
+  - ansible.builtin
+  - ansible.posix
+  - community.general

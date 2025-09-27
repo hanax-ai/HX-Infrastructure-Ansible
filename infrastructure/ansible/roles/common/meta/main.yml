@@ -1,0 +1,39 @@
+
+---
+# Common role - metadata
+# Role information and dependencies
+
+galaxy_info:
+  role_name: common
+  author: HX Infrastructure Team
+  description: Common baseline configuration for all systems
+  company: Hana-X AI
+  license: MIT
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - system
+    - baseline
+    - common
+    - infrastructure
+
+dependencies: []
+
+# Collections used by this role
+collections:
+  - ansible.builtin
+  - community.general

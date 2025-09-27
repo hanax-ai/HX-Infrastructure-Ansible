@@ -1,0 +1,34 @@
+
+---
+# SSH role - main task orchestration
+# Secure SSH server and client configuration
+
+- name: "ssh : Validate SSH configuration requirements"
+  ansible.builtin.import_tasks: validate.yml
+  tags:
+    - role:ssh
+    - phase:validate
+
+- name: "ssh : Prepare SSH service for configuration"
+  ansible.builtin.import_tasks: prepare.yml
+  tags:
+    - role:ssh
+    - phase:prepare
+
+- name: "ssh : Install SSH packages and dependencies"
+  ansible.builtin.import_tasks: install.yml
+  tags:
+    - role:ssh
+    - phase:install
+
+- name: "ssh : Configure SSH server and client settings"
+  ansible.builtin.import_tasks: configure.yml
+  tags:
+    - role:ssh
+    - phase:configure
+
+- name: "ssh : Verify SSH configuration integrity"
+  ansible.builtin.import_tasks: verify.yml
+  tags:
+    - role:ssh
+    - phase:verify

@@ -1,0 +1,43 @@
+
+---
+# Common role - validation tasks
+# Pre-flight checks before system configuration
+
+- name: "common : Validate minimum system requirements"
+  ansible.builtin.assert:
+    that:
+      - ansible_architecture in common_supported_architectures
+      - ansible_distribution in common_supported_distributions
+    fail_msg: "Unsupported system: {{ ansible_distribution }} {{ ansible_architecture }}"
+    success_msg: "System validation passed: {{ ansible_distribution }} {{ ansible_architecture }}"
+  tags:
+    - role:common
+    - phase:validate
+    - validation:system
+
+- name: "common : Validate network connectivity"
+  ansible.builtin.uri:
+    url: "{{ item }}"
+    method: HEAD
+    timeout: 10
+  loop: "{{ common_connectivity_checks }}"
+  when: common_connectivity_checks is defined and common_connectivity_checks | length > 0
+  tags:
+    - role:common
+    - phase:validate
+    - validation:network
+
+- name: "common : Validate disk space requirements"
+  ansible.builtin.assert:
+    that:
+      - ansible_mounts | selectattr('mount', 'equalto', '/') | 
+        map(attribute='size_available') | first > common_min_disk_space
+    fail_msg: >
+      Insufficient disk space. Required: {{ common_min_disk_space }}, 
+      Available: {{ ansible_mounts | selectattr('mount', 'equalto', '/') | 
+      map(attribute='size_available') | first }}
+  when: common_min_disk_space is defined
+  tags:
+    - role:common
+    - phase:validate
+    - validation:storage

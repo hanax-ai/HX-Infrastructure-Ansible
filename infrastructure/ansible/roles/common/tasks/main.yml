@@ -1,0 +1,34 @@
+
+---
+# Common role - main task orchestration
+# Follows SOLID principles: single responsibility for OS baseline setup
+
+- name: "common : Run validation checks"
+  ansible.builtin.import_tasks: validate.yml
+  tags:
+    - role:common
+    - phase:validate
+
+- name: "common : Prepare system for configuration"
+  ansible.builtin.import_tasks: prepare.yml
+  tags:
+    - role:common
+    - phase:prepare
+
+- name: "common : Install base packages and dependencies"
+  ansible.builtin.import_tasks: install.yml
+  tags:
+    - role:common
+    - phase:install
+
+- name: "common : Configure system baseline"
+  ansible.builtin.import_tasks: configure.yml
+  tags:
+    - role:common
+    - phase:configure
+
+- name: "common : Verify configuration integrity"
+  ansible.builtin.import_tasks: verify.yml
+  tags:
+    - role:common
+    - phase:verify

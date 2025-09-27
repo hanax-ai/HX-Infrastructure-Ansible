@@ -1,0 +1,38 @@
+
+---
+# Common role - installation tasks
+# Install base packages and dependencies
+
+- name: "common : Install essential system packages"
+  ansible.builtin.package:
+    name: "{{ common_essential_packages }}"
+    state: present
+  become: true
+  tags:
+    - role:common
+    - phase:install
+    - packages:essential
+
+- name: "common : Install additional utility packages"
+  ansible.builtin.package:
+    name: "{{ common_utility_packages }}"
+    state: present
+  become: true
+  when: common_utility_packages is defined and common_utility_packages | length > 0
+  tags:
+    - role:common
+    - phase:install
+    - packages:utilities
+
+- name: "common : Install development tools (if enabled)"
+  ansible.builtin.package:
+    name: "{{ common_development_packages }}"
+    state: present
+  become: true
+  when:
+    - common_install_development_tools | default(false) | bool
+    - common_development_packages is defined
+  tags:
+    - role:common
+    - phase:install
+    - packages:development

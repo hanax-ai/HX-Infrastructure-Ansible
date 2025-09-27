@@ -1,0 +1,34 @@
+
+---
+# Docker Engine role - handlers
+# Docker service management handlers
+
+- name: restart docker service
+  ansible.builtin.service:
+    name: docker
+    state: restarted
+    daemon_reload: true
+  become: true
+  listen: restart docker service
+
+- name: reload docker service
+  ansible.builtin.service:
+    name: docker
+    state: reloaded
+  become: true
+  listen: reload docker service
+
+- name: start docker service
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+  become: true
+  listen: start docker service
+
+- name: stop docker service
+  ansible.builtin.service:
+    name: docker
+    state: stopped
+  become: true
+  listen: stop docker service
