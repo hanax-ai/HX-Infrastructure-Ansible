@@ -1,0 +1,4 @@
+---
+# Internal variables for monitoring role
+monitoring_role_version: "1.0.0"
+monitoring_role_name: "monitoring"

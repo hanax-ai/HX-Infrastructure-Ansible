@@ -1,0 +1,5 @@
+---
+# Internal variables for monitoring_grafana role - DO NOT override these
+monitoring_grafana_role_version: "1.0.0"
+monitoring_grafana_role_name: "monitoring_grafana"
+monitoring_grafana_internal_config_path: "/etc/hx-infrastructure/monitoring_grafana"

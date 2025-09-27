@@ -1,0 +1,4 @@
+---
+# Internal variables for networking role
+networking_role_version: "1.0.0"
+networking_role_name: "networking"

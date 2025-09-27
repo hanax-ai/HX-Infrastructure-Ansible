@@ -1,0 +1,5 @@
+---
+# Internal variables for enterprise_integration role - DO NOT override these
+enterprise_integration_role_version: "1.0.0"
+enterprise_integration_role_name: "enterprise_integration"
+enterprise_integration_internal_config_path: "/etc/hx-infrastructure/enterprise_integration"

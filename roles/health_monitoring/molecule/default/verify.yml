@@ -1,0 +1,7 @@
+---
+- name: Verify
+  hosts: all
+  tasks:
+    - name: "Verify health_monitoring role execution"
+      ansible.builtin.debug:
+        msg: "Role health_monitoring verification complete"

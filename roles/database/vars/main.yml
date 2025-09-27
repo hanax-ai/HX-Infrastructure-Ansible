@@ -1,0 +1,4 @@
+---
+# Internal variables for database role
+database_role_version: "1.0.0"
+database_role_name: "database"

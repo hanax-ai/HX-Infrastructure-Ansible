@@ -3,10 +3,10 @@
 # Comprehensive prerequisite checking system
 
 # Core dependency validation settings
-dependency_validation_enabled: true
-dependency_validation_version: "3.0.0"
-dependency_validation_strict_mode: true
-dependency_validation_fail_fast: false
+dependency_validator_enabled: true
+dependency_validator_version: "3.0.0"
+dependency_validator_strict_mode: true
+dependency_validator_fail_fast: false
 
 # System requirement validation
 system_requirements:

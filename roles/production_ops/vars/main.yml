@@ -1,0 +1,5 @@
+---
+# Internal variables for production_ops role - DO NOT override these
+production_ops_role_version: "1.0.0"
+production_ops_role_name: "production_ops"
+production_ops_internal_config_path: "/etc/hx-infrastructure/production_ops"

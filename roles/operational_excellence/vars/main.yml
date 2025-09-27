@@ -1,0 +1,4 @@
+---
+# Internal variables for operational_excellence role
+operational_excellence_role_version: "1.0.0"
+operational_excellence_role_name: "operational_excellence"

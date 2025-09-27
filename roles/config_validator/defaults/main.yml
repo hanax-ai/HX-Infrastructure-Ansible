@@ -3,13 +3,13 @@
 # Standardized configuration management and validation
 
 # Core configuration validation settings
-config_validation_enabled: true
-config_validation_version: "3.0.0"
-config_validation_strict_mode: true
-config_validation_schema_validation: true
+config_validator_enabled: true
+config_validator_version: "3.0.0"
+config_validator_strict_mode: true
+config_validator_schema_validation: true
 
 # Variable naming conventions
-variable_naming_conventions:
+config_validator_variable_naming_conventions:
   prefix_patterns:
     - "hx_"
     - "ansible_"
@@ -41,7 +41,7 @@ variable_naming_conventions:
   max_length: 50
 
 # Configuration schema definitions
-config_schemas:
+config_validator_schemas:
   environment_config:
     required_fields:
       - environment_type
@@ -80,7 +80,7 @@ config_schemas:
       monitoring_config: "dict"
 
 # Default value standardization
-standardized_defaults:
+config_validator_standardized_defaults:
   timeouts:
     connection_timeout: 30
     command_timeout: 600
@@ -104,7 +104,7 @@ standardized_defaults:
     executable_mode: "0755"
 
 # Configuration inheritance rules
-inheritance_rules:
+config_validator_inheritance_rules:
   global_precedence:
     - "group_vars/all.yml"
     - "group_vars/{{ environment_type }}.yml"

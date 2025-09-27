@@ -1,0 +1,4 @@
+---
+# Internal variables for web_server role
+web_server_role_version: "1.0.0"
+web_server_role_name: "web_server"

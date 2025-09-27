@@ -1,0 +1,4 @@
+---
+# Internal variables for backup_automation role
+backup_automation_role_version: "1.0.0"
+backup_automation_role_name: "backup_automation"

@@ -1,0 +1,5 @@
+---
+# Internal variables for dependency_validator role - DO NOT override these
+dependency_validator_role_version: "1.0.0"
+dependency_validator_role_name: "dependency_validator"
+dependency_validator_internal_config_path: "/etc/hx-infrastructure/dependency_validator"

@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    performance_optimization_enabled: true
+  roles:
+    - role: performance_optimization

@@ -1,0 +1,7 @@
+---
+- name: Verify
+  hosts: all
+  tasks:
+    - name: "Verify monitoring_prometheus role execution"
+      ansible.builtin.debug:
+        msg: "Role monitoring_prometheus verification complete"

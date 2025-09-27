@@ -1,0 +1,5 @@
+---
+# Internal variables for performance_optimization role - DO NOT override these
+performance_optimization_role_version: "1.0.0"
+performance_optimization_role_name: "performance_optimization"
+performance_optimization_internal_config_path: "/etc/hx-infrastructure/performance_optimization"

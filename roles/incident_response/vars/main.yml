@@ -1,0 +1,5 @@
+---
+# Internal variables for incident_response role - DO NOT override these
+incident_response_role_version: "1.0.0"
+incident_response_role_name: "incident_response"
+incident_response_internal_config_path: "/etc/hx-infrastructure/incident_response"

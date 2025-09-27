@@ -1,0 +1,5 @@
+---
+# Internal variables for reliability_monitor role - DO NOT override these
+reliability_monitor_role_version: "1.0.0"
+reliability_monitor_role_name: "reliability_monitor"
+reliability_monitor_internal_config_path: "/etc/hx-infrastructure/reliability_monitor"
