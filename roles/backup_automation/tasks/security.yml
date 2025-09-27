@@ -4,22 +4,22 @@
   group:
     name: backup
     state: present
-    system: yes
+    system: true
 
 - name: Create backup user
   user:
     name: backup
     group: backup
-    system: yes
+    system: true
     shell: /bin/bash
     home: /var/lib/backup
-    create_home: yes
+    create_home: true
     comment: "HX Backup Automation User"
 
 - name: Set backup user password policy
   user:
     name: backup
-    password_lock: yes
+    password_lock: true
 
 - name: Create backup sudoers configuration
   template:
@@ -54,7 +54,7 @@
   command: openssl rand -base64 32
   register: backup_encryption_key
   no_log: true
-  when: 
+  when:
     - backup_automation.encryption.enabled
     - not ansible_check_mode
 
@@ -66,7 +66,7 @@
     group: backup
     mode: "{{ backup_security.file_permissions }}"
   no_log: true
-  when: 
+  when:
     - backup_automation.encryption.enabled
     - backup_encryption_key is defined
     - not ansible_check_mode
@@ -89,7 +89,7 @@
     {'target': '/var/lib/backup(/.*)?', 'setype': 'var_lib_t'},
     {'target': '/etc/hx-backup(/.*)?', 'setype': 'etc_t'}
   ]) }}"
-  when: 
+  when:
     - ansible_selinux.status == "enabled"
     - backup_security.selinux_contexts is defined
 
@@ -99,7 +99,7 @@
     - "{{ backup_automation.base_directory }}"
     - "/var/lib/backup"
     - "/etc/hx-backup"
-  when: 
+  when:
     - ansible_selinux.status == "enabled"
     - backup_security.selinux_contexts is defined
 
@@ -153,7 +153,7 @@
   command: openssl rand -hex 32
   register: backup_integrity_key
   no_log: true
-  when: 
+  when:
     - verification.enabled
     - not ansible_check_mode
 
@@ -165,7 +165,7 @@
     group: backup
     mode: "{{ backup_security.file_permissions }}"
   no_log: true
-  when: 
+  when:
     - verification.enabled
     - backup_integrity_key is defined
     - not ansible_check_mode

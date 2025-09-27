@@ -1,37 +1,69 @@
+---
+# YAML Lint Configuration for HX Infrastructure Ansible
+# Repo-wide YAML hygiene enforcement
+
 extends: default
 
 rules:
+  # Document start requirement
+  document-start:
+    present: true
+
+  # Line length policy
   line-length:
     max: 120
-    level: warning
-  
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+
+  # Indentation rules
   indentation:
     spaces: 2
     indent-sequences: true
     check-multi-line-strings: false
-  
-  comments:
-    min-spaces-from-content: 1
-  
-  document-start:
-    present: false
-  
-  truthy:
-    allowed-values: ['true', 'false', 'yes', 'no']
-    check-keys: false
-  
-  key-ordering: disable
-  
+
+  # Trailing spaces
+  trailing-spaces: enable
+
+  # Empty lines
   empty-lines:
     max: 2
     max-start: 1
     max-end: 1
 
+  # Comments
+  comments:
+    min-spaces-from-content: 1
+
+  # Truthy values (enforce true/false)
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no']
+    check-keys: true
+
+  # Brackets spacing
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+  # Braces spacing
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+  # Key duplicates
+  key-duplicates: enable
+
+  # Octal values
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+
+# File patterns to ignore
 ignore: |
   .git/
-  venv/
-  tmp/
-  *.pyc
   __pycache__/
-  .pytest_cache/
-  molecule/*/
+  *.pyc
+  backup/
+  tmp/
+  logs/
+  .ansible/
+  molecule/*/cache/

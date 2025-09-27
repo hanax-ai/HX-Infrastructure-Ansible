@@ -1,4 +1,3 @@
-
 ---
 # Phase 3.4 - Production Operations and Maintenance Automation
 # Main site playbook for production operations
@@ -10,7 +9,7 @@
     operation_type: "production"
   tasks:
     - name: Display Phase 3.4 Banner
-      debug:
+      ansible.builtin.debug:
         msg: |
           ========================================
           HX Infrastructure - Phase 3.4

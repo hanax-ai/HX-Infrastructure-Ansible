@@ -1,4 +1,4 @@
-
+---
 # UI Services Group Variables
 # Web Interfaces and Load Balancers
 
@@ -30,7 +30,7 @@ webui:
   version: "2.0.0"
   port: 3000
   host: "0.0.0.0"
-  
+
   # Application Configuration
   app:
     title: "HX AI Assistant"
@@ -39,14 +39,14 @@ webui:
     logo: "/assets/logo.png"
     theme: "dark"
     language: "en"
-    
+
   # API Configuration
   api:
     base_url: "http://{{ groups['llm_services'][0] }}:4000"
     timeout: 30000
     retry_attempts: 3
     retry_delay: 1000
-    
+
   # Authentication Configuration
   auth:
     enabled: true
@@ -54,7 +54,7 @@ webui:
     secret_key: "{{ vault_jwt_secret }}"
     token_expiry: 86400  # 24 hours
     refresh_token_expiry: 604800  # 7 days
-    
+
     # OAuth Configuration (optional)
     oauth:
       enabled: false
@@ -65,7 +65,7 @@ webui:
         - name: "github"
           client_id: "{{ vault_github_oauth_client_id }}"
           client_secret: "{{ vault_github_oauth_client_secret }}"
-  
+
   # Database Configuration
   database:
     type: "postgresql"
@@ -76,14 +76,14 @@ webui:
     password: "{{ vault_webui_db_password }}"
     pool_size: 20
     ssl_mode: "require"
-    
+
   # Redis Configuration
   redis:
     host: "{{ groups['cache_services'][0] }}"
     port: 6379
     db: 2
     password: "{{ vault_redis_password }}"
-    
+
   # Session Configuration
   session:
     store: "redis"
@@ -92,7 +92,7 @@ webui:
     secure: true
     http_only: true
     same_site: "strict"
-    
+
   # File Upload Configuration
   upload:
     enabled: true
@@ -104,7 +104,7 @@ webui:
       - "text/plain"
       - "application/pdf"
     storage_path: "/data/uploads"
-    
+
   # Chat Configuration
   chat:
     max_message_length: 4000
@@ -112,7 +112,7 @@ webui:
     auto_save: true
     typing_indicator: true
     read_receipts: true
-    
+
     # Model Selection
     default_model: "gpt-4"
     available_models:
@@ -128,7 +128,7 @@ webui:
         display_name: "Claude 3"
         description: "Anthropic's latest model"
         max_tokens: 4096
-        
+
   # UI Features
   features:
     dark_mode: true
@@ -138,7 +138,7 @@ webui:
     file_sharing: true
     conversation_export: true
     search_history: true
-    
+
   # Performance Configuration
   performance:
     enable_compression: true
@@ -146,7 +146,7 @@ webui:
     minify_assets: true
     lazy_loading: true
     virtual_scrolling: true
-    
+
   # Logging Configuration
   logging:
     level: "info"
@@ -154,7 +154,7 @@ webui:
     file: "/var/log/ui/webui.log"
     max_size: "100MB"
     max_files: 5
-    
+
   # Health Check Configuration
   health_check:
     endpoint: "/health"
@@ -167,13 +167,13 @@ nginx:
   user: "www-data"
   worker_processes: "auto"
   worker_connections: 1024
-  
+
   # Main Configuration
   main:
     error_log: "/var/log/nginx/error.log"
     access_log: "/var/log/nginx/access.log"
     pid: "/var/run/nginx.pid"
-    
+
   # HTTP Configuration
   http:
     sendfile: true
@@ -182,12 +182,12 @@ nginx:
     keepalive_timeout: 65
     types_hash_max_size: 2048
     server_tokens: false
-    
+
     # Client Configuration
     client_max_body_size: "100M"
     client_body_timeout: 60
     client_header_timeout: 60
-    
+
     # Gzip Configuration
     gzip: true
     gzip_vary: true
@@ -202,7 +202,7 @@ nginx:
       - "application/xml+rss"
       - "application/json"
       - "image/svg+xml"
-      
+
     # SSL Configuration
     ssl_protocols:
       - "TLSv1.2"
@@ -213,7 +213,7 @@ nginx:
     ssl_session_timeout: "10m"
     ssl_stapling: true
     ssl_stapling_verify: true
-    
+
     # Security Headers
     security_headers:
       x_frame_options: "DENY"
@@ -222,7 +222,7 @@ nginx:
       referrer_policy: "strict-origin-when-cross-origin"
       content_security_policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss:;"
       strict_transport_security: "max-age=31536000; includeSubDomains; preload"
-      
+
   # Rate Limiting
   rate_limiting:
     enabled: true
@@ -231,7 +231,7 @@ nginx:
     rate: "10r/s"
     burst: 20
     nodelay: true
-    
+
   # Upstream Configuration
   upstreams:
     - name: "webui_backend"
@@ -240,7 +240,7 @@ nginx:
         - "{{ groups['web_interfaces'][1] }}:3000 backup"
       method: "least_conn"
       keepalive: 32
-      
+
     - name: "api_backend"
       servers:
         - "{{ groups['llm_services'][0] }}:4000"
@@ -259,12 +259,12 @@ load_balancer:
     advert_int: 1
     auth_type: "PASS"
     auth_pass: "{{ vault_keepalived_password }}"
-    
+
     # Virtual IP Configuration
     virtual_ips:
       - ip: "{{ vip_address }}"
         interface: "eth0"
-        
+
     # Health Check Scripts
     vrrp_scripts:
       - name: "chk_nginx"
@@ -273,7 +273,7 @@ load_balancer:
         weight: -2
         fall: 3
         rise: 2
-        
+
   # HAProxy Configuration (alternative to nginx)
   haproxy:
     enabled: false
@@ -282,7 +282,7 @@ load_balancer:
       uri: "/stats"
       username: "admin"
       password: "{{ vault_haproxy_stats_password }}"
-      
+
     # Global Configuration
     global:
       maxconn: 4096
@@ -293,7 +293,7 @@ load_balancer:
       user: "haproxy"
       group: "haproxy"
       daemon: true
-      
+
     # Default Configuration
     defaults:
       mode: "http"
@@ -324,7 +324,7 @@ ssl_certificates:
       - "www.{{ domain_name }}"
       - "api.{{ domain_name }}"
     challenge_type: "http-01"
-    
+
   # Self-signed Certificate (for development)
   self_signed:
     enabled: "{{ environment == 'development' }}"
@@ -334,7 +334,7 @@ ssl_certificates:
     organization: "Hana-X AI"
     organizational_unit: "IT Department"
     common_name: "{{ domain_name }}"
-    
+
 # Monitoring Configuration
 monitoring:
   # Nginx Monitoring
@@ -344,7 +344,7 @@ monitoring:
     allow_ips:
       - "127.0.0.1"
       - "{{ network_subnet }}"
-      
+
   # Custom Metrics
   custom_metrics:
     - name: "http_requests_total"
@@ -366,12 +366,12 @@ backup:
     enabled: true
     schedule: "0 3 * * *"  # Daily at 3 AM
     retention_days: 30
-    
+
   configurations:
     enabled: true
     schedule: "0 2 * * *"  # Daily at 2 AM
     retention_days: 90
-    
+
   ssl_certificates:
     enabled: true
     schedule: "0 1 * * 0"  # Weekly on Sunday at 1 AM
@@ -406,14 +406,14 @@ security:
       - "RESPONSE-954-DATA-LEAKAGES-IIS"
       - "RESPONSE-959-BLOCKING-EVALUATION"
       - "RESPONSE-980-CORRELATION"
-      
+
   # DDoS Protection
   ddos_protection:
     enabled: true
     rate_limit: "100r/s"
     burst: 200
     connection_limit: 50
-    
+
   # Bot Protection
   bot_protection:
     enabled: true
@@ -428,14 +428,14 @@ environment_config:
     ssl_verification: false
     cache_enabled: false
     minification: false
-    
+
   test:
     debug_mode: true
     ssl_verification: false
     cache_enabled: true
     minification: false
     load_testing: true
-    
+
   production:
     debug_mode: false
     ssl_verification: true

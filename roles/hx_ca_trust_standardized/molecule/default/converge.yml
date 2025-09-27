@@ -1,29 +1,28 @@
-
 ---
 - name: Converge
   hosts: all
   become: true
   pre_tasks:
     - name: Update apt cache
-      apt:
+      ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 600
       when: ansible_os_family == "Debian"
 
     - name: Install OpenSSL for test certificate generation
-      package:
+      ansible.builtin.package:
         name: openssl
         state: present
 
     - name: Create test CA certificate
       shell: |
-        openssl req -x509 -newkey rsa:2048 -keyout /tmp/test-ca.key -out /tmp/test-ca.crt -days 365 -nodes \
+        openssl req -x509 -newkey rsa:2048 -keyout /tmp/test-ca.key -out /tmp/test-ca.crt -days 365 -nodes 
           -subj "/C=US/ST=Test/L=Test/O=HX Test/CN=HX Test CA"
       args:
         creates: /tmp/test-ca.crt
 
     - name: Set proper permissions on test certificate
-      file:
+      ansible.builtin.file:
         path: /tmp/test-ca.crt
         owner: root
         group: root

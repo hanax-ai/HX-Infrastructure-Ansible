@@ -32,7 +32,7 @@
     owner: consul
     group: consul
     mode: '0640'
-    backup: yes
+    backup: true
   vars:
     datacenter: "{{ consul_datacenter | default('dc1') }}"
     node_name: "{{ inventory_hostname }}"
@@ -50,8 +50,8 @@
   systemd:
     name: consul
     state: started
-    enabled: yes
-    daemon_reload: yes
+    enabled: true
+    daemon_reload: true
   when: service_discovery_enabled | default(true)
 
 - name: Wait for Consul to be ready
@@ -110,7 +110,7 @@
   set_fact:
     parsed_health_results: "{{ parsed_health_results | default([]) + [{'service': item.item, 'healthy': (item.json | length > 0), 'status': item.status}] }}"
   loop: "{{ service_health_query.results | default([]) }}"
-  when: 
+  when:
     - service_discovery_enabled | default(true)
     - item.json is defined
 

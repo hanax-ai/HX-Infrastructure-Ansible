@@ -2,23 +2,23 @@
 # Application Deployment Playbook
 - name: Application Deployment
   hosts: webservers
-  become: yes
-  gather_facts: yes
-  
+  become: true
+  gather_facts: true
+
   roles:
     - geerlingguy.nginx
-  
+
   tasks:
     - name: Ensure application directory exists
-      file:
+      ansible.builtin.file:
         path: /var/www/html
         state: directory
         owner: www-data
         group: www-data
         mode: '0755'
-        
+
     - name: Deploy application files
-      template:
+      ansible.builtin.template:
         src: index.html.j2
         dest: /var/www/html/index.html
         owner: www-data

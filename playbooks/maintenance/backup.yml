@@ -4,14 +4,14 @@
 
 - name: HX Infrastructure Backup
   hosts: all
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   vars:
     hx_backup_timestamp: "{{ ansible_date_time.epoch }}"
     hx_backup_date: "{{ ansible_date_time.date }}"
     hx_backup_base_dir: "{{ hx_common_backup_directory | default('/opt/hx/backups') }}"
     hx_backup_retention_days: "{{ hx_common_backup_retention_days | default(7) }}"
-  
+
   tasks:
     - name: Create backup directory structure
       file:
@@ -51,7 +51,7 @@
         - /opt/hx/
         - /var/lib/hx/
       when: item is exists
-      ignore_errors: yes
+      ignore_errors: true
       tags:
         - hx_backup
         - hx_application
@@ -83,7 +83,7 @@
         owner: root
         group: root
         mode: '0640'
-      ignore_errors: yes
+      ignore_errors: true
       tags:
         - hx_backup
         - hx_logs
@@ -122,19 +122,19 @@
       debug:
         msg: |
           HX Infrastructure Backup Complete!
-          
+
           Backup Details:
           - Date: {{ hx_backup_date }}
           - Timestamp: {{ hx_backup_timestamp }}
           - Location: {{ hx_backup_base_dir }}/{{ hx_backup_date }}
           - Retention: {{ hx_backup_retention_days }} days
-          
+
           Backed up components:
           - System configurations
           - HX application data
           - User home directories
           - System logs
-          
+
           Next Steps:
           1. Verify backup integrity
           2. Test restore procedures
@@ -145,13 +145,13 @@
 
 - name: Database Backup (Database Servers Only)
   hosts: database_servers
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   vars:
     hx_backup_timestamp: "{{ ansible_date_time.epoch }}"
     hx_backup_date: "{{ ansible_date_time.date }}"
     hx_backup_base_dir: "{{ hx_common_backup_directory | default('/opt/hx/backups') }}"
-  
+
   tasks:
     - name: Create database backup
       postgresql_db:
@@ -169,7 +169,7 @@
       archive:
         path: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}/database-*.sql"
         dest: "{{ hx_backup_base_dir }}/{{ hx_backup_date }}/databases-{{ hx_backup_timestamp }}.tar.gz"
-        remove: yes
+        remove: true
         owner: root
         group: root
         mode: '0640'

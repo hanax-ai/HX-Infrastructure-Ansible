@@ -1,4 +1,3 @@
-
 ---
 # Trigger Alert Task
 - name: Create alert payload
@@ -29,10 +28,10 @@
       - Severity: {{ alert_severity | default('warning') }}
       - Message: {{ alert_message }}
       - Timestamp: {{ ansible_date_time.iso8601 }}
-      
+
       Additional Data:
       {{ alert_data | default({}) | to_nice_json }}
-  when: 
+  when:
     - email_alerts_enabled | default(false)
     - alert_email_recipients is defined
 
@@ -51,7 +50,7 @@
         *Type:* {{ alert_type }}
         *Message:* {{ alert_message }}
         *Time:* {{ ansible_date_time.iso8601 }}
-  when: 
+  when:
     - slack_alerts_enabled | default(false)
     - slack_webhook_url is defined
 
@@ -73,7 +72,7 @@
         group: "{{ alert_type }}"
         class: "system"
         custom_details: "{{ alert_data | default({}) }}"
-  when: 
+  when:
     - pagerduty_alerts_enabled | default(false)
     - pagerduty_routing_key is defined
     - alert_severity in ['critical', 'error']
@@ -84,7 +83,7 @@
     if [ ! -f "$alert_stats_file" ]; then
       echo '{"total_alerts": 0, "by_type": {}, "by_severity": {}}' > "$alert_stats_file"
     fi
-    
+
     # Update statistics using jq
     jq --arg type "{{ alert_type }}" --arg severity "{{ alert_severity | default('warning') }}" '
       .total_alerts += 1 |

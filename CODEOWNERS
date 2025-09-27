@@ -1,0 +1,57 @@
+
+# Repository Code Owners
+# These users/teams will be requested for review when changes are made to specified paths
+
+# Global owners for any file not specifically covered
+* @ops-team @security-team
+
+# Workflow and CI/CD changes require security review
+.github/workflows/ @security-team @devops-leads
+.github/ @security-team @devops-leads
+
+# Infrastructure and deployment changes
+playbooks/ @ops-team @infrastructure-team
+inventories/ @ops-team @infrastructure-team
+roles/ @ops-team @infrastructure-team
+group_vars/ @ops-team @infrastructure-team
+host_vars/ @ops-team @infrastructure-team
+
+# Security-sensitive files
+vault.yml @security-team
+**/vault*.yml @security-team
+**/secrets*.yml @security-team
+ansible.cfg @ops-team @security-team
+
+# Scripts and automation
+scripts/ @ops-team @automation-team
+Makefile @ops-team @automation-team
+
+# Documentation requires technical writing review
+docs/ @ops-team @tech-writing-team
+README.md @ops-team @tech-writing-team
+*.md @tech-writing-team
+
+# Configuration and templates
+templates/ @ops-team @infrastructure-team
+files/ @ops-team @infrastructure-team
+
+# Monitoring and observability
+**/monitoring/ @ops-team @sre-team
+**/prometheus/ @sre-team
+**/grafana/ @sre-team
+
+# Release and deployment procedures
+docs/release/ @ops-team @release-managers
+scripts/evidence/ @ops-team @release-managers
+scripts/rollback/ @ops-team @security-team @release-managers
+
+# Archive cleanup and maintenance (security-sensitive)
+scripts/maintenance/ @ops-team @security-team
+
+# Golden path tests and validation
+tests/ @ops-team @qa-team
+scripts/monitoring/ @ops-team @sre-team
+
+# Root configuration files
+/.* @ops-team @security-team
+requirements.yml @ops-team

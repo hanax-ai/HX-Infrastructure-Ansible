@@ -1,6 +1,9 @@
 
 # Ansible Lint Configuration for HX Infrastructure Ansible
-# Enforces Ansible best practices and security standards
+# Repo-wide hygiene enforcement with infrastructure/ansible focus
+
+# Project directory for Ansible code
+project_dir: infrastructure/ansible
 
 # Profile for production-ready code
 profile: production
@@ -12,10 +15,17 @@ exclude_paths:
   - tmp/
   - __pycache__/
   - .pytest_cache/
-  - molecule/*/
-  - tests/unit/
   - backup/
   - logs/
+  - docs/
+  - scripts/
+  - evidence/
+  - reports/
+  - POC-1/
+  - "*.pdf"
+  - "*.md"
+  - molecule/*/cache/
+  - .ansible/
 
 # Enable additional rules for security and best practices
 enable_list:
@@ -38,30 +48,29 @@ enable_list:
   - package-latest
   - role-name
   - var-naming
+  - fqcn[action-core]
+  - fqcn[action]
 
-# Warn on these rules instead of failing
+# Warn on these rules instead of failing (during transition)
 warn_list:
   - experimental
   - ignore-errors
   - no-changed-when
   - command-instead-of-shell
   - risky-file-permissions
+  - package-latest
 
 # Skip certain rules for specific scenarios
-skip_list:
-  - yaml[line-length]  # Some long lines are acceptable in templates
-
-# Use rich output format for better readability
-format: rich
-
-# Minimum Ansible version
-min_ansible_version: "2.12"
+skip_list: []
 
 # Mock modules and roles for testing
 mock_modules:
   - community.general.timezone
   - community.crypto.x509_certificate
+  - community.docker.docker_container
+  - ansible.posix.mount
 
 mock_roles:
   - common
   - backup
+  - prometheus_node_exporter

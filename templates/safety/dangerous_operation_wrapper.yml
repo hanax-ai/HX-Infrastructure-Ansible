@@ -43,7 +43,7 @@
       lineinfile:
         path: "{{ ansible_log_path | default('/var/log/ansible.log') }}"
         line: "{{ ansible_date_time.iso8601 }} - SAFETY FAILURE: {{ operation_description | default('Operation') }} failed on {{ inventory_hostname }}"
-        create: yes
+        create: true
       delegate_to: localhost
 
     - name: Re-raise the error
@@ -56,7 +56,7 @@
       lineinfile:
         path: "{{ ansible_log_path | default('/var/log/ansible.log') }}"
         line: "{{ ansible_date_time.iso8601 }} - SAFETY COMPLETE: {{ operation_description | default('Operation') }} finished on {{ inventory_hostname }}"
-        create: yes
+        create: true
       delegate_to: localhost
 
   tags: [safety, dangerous_operation]

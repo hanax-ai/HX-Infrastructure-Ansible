@@ -1,4 +1,3 @@
-
 ---
 # Backup Automation Configuration
 backup_automation:
@@ -7,27 +6,27 @@ backup_automation:
   base_directory: "/opt/hx-backups"
   temp_directory: "/tmp/hx-backup-staging"
   log_directory: "/var/log/hx-backups"
-  
+
   # Retention policies
   retention:
     daily: 7
     weekly: 4
     monthly: 12
     yearly: 3
-  
+
   # Encryption settings - FIXED: Use GCM for authenticated encryption
   encryption:
     enabled: true
     algorithm: "AES-256-GCM"
     key_file: "/etc/hx-backup/encryption.key"
     pbkdf2_iterations: 20000
-    
+
   # Compression settings
   compression:
     enabled: true
     algorithm: "gzip"
     level: 6
-    
+
   # Notification settings
   notifications:
     enabled: true
@@ -35,7 +34,7 @@ backup_automation:
       - "ops@hanax.ai"
       - "backup-alerts@hanax.ai"
     slack_webhook: ""
-    
+
   # Monitoring integration - FIXED: Use unique port to avoid node_exporter conflict
   monitoring:
     prometheus_metrics: true
@@ -59,20 +58,20 @@ database_backup:
       # FIXED: Parallel jobs incompatible with custom format
       backup_format: "custom"
       parallel_jobs: 1
-      
+
     redis:
       enabled: true
       # FIXED: Safe inventory group access with fallback
       host: "{{ (groups['cache'] | default([])) | first | default('localhost') }}"
       port: 6379
       backup_type: "rdb"
-      
+
   # Database-specific settings
   postgresql:
     pg_dump_options: "--verbose --no-owner --no-privileges"
     vacuum_before_backup: true
     analyze_after_backup: true
-    
+
   redis:
     save_before_backup: true
     verify_rdb: true
@@ -93,7 +92,7 @@ application_backup:
     - path: "/opt/hx-app/config"
       type: "configuration"
       sensitive: true
-      
+
 # Configuration backup settings
 configuration_backup:
   enabled: true
@@ -110,7 +109,7 @@ configuration_backup:
     - path: "/etc/hx-app"
       type: "application"
       sensitive: true
-      
+
 # System backup settings
 system_backup:
   enabled: true
@@ -148,7 +147,7 @@ verification:
   max_age_hours: 48
   min_size_mb: 1
   max_size_gb: 100
-  
+
 # Remote storage configuration
 remote_storage:
   enabled: true
@@ -158,14 +157,14 @@ remote_storage:
     region: "us-east-1"
     storage_class: "STANDARD_IA"
     encryption: "AES256"
-  
+
   # Sync settings
   sync:
     enabled: true
     immediate: false
     batch_size: 100
     retry_attempts: 3
-    
+
 # Backup monitoring and alerting
 backup_monitoring:
   enabled: true
@@ -176,7 +175,7 @@ backup_monitoring:
       threshold: "20%"
     - name: "backup_duration"
       threshold: "4h"
-      
+
   alerts:
     - name: "backup_failed"
       severity: "critical"
@@ -201,7 +200,7 @@ backup_security:
       setype: "var_lib_t"
     - target: "/etc/hx-backup(/.*)?"
       setype: "etc_t"
-  
+
   # Access control
   access_control:
     read_users: ["backup", "root"]

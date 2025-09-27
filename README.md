@@ -1,7 +1,17 @@
 # HX Infrastructure Ansible
 
 [![Ansible CI/CD Pipeline](https://github.com/hanax-ai/HX-Infrastructure-Ansible/actions/workflows/ansible-ci.yml/badge.svg)](https://github.com/hanax-ai/HX-Infrastructure-Ansible/actions/workflows/ansible-ci.yml)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://i.ytimg.com/vi/4cgpu9L2AE8/maxresdefault.jpg)
+
+## 🚀 Quick Start (Production Ready ✅)
+```bash
+git clone https://github.com/hanax-ai/HX-Infrastructure-Ansible.git
+cd HX-Infrastructure-Ansible
+git checkout stable
+make ci
+```
+
+**Status:** Production Ready v1.0.0-poc2prod | **Framework:** Blue-Green Deployment | **CI Gates:** 6 Active
 
 ## Overview
 

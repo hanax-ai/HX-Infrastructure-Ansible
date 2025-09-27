@@ -1,4 +1,3 @@
-
 ---
 # Enterprise Backup Integration Tasks
 - name: Install enterprise backup tools
@@ -16,7 +15,7 @@
     src: bacula-fd.conf.j2
     dest: /etc/bacula/bacula-fd.conf
     mode: '0640'
-    backup: yes
+    backup: true
   notify: restart bacula-fd
   when: enterprise_backup_system == "bacula"
 
@@ -25,7 +24,7 @@
     src: amanda-client.conf.j2
     dest: /etc/amanda/amanda-client.conf
     mode: '0644'
-    backup: yes
+    backup: true
   when: enterprise_backup_system == "amanda"
 
 - name: Setup enterprise backup scripts
@@ -80,11 +79,11 @@
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: started
-    enabled: yes
+    enabled: true
   loop: "{{ enterprise_backup_services | default(['bacula-fd']) }}"
 
 - name: Log backup integration setup
   ansible.builtin.lineinfile:
     path: /var/log/backup_integration.log
     line: "{{ ansible_date_time.iso8601 }} - Enterprise backup integration completed for {{ enterprise_backup_system | default('default') }}"
-    create: yes
+    create: true

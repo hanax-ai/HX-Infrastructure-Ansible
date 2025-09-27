@@ -128,8 +128,8 @@
   systemd:
     name: hx-continuous-improvement
     state: started
-    enabled: yes
-    daemon_reload: yes
+    enabled: true
+    daemon_reload: true
 
 - name: Verify continuous improvement health
   uri:

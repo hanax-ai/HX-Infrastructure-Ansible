@@ -1,0 +1,62 @@
+
+---
+# Health Check Playbook
+# Usage: ansible-playbook -i inventories/production playbooks/health_check.yml -e "target_color=blue"
+
+- name: Comprehensive Health Check
+  hosts: "{{ 'prod_' + target_color if target_color is defined else 'all' }}"
+  gather_facts: yes
+  
+  vars:
+    health_timeout: 30
+    health_retries: 3
+    service_port: "{{ service_port | default(8080) }}"
+    
+  tasks:
+    - name: Check system resources
+      shell: |
+        echo "CPU Usage: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)%"
+        echo "Memory Usage: $(free | grep Mem | awk '{printf("%.2f%%\n", ($3/$2)*100)}')"
+        echo "Disk Usage: $(df -h / | awk 'NR==2{printf "%s", $5}')"
+      register: system_resources
+      
+    - name: Check service status
+      service_facts:
+      
+    - name: Verify application health endpoint
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}:{{ service_port }}/health"
+        method: GET
+        status_code: 200
+        timeout: "{{ health_timeout }}"
+      register: health_check
+      retries: "{{ health_retries }}"
+      delay: 10
+      ignore_errors: yes
+      
+    - name: Check network connectivity
+      wait_for:
+        port: "{{ service_port }}"
+        host: "{{ ansible_default_ipv4.address }}"
+        timeout: 10
+      ignore_errors: yes
+      register: port_check
+      
+    - name: Validate configuration files
+      stat:
+        path: "{{ item }}"
+      register: config_files
+      with_items:
+        - /etc/nginx/nginx.conf
+        - /etc/systemd/system/app.service
+      ignore_errors: yes
+      
+    - name: Summary report
+      debug:
+        msg: |
+          Health Check Results for {{ inventory_hostname }}:
+          - System Resources: {{ system_resources.stdout_lines }}
+          - Health Endpoint: {{ 'PASS' if health_check.status == 200 else 'FAIL' }}
+          - Port Connectivity: {{ 'PASS' if port_check.elapsed is defined else 'FAIL' }}
+          - Configuration Files: {{ 'PASS' if config_files.results | selectattr('stat.exists') | list | length > 0 else 'FAIL' }}
+          - Overall Status: {{ 'HEALTHY' if (health_check.status | default(0) == 200 and port_check.elapsed is defined) else 'UNHEALTHY' }}

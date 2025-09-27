@@ -1,0 +1,76 @@
+
+---
+# Production Blue-Green Deployment Playbook
+# Usage: ansible-playbook -i inventories/production playbooks/deployment.yml -e "target_color=green"
+
+- name: Deploy to Target Color Environment
+  hosts: "prod_{{ target_color | default('blue') }}"
+  become: yes
+  serial: "50%"
+  max_fail_percentage: 10
+  
+  vars:
+    deployment_timestamp: "{{ ansible_date_time.epoch }}"
+    rollback_enabled: true
+    health_check_retries: 5
+    health_check_delay: 30
+    
+  pre_tasks:
+    - name: Validate target color parameter
+      fail:
+        msg: "target_color must be 'blue' or 'green'"
+      when: target_color not in ['blue', 'green']
+      
+    - name: Create deployment log entry
+      local_action:
+        module: lineinfile
+        path: "/tmp/deployment_{{ deployment_timestamp }}.log"
+        line: "{{ ansible_date_time.iso8601 }} - Starting deployment to {{ target_color }} environment"
+        create: yes
+      run_once: yes
+      
+    - name: Pre-deployment health check
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}:{{ service_port | default(8080) }}/health"
+        method: GET
+        status_code: [200, 503]
+      register: pre_health
+      ignore_errors: yes
+      
+  roles:
+    - role: common
+      tags: [common]
+    - role: security
+      tags: [security]  
+    - role: monitoring
+      tags: [monitoring]
+    - role: application
+      tags: [application]
+      
+  post_tasks:
+    - name: Post-deployment health check
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}:{{ service_port | default(8080) }}/health"
+        method: GET
+        status_code: 200
+      register: post_health
+      retries: "{{ health_check_retries }}"
+      delay: "{{ health_check_delay }}"
+      
+    - name: Validate deployment success
+      fail:
+        msg: "Deployment validation failed on {{ inventory_hostname }}"
+      when: post_health.status != 200
+      
+    - name: Log deployment completion
+      local_action:
+        module: lineinfile
+        path: "/tmp/deployment_{{ deployment_timestamp }}.log"
+        line: "{{ ansible_date_time.iso8601 }} - Deployment completed successfully on {{ inventory_hostname }}"
+      
+  handlers:
+    - name: restart application
+      service:
+        name: "{{ app_service_name | default('app') }}"
+        state: restarted
+        enabled: yes

@@ -1,4 +1,3 @@
-
 ---
 # Validate deployment prerequisites
 - name: Check system resources
@@ -44,7 +43,7 @@
 - name: Set prerequisite validation status
   set_fact:
     prerequisites_validated: true
-  when: 
+  when:
     - system_resources is succeeded
     - service_check is not failed
     - connectivity_check is not failed

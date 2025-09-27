@@ -1,4 +1,3 @@
-
 ---
 # Health Check Tasks for HX PostgreSQL Authentication
 
@@ -55,8 +54,8 @@
   shell: |
     set -euo pipefail
     export PGPASSWORD="{{ hx_pg_app_password }}"
-    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" \
-         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" \
+    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" 
+         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" 
          -c "SELECT current_user, current_database(), version();" -t
   args:
     executable: /bin/bash
@@ -73,9 +72,9 @@
   shell: |
     set -euo pipefail
     export PGPASSWORD="{{ hx_pg_app_password }}"
-    psql "host={{ ansible_default_ipv4.address }} port={{ hx_pg_port }} \
-          dbname={{ hx_pg_db }} user={{ hx_pg_app_user }} \
-          sslmode=require" \
+    psql "host={{ ansible_default_ipv4.address }} port={{ hx_pg_port }} 
+          dbname={{ hx_pg_db }} user={{ hx_pg_app_user }} 
+          sslmode=require" 
       -c "SELECT current_setting('ssl_version'), current_setting('ssl_cipher');" -t
   args:
     executable: /bin/bash
@@ -92,7 +91,7 @@
 - name: Check configuration file syntax
   shell: |
     set -euo pipefail
-    sudo -u postgres /usr/lib/postgresql/{{ hx_pg_cluster_version }}/bin/postgres \
+    sudo -u postgres /usr/lib/postgresql/{{ hx_pg_cluster_version }}/bin/postgres 
       --check-config -D "{{ hx_pg_data_dir }}"
   args:
     executable: /bin/bash

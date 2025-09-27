@@ -50,7 +50,7 @@
       - database_backup.databases.postgresql.databases | length > 0
     fail_msg: "PostgreSQL backup configuration is incomplete"
     success_msg: "PostgreSQL backup configuration validated"
-  when: 
+  when:
     - database_backup.enabled
     - database_backup.databases.postgresql.enabled
 
@@ -74,7 +74,7 @@
       - remote_storage.s3.region is defined
     fail_msg: "Remote storage configuration is invalid"
     success_msg: "Remote storage configuration validated"
-  when: 
+  when:
     - (remote_storage is defined) and (remote_storage.enabled | default(false))
     - remote_storage.type == 's3'
     - remote_storage.s3 is defined

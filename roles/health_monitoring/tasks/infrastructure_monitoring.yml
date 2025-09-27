@@ -1,4 +1,3 @@
-
 ---
 # Infrastructure Monitoring
 - name: Install monitoring tools
@@ -29,7 +28,7 @@
 
 - name: Check network interface statistics
   shell: |
-    cat /proc/net/dev | grep {{ ansible_default_ipv4.interface }} | \
+    cat /proc/net/dev | grep {{ ansible_default_ipv4.interface }} | 
     awk '{print "rx_bytes:" $2 ",tx_bytes:" $10 ",rx_packets:" $3 ",tx_packets:" $11}'
   register: network_stats
   changed_when: false
@@ -42,7 +41,7 @@
 
 - name: Check system uptime and load
   shell: |
-    uptime | awk -F'up ' '{print $2}' | awk -F',' '{print "uptime:" $1 ",users:" $2}' && \
+    uptime | awk -F'up ' '{print $2}' | awk -F',' '{print "uptime:" $1 ",users:" $2}' && 
     cat /proc/loadavg | awk '{print "load_1min:" $1 ",load_5min:" $2 ",load_15min:" $3}'
   register: system_uptime_load
   changed_when: false
@@ -50,7 +49,7 @@
 - name: Monitor process count and states
   shell: |
     ps aux | awk 'NR>1 {states[substr($8,1,1)]++; total++} END {
-      for (state in states) printf "%s:%d,", state, states[state]; 
+      for (state in states) printf "%s:%d,", state, states[state];
       printf "total:%d", total
     }'
   register: process_stats
@@ -59,7 +58,7 @@
 - name: Check filesystem usage details
   shell: |
     df -h | awk 'NR>1 && $6!="/dev" && $6!="/run" {
-      gsub(/%/, "", $5); 
+      gsub(/%/, "", $5);
       printf "%s:size=%s,used=%s,avail=%s,use_pct=%s;", $6, $2, $3, $4, $5
     }'
   register: filesystem_details
@@ -112,6 +111,6 @@
     alert_type: "infrastructure_monitoring"
     alert_message: "Infrastructure monitoring alerts: {{ infrastructure_alerts | join(', ') }}"
     alert_data: "{{ infrastructure_metrics }}"
-  when: 
+  when:
     - infrastructure_alerts | length > 0
     - alerting_enabled | default(true)

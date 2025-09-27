@@ -1,4 +1,3 @@
-
 ---
 # Generate comprehensive maintenance report
 - name: Collect maintenance execution data
@@ -103,25 +102,25 @@
     body: |
       Maintenance Report Summary
       =========================
-      
+
       Hostname: {{ inventory_hostname }}
       Date: {{ ansible_date_time.date }}
       Duration: {{ maintenance_duration_calc.stdout }}
-      
+
       Execution Status:
       - Pre-maintenance validated: {{ pre_maintenance_validated | default(false) }}
       - Maintenance executed: {{ maintenance_executed | default(false) }}
       - Database maintenance: {{ database_maintenance_completed | default(false) }}
       - Security patching: {{ security_patching_completed | default(false) }}
       - Post-verification: {{ post_maintenance_verified | default(false) }}
-      
+
       System Impact:
       - Services restarted: {{ critical_services_restart | default([]) | length }}
       - Reboot required: {{ security_reboot_required | default(false) }}
-      
+
       Full report available at: /var/log/hx-infrastructure/maintenance-report-{{ ansible_date_time.epoch }}.json
     attach: "/var/log/hx-infrastructure/maintenance-report-{{ ansible_date_time.epoch }}.json"
-  when: 
+  when:
     - email_maintenance_reports | default(false)
     - maintenance_report_recipients is defined
 

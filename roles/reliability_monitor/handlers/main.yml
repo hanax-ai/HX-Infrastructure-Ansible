@@ -1,8 +1,7 @@
-
 ---
 - name: reload systemd
   systemd:
-    daemon_reload: yes
+    daemon_reload: true
 
 - name: restart reliability monitor
   systemd:

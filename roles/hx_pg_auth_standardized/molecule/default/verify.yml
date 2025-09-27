@@ -11,7 +11,7 @@
           register: service_files
           loop:
             - "/etc/systemd/system/hx-pg-auth-standardized.service"
-        
+
         - name: Check configuration directories
           stat:
             path: "{{ item }}"
@@ -20,7 +20,7 @@
             - "/etc/pg"
             - "/opt/hx-pg-auth-standardized"
           failed_when: false
-        
+
         - name: Verify log directories
           stat:
             path: "{{ item }}"
@@ -28,7 +28,7 @@
           loop:
             - "/var/log/pg"
           failed_when: false
-        
+
         - name: Display verification results
           debug:
             msg: "Verification completed for hx_pg_auth_standardized"
