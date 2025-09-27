@@ -11,7 +11,7 @@
 
   tasks:
     - name: Ensure SSH key-based authentication
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
         regexp: '^#?PasswordAuthentication'
         line: 'PasswordAuthentication no'
@@ -21,6 +21,6 @@
 
   handlers:
     - name: restart ssh
-      service:
+      ansible.builtin.service:
         name: ssh
         state: restarted

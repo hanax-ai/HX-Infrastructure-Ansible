@@ -7,13 +7,13 @@
 
   tasks:
     - name: Update system packages
-      package:
+      ansible.builtin.package:
         name: "*"
         state: latest
       when: ansible_os_family in ["RedHat", "Debian"]
 
     - name: Ensure common packages are installed
-      package:
+      ansible.builtin.package:
         name:
           - curl
           - wget

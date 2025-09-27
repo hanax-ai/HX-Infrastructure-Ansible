@@ -12,7 +12,7 @@
       register: namespace_info
 
     - name: Assert namespace is active
-      assert:
+      ansible.builtin.assert:
         that:
           - namespace_info.resources | length > 0
           - namespace_info.resources[0].status.phase == "Active"
@@ -28,7 +28,7 @@
       register: pod_info
 
     - name: Assert pod is running
-      assert:
+      ansible.builtin.assert:
         that:
           - pod_info.resources | length > 0
           - pod_info.resources[0].status.phase == "Running"
@@ -44,7 +44,7 @@
       register: service_info
 
     - name: Assert service is configured
-      assert:
+      ansible.builtin.assert:
         that:
           - service_info.resources | length > 0
           - service_info.resources[0].spec.ports[0].port == 80

@@ -13,14 +13,14 @@
 
   tasks:
     - name: "Integration Test | Display test start"
-      debug:
+      ansible.builtin.debug:
         msg:
           - "Starting Phase 3 Integration Testing"
           - "Testing compatibility with Phase 2 security and operational safety"
           - "Timestamp: {{ ansible_date_time.iso8601 }}"
 
     - name: "Integration Test | Test dependency validator with operational safety"
-      include_role:
+      ansible.builtin.include_role:
         name: dependency_validator
       vars:
         dependency_validation_enabled: true
@@ -30,14 +30,14 @@
           validate_network: true
 
     - name: "Integration Test | Test config validator with existing variables"
-      include_role:
+      ansible.builtin.include_role:
         name: config_validator
       vars:
         config_validation_enabled: true
         config_validation_strict_mode: false  # Lenient for testing
 
     - name: "Integration Test | Test operational safety integration"
-      include_role:
+      ansible.builtin.include_role:
         name: operational_safety
       vars:
         safety_confirmation_required: false  # Skip confirmation for testing
@@ -45,7 +45,7 @@
         operational_safety_log_dir: "/tmp/phase3-integration-test"
 
     - name: "Integration Test | Validate Phase 2 security controls still work"
-      stat:
+      ansible.builtin.stat:
         path: "{{ item }}"
       register: security_files_check
       loop:
@@ -54,14 +54,14 @@
         - "/home/ubuntu/hx-infrastructure-ansible/group_vars/production.yml"
 
     - name: "Integration Test | Verify no conflicts with existing roles"
-      assert:
+      ansible.builtin.assert:
         that:
           - security_files_check.results | selectattr('stat.exists') | list | length == 3
         success_msg: "All Phase 2 security components are intact"
         fail_msg: "Phase 2 security components may have been affected"
 
     - name: "Integration Test | Test variable consistency across phases"
-      set_fact:
+      ansible.builtin.set_fact:
         phase2_variables:
           - "operational_safety"
           - "security_hardening"
@@ -72,7 +72,7 @@
           - "system_requirements"
 
     - name: "Integration Test | Generate integration test report"
-      copy:
+      ansible.builtin.copy:
         content: |
           {
             "integration_test_results": {
@@ -94,7 +94,7 @@
         mode: '0644'
 
     - name: "Integration Test | Display test completion"
-      debug:
+      ansible.builtin.debug:
         msg:
           - "Phase 3 Integration Testing Completed Successfully"
           - "Status: PASSED"

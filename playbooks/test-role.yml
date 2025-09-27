@@ -11,7 +11,7 @@
 
   tasks:
     - name: Validate target role is specified
-      fail:
+      ansible.builtin.fail:
         msg: "target_role variable must be specified"
       when: target_role is not defined
       tags:
@@ -19,7 +19,7 @@
         - hx_validation
 
     - name: Display test information
-      debug:
+      ansible.builtin.debug:
         msg: |
           Testing HX Infrastructure Role: {{ target_role }}
 
@@ -33,7 +33,7 @@
         - hx_info
 
     - name: Include target role for testing
-      include_role:
+      ansible.builtin.include_role:
         name: "{{ target_role }}"
       vars:
         # Override potentially destructive actions in test mode
@@ -45,7 +45,7 @@
         - hx_role
 
     - name: Validate role execution
-      debug:
+      ansible.builtin.debug:
         msg: |
           Role Test Complete: {{ target_role }}
 

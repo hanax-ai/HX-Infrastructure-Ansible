@@ -10,7 +10,7 @@
 
   tasks:
     - name: Ensure application directory exists
-      file:
+      ansible.builtin.file:
         path: /var/www/html
         state: directory
         owner: www-data
@@ -18,7 +18,7 @@
         mode: '0755'
 
     - name: Deploy application files
-      template:
+      ansible.builtin.template:
         src: index.html.j2
         dest: /var/www/html/index.html
         owner: www-data

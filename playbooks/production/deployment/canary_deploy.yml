@@ -11,43 +11,43 @@
 
   pre_tasks:
     - name: Validate canary deployment prerequisites
-      include_role:
+      ansible.builtin.include_role:
         name: production_ops
         tasks_from: validate_canary_prerequisites
 
   tasks:
     - name: Deploy to canary instances
-      include_role:
+      ansible.builtin.include_role:
         name: production_ops
         tasks_from: canary_deployment
       vars:
         canary_instances: "{{ groups['canary'] | default([]) }}"
 
     - name: Configure traffic routing
-      include_role:
+      ansible.builtin.include_role:
         name: production_ops
         tasks_from: configure_canary_routing
 
     - name: Monitor canary performance
-      include_role:
+      ansible.builtin.include_role:
         name: health_monitoring
         tasks_from: canary_monitoring
       vars:
         monitoring_duration: "{{ monitoring_duration }}"
 
     - name: Evaluate canary metrics
-      include_role:
+      ansible.builtin.include_role:
         name: production_ops
         tasks_from: evaluate_canary_metrics
 
     - name: Proceed with full deployment
-      include_role:
+      ansible.builtin.include_role:
         name: production_ops
         tasks_from: full_deployment
       when: canary_evaluation_passed | default(false)
 
   rescue:
     - name: Rollback canary deployment
-      include_role:
+      ansible.builtin.include_role:
         name: production_ops
         tasks_from: rollback_canary

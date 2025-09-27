@@ -298,7 +298,7 @@ performance:
     net_core_wmem_max: 134217728
 
   # File system optimizations
-  filesystem:
+  ansible.builtin.filesystem:
     noatime: true
     nodiratime: true
     barrier: 0

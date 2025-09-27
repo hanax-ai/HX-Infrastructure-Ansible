@@ -35,7 +35,7 @@
   tags: [configure]
 
 - name: Validate certificate fingerprint (if expected fingerprint provided)
-  assert:
+  ansible.builtin.assert:
     that:
       - hx_ca_expected_sha256.replace('SHA256:', '') == hx_ca_actual_fingerprint.stdout
     fail_msg: "Certificate fingerprint mismatch. Expected: {{ hx_ca_expected_sha256 }}, Actual: {{ hx_ca_actual_fingerprint.stdout }}"
@@ -46,7 +46,7 @@
   tags: [configure]
 
 - name: Configure certificate monitoring (if monitoring enabled)
-  template:
+  ansible.builtin.template:
     src: ca_monitor.sh.j2
     dest: /usr/local/bin/hx-ca-monitor
     owner: root
@@ -56,7 +56,7 @@
   tags: [configure]
 
 - name: Create certificate monitoring cron job (if monitoring enabled)
-  cron:
+  ansible.builtin.cron:
     name: "HX CA Certificate Monitoring"
     minute: "0"
     hour: "*/6"
@@ -66,7 +66,7 @@
   tags: [configure]
 
 - name: Log configuration completion
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "{{ hx_ca_log_dir }}/deployment.log"
     line: "{{ ansible_date_time.iso8601 }} - Certificate configuration completed. Fingerprint: {{ hx_ca_actual_fingerprint.stdout }}"
     create: true
@@ -77,7 +77,7 @@
   tags: [configure]
 
 - name: Display configuration summary
-  debug:
+  ansible.builtin.debug:
     msg:
       - "Certificate configuration completed"
       - "Subject: {{ hx_ca_cert_info.stdout_lines[0] | default('Unknown') }}"

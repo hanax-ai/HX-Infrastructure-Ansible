@@ -1,6 +1,6 @@
 ---
 - name: Create multi-cloud orchestrator directories
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: '0755'
@@ -36,35 +36,35 @@
     creates: /usr/local/bin/terraform
 
 - name: Deploy multi-cloud orchestrator
-  template:
+  ansible.builtin.template:
     src: multi_cloud_orchestrator.py.j2
     dest: /opt/hx/multi-cloud/orchestrator.py
     mode: '0755'
   notify: restart multi cloud orchestrator
 
 - name: Deploy workload placement engine
-  template:
+  ansible.builtin.template:
     src: workload_placement.py.j2
     dest: /opt/hx/multi-cloud/workload_placement.py
     mode: '0755'
   notify: restart multi cloud orchestrator
 
 - name: Deploy cost optimizer
-  template:
+  ansible.builtin.template:
     src: multi_cloud_cost_optimizer.py.j2
     dest: /opt/hx/multi-cloud/cost_optimizer.py
     mode: '0755'
   notify: restart multi cloud orchestrator
 
 - name: Deploy disaster recovery manager
-  template:
+  ansible.builtin.template:
     src: disaster_recovery_manager.py.j2
     dest: /opt/hx/multi-cloud/dr_manager.py
     mode: '0755'
   notify: restart multi cloud orchestrator
 
 - name: Create Terraform modules
-  template:
+  ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
     mode: '0644'
@@ -79,7 +79,7 @@
       dest: /opt/hx/terraform-modules/variables.tf
 
 - name: Create multi-cloud systemd service
-  template:
+  ansible.builtin.template:
     src: hx-multi-cloud-orchestrator.service.j2
     dest: /etc/systemd/system/hx-multi-cloud-orchestrator.service
     mode: '0644'
@@ -88,14 +88,14 @@
     - restart multi cloud orchestrator
 
 - name: Deploy configuration files
-  template:
+  ansible.builtin.template:
     src: multi_cloud_config.yml.j2
     dest: /opt/hx/multi-cloud/config.yml
     mode: '0644'
   notify: restart multi cloud orchestrator
 
 - name: Create cloud provider configuration files
-  template:
+  ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
     mode: '0600'
@@ -108,13 +108,13 @@
       dest: /opt/hx/cloud-configs/gcp.yml
 
 - name: Create ML model training script
-  template:
+  ansible.builtin.template:
     src: train_multi_cloud_models.py.j2
     dest: /opt/hx/multi-cloud/train_models.py
     mode: '0755'
 
 - name: Set up cron job for model training
-  cron:
+  ansible.builtin.cron:
     name: "Multi-cloud model training"
     minute: "0"
     hour: "5"
@@ -122,14 +122,14 @@
     user: root
 
 - name: Start and enable multi-cloud orchestrator
-  systemd:
+  ansible.builtin.systemd:
     name: hx-multi-cloud-orchestrator
     state: started
     enabled: true
     daemon_reload: true
 
 - name: Verify multi-cloud orchestrator health
-  uri:
+  ansible.builtin.uri:
     url: "http://localhost:8086/health"
     method: GET
     timeout: 10

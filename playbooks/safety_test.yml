@@ -15,7 +15,7 @@
 
   tasks:
     - name: Test operational safety role inclusion
-      include_role:
+      ansible.builtin.include_role:
         name: operational_safety
       vars:
         safety_test_mode: true
@@ -34,7 +34,7 @@
           failed_when: false
 
         - name: Verify dangerous command was caught
-          assert:
+          ansible.builtin.assert:
             that:
               - dangerous_test is defined
             fail_msg: "Dangerous command protection not working"
@@ -44,13 +44,13 @@
     - name: Test backup creation
       block:
         - name: Create test directory for backup
-          file:
+          ansible.builtin.file:
             path: "/tmp/safety_test_backup"
             state: directory
             mode: '0755'
 
         - name: Create test file
-          copy:
+          ansible.builtin.copy:
             content: "Safety test content - {{ ansible_date_time.iso8601 }}"
             dest: "/tmp/safety_test_backup/test_file.txt"
             mode: '0644'
@@ -63,12 +63,12 @@
           register: backup_test
 
         - name: Verify backup was created
-          stat:
+          ansible.builtin.stat:
             path: "/tmp/safety_test_backup.tar.gz"
           register: backup_verification
 
         - name: Assert backup exists
-          assert:
+          ansible.builtin.assert:
             that:
               - backup_verification.stat.exists
             fail_msg: "Backup creation failed"
@@ -78,13 +78,13 @@
     - name: Test rollback script generation
       block:
         - name: Check for rollback script
-          find:
+          ansible.builtin.find:
             paths: "/var/log/ansible-safety"
             patterns: "rollback-*.sh"
           register: rollback_scripts
 
         - name: Verify rollback script exists
-          assert:
+          ansible.builtin.assert:
             that:
               - rollback_scripts.files | length > 0
             fail_msg: "Rollback script not generated"
@@ -95,7 +95,7 @@
     - name: Test SSH key management
       block:
         - name: Test SSH key management role
-          include_role:
+          ansible.builtin.include_role:
             name: ssh_key_management
           vars:
             ssh_key_test_connectivity: false
@@ -103,7 +103,7 @@
           when: false  # Skip for testing
 
         - name: Verify SSH key management components
-          stat:
+          ansible.builtin.stat:
             path: "{{ item }}"
           register: ssh_components
           loop:
@@ -112,7 +112,7 @@
             - "roles/ssh_key_management/templates/ssh_config.j2"
 
         - name: Assert SSH key management components exist
-          assert:
+          ansible.builtin.assert:
             that:
               - item.stat.exists
             fail_msg: "SSH key management component missing: {{ item.item }}"
@@ -123,12 +123,12 @@
     - name: Test production inventory validation
       block:
         - name: Load production inventory
-          include_vars:
+          ansible.builtin.include_vars:
             file: "inventories/production/hosts.yml"
             name: prod_inventory
 
         - name: Validate production inventory structure
-          assert:
+          ansible.builtin.assert:
             that:
               - prod_inventory.all is defined
               - prod_inventory.all.children is defined
@@ -137,7 +137,7 @@
             success_msg: "Production inventory structure valid"
 
         - name: Validate production groups
-          assert:
+          ansible.builtin.assert:
             that:
               - "'production_web_servers' in prod_inventory.all.children"
               - "'production_database_servers' in prod_inventory.all.children"
@@ -154,12 +154,12 @@
           failed_when: security_scan_test.rc > 2  # Allow medium issues
 
         - name: Verify security scan completed
-          stat:
+          ansible.builtin.stat:
             path: "/tmp/test_security_scan.json"
           register: security_scan_output
 
         - name: Assert security scan output exists
-          assert:
+          ansible.builtin.assert:
             that:
               - security_scan_output.stat.exists
             fail_msg: "Security scan output not generated"
@@ -169,7 +169,7 @@
     - name: Test documentation completeness
       block:
         - name: Check required documentation files
-          stat:
+          ansible.builtin.stat:
             path: "{{ item }}"
           register: doc_files
           loop:
@@ -179,7 +179,7 @@
             - "README.md"
 
         - name: Verify all documentation exists
-          assert:
+          ansible.builtin.assert:
             that:
               - item.stat.exists
             fail_msg: "Documentation file missing: {{ item.item }}"
@@ -189,7 +189,7 @@
 
   post_tasks:
     - name: Cleanup test files
-      file:
+      ansible.builtin.file:
         path: "{{ item }}"
         state: absent
       loop:
@@ -199,7 +199,7 @@
       tags: [cleanup]
 
     - name: Generate safety test report
-      template:
+      ansible.builtin.template:
         src: safety_test_report.j2
         dest: "/tmp/safety_test_report.txt"
         mode: '0644'
@@ -209,7 +209,7 @@
       tags: [reporting]
 
     - name: Display test completion message
-      debug:
+      ansible.builtin.debug:
         msg: |
           ✅ Safety Testing Completed Successfully
 

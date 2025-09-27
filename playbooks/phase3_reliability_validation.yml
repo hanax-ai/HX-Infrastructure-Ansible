@@ -13,7 +13,7 @@
 
   pre_tasks:
     - name: "Phase 3 | Display validation start"
-      debug:
+      ansible.builtin.debug:
         msg:
           - "Starting Phase 3 Core Reliability Framework Validation"
           - "Target: {{ inventory_hostname }}"
@@ -21,7 +21,7 @@
           - "Timestamp: {{ ansible_date_time.iso8601 }}"
 
     - name: "Phase 3 | Create validation directories"
-      file:
+      ansible.builtin.file:
         path: "{{ item }}"
         state: directory
         mode: '0755'
@@ -71,7 +71,7 @@
 
   post_tasks:
     - name: "Phase 3 | Generate comprehensive validation report"
-      template:
+      ansible.builtin.template:
         src: phase3_validation_report.json.j2
         dest: "{{ validation_report_path }}"
         mode: '0644'
@@ -82,7 +82,7 @@
         validation_environment: "{{ environment_type | default('unknown') }}"
 
     - name: "Phase 3 | Display validation completion"
-      debug:
+      ansible.builtin.debug:
         msg:
           - "Phase 3 Core Reliability Framework Validation Completed"
           - "Host: {{ inventory_hostname }}"

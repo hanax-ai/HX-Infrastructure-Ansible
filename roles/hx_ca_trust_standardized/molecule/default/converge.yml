@@ -4,13 +4,13 @@
   become: true
   pre_tasks:
     - name: Update apt cache
-      apt:
+      ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 600
       when: ansible_os_family == "Debian"
 
     - name: Install OpenSSL for test certificate generation
-      package:
+      ansible.builtin.package:
         name: openssl
         state: present
 
@@ -22,7 +22,7 @@
         creates: /tmp/test-ca.crt
 
     - name: Set proper permissions on test certificate
-      file:
+      ansible.builtin.file:
         path: /tmp/test-ca.crt
         owner: root
         group: root

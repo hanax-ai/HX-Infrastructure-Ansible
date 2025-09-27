@@ -34,7 +34,7 @@
     - "../../vars/secrets.yml"
   tasks:
     - name: Install control node specific packages
-      package:
+      ansible.builtin.package:
         name:
           - ansible
           - docker.io
@@ -46,7 +46,7 @@
         - hx_packages
 
     - name: Configure control node services
-      systemd:
+      ansible.builtin.systemd:
         name: docker
         enabled: true
         state: started
@@ -64,7 +64,7 @@
     - hx_litellm_proxy_standardized
   tasks:
     - name: Install GPU monitoring tools
-      package:
+      ansible.builtin.package:
         name:
           - nvidia-smi
           - nvtop
@@ -75,7 +75,7 @@
         - hx_gpu
 
     - name: Configure GPU services
-      systemd:
+      ansible.builtin.systemd:
         name: nvidia-persistenced
         enabled: true
         state: started
@@ -113,7 +113,7 @@
   gather_facts: true
   tasks:
     - name: Validate all services are running
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ item }}"
         state: started
       loop:
@@ -136,7 +136,7 @@
         - hx_validation
 
     - name: Display deployment summary
-      debug:
+      ansible.builtin.debug:
         msg: |
           HX Infrastructure Deployment Complete!
 

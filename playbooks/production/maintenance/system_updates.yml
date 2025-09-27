@@ -10,39 +10,39 @@
 
   pre_tasks:
     - name: Vulnerability scanning
-      include_role:
+      ansible.builtin.include_role:
         name: maintenance_automation
         tasks_from: vulnerability_scan
 
     - name: Update validation
-      include_role:
+      ansible.builtin.include_role:
         name: maintenance_automation
         tasks_from: validate_updates
 
   tasks:
     - name: Security patching
-      include_role:
+      ansible.builtin.include_role:
         name: maintenance_automation
         tasks_from: security_patching
 
     - name: Staged update deployment
-      include_role:
+      ansible.builtin.include_role:
         name: maintenance_automation
         tasks_from: staged_updates
 
     - name: Update verification
-      include_role:
+      ansible.builtin.include_role:
         name: maintenance_automation
         tasks_from: verify_updates
 
   post_tasks:
     - name: Patch compliance reporting
-      include_role:
+      ansible.builtin.include_role:
         name: maintenance_automation
         tasks_from: compliance_reporting
 
   rescue:
     - name: Update rollback
-      include_role:
+      ansible.builtin.include_role:
         name: maintenance_automation
         tasks_from: rollback_updates

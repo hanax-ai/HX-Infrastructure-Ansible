@@ -5,11 +5,11 @@
 
   tasks:
     - name: Update all packages
-      package:
+      ansible.builtin.package:
         name: "*"
         state: latest
       when: ansible_os_family in ['Debian', 'RedHat']
 
     - name: Apply security role
-      include_role:
+      ansible.builtin.include_role:
         name: security

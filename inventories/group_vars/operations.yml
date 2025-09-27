@@ -409,7 +409,7 @@ elasticsearch:
             type: "text"
           level:
             type: "keyword"
-          service:
+          ansible.builtin.service:
             type: "keyword"
           host:
             type: "keyword"

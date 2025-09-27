@@ -13,26 +13,26 @@
 
   tasks:
     - name: System Health Checks
-      include_role:
+      ansible.builtin.include_role:
         name: health_monitoring
         tasks_from: system_health_check
 
     - name: Application Performance Monitoring
-      include_role:
+      ansible.builtin.include_role:
         name: health_monitoring
         tasks_from: apm_monitoring
 
     - name: Infrastructure Monitoring
-      include_role:
+      ansible.builtin.include_role:
         name: health_monitoring
         tasks_from: infrastructure_monitoring
 
     - name: SLA Monitoring and Reporting
-      include_role:
+      ansible.builtin.include_role:
         name: health_monitoring
         tasks_from: sla_monitoring
 
     - name: Predictive Failure Detection
-      include_role:
+      ansible.builtin.include_role:
         name: health_monitoring
         tasks_from: predictive_monitoring

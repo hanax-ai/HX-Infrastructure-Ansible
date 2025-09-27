@@ -38,7 +38,7 @@
 
   tasks:
     - name: Update package cache
-      apt:
+      ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 0
       when: ansible_os_family == "Debian"
@@ -47,7 +47,7 @@
         - hx_cache
 
     - name: Check for available updates
-      apt:
+      ansible.builtin.apt:
         upgrade: "no"
         update_cache: true
       register: hx_available_updates
@@ -57,7 +57,7 @@
         - hx_check
 
     - name: Display available updates
-      debug:
+      ansible.builtin.debug:
         msg: |
           Available Updates Summary:
           - Total packages to upgrade: {{ hx_available_updates.changed | default(0) }}
@@ -70,7 +70,7 @@
         - hx_info
 
     - name: Perform security updates only
-      apt:
+      ansible.builtin.apt:
         upgrade: safe
         autoremove: true
         autoclean: true
@@ -81,7 +81,7 @@
         - hx_security
 
     - name: Check if reboot is required
-      stat:
+      ansible.builtin.stat:
         path: /var/run/reboot-required
       register: hx_reboot_required_file
       tags:
@@ -89,7 +89,7 @@
         - hx_reboot
 
     - name: Set reboot required flag
-      set_fact:
+      ansible.builtin.set_fact:
         hx_update_reboot_required: true
       when: hx_reboot_required_file.stat.exists
       tags:
@@ -97,7 +97,7 @@
         - hx_reboot
 
     - name: Update system packages (non-kernel)
-      apt:
+      ansible.builtin.apt:
         upgrade: safe
         autoremove: true
         autoclean: true
@@ -110,7 +110,7 @@
         - hx_packages
 
     - name: Clean package cache
-      apt:
+      ansible.builtin.apt:
         autoclean: true
         autoremove: true
       when: ansible_os_family == "Debian"
@@ -127,7 +127,7 @@
         - hx_record
 
     - name: Generate update report
-      template:
+      ansible.builtin.template:
         src: update-report.j2
         dest: "/tmp/update-report-{{ hx_update_timestamp }}.txt"
         owner: root
@@ -138,7 +138,7 @@
         - hx_report
 
     - name: Display update summary
-      debug:
+      ansible.builtin.debug:
         msg: |
           HX Infrastructure Update Complete!
 
@@ -169,12 +169,12 @@
 
   tasks:
     - name: Check reboot requirement
-      stat:
+      ansible.builtin.stat:
         path: /var/run/reboot-required
       register: hx_needs_reboot
 
     - name: falsetify about required reboot
-      debug:
+      ansible.builtin.debug:
         msg: |
           ATTENTION: {{ inventory_hostname }} requires a reboot to complete updates.
 
@@ -191,7 +191,7 @@
       when: hx_needs_reboot.stat.exists
 
     - name: Perform automatic reboot (if enabled)
-      reboot:
+      ansible.builtin.reboot:
         reboot_timeout: "{{ hx_reboot_timeout }}"
         msg: "HX Infrastructure automatic reboot for system updates"
       when:
@@ -202,7 +202,7 @@
         - hx_reboot
 
     - name: Verify services after reboot
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ item }}"
         state: started
       loop:

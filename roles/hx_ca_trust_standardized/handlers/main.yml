@@ -30,7 +30,7 @@
   listen: "backup ca certificates"
 
 - name: log ca trust update
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "{{ hx_ca_log_dir }}/updates.log"
     line: "{{ ansible_date_time.iso8601 }} - CA trust store updated: {{ ca_update_result.stdout | default('No output') }}"
     create: true

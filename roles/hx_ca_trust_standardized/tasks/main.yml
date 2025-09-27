@@ -27,7 +27,7 @@
   tags: [health_checks, hx_ca_trust]
 
 - name: Display deployment summary
-  debug:
+  ansible.builtin.debug:
     msg:
       - "HX CA Trust deployment completed successfully"
       - "Certificate: {{ hx_ca_trust_enabled | ternary('Deployed to ' + hx_ca_cert_full_path, 'Disabled') }}"

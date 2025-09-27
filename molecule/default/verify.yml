@@ -8,21 +8,21 @@
         manager: auto
 
     - name: Assert curl is installed
-      assert:
+      ansible.builtin.assert:
         that:
           - "'curl' in ansible_facts.packages"
         fail_msg: "curl package is not installed"
         success_msg: "curl package is correctly installed"
 
     - name: Assert git is installed
-      assert:
+      ansible.builtin.assert:
         that:
           - "'git' in ansible_facts.packages"
         fail_msg: "git package is not installed"
         success_msg: "git package is correctly installed"
 
     - name: Verify test user exists
-      user:
+      ansible.builtin.user:
         name: testuser
         state: present
       check_mode: true
@@ -33,30 +33,30 @@
       service_facts:
 
     - name: Assert SSH service is active
-      assert:
+      ansible.builtin.assert:
         that:
           - "ansible_facts.services['ssh.service'].state == 'running' or ansible_facts.services['sshd.service'].state == 'running'"
         fail_msg: "SSH service is not running"
         success_msg: "SSH service is running correctly"
 
     - name: Verify idempotency marker exists
-      stat:
+      ansible.builtin.stat:
         path: /tmp/molecule-test
       register: marker_file
 
     - name: Assert marker file exists
-      assert:
+      ansible.builtin.assert:
         that:
           - marker_file.stat.exists
         fail_msg: "Molecule test marker file does not exist"
         success_msg: "Molecule test marker file exists"
 
     - name: Test connectivity
-      ping:
+      ansible.builtin.ping:
       register: ping_result
 
     - name: Assert connectivity works
-      assert:
+      ansible.builtin.assert:
         that:
           - ping_result is succeeded
         fail_msg: "Connectivity test failed"

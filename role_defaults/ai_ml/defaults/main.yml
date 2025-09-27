@@ -302,7 +302,7 @@ performance:
     net_core_wmem_max: "{{ ai_ml_performance_net_core_wmem_max | default(134217728) }}"
 
   # File system optimizations
-  filesystem:
+  ansible.builtin.filesystem:
     noatime: "{{ ai_ml_performance_filesystem_noatime | default(true) }}"
     nodiratime: "{{ ai_ml_performance_filesystem_nodiratime | default(true) }}"
     barrier: "{{ ai_ml_performance_filesystem_barrier | default(0) }}"

@@ -2,13 +2,13 @@
 # Health Check Tasks for HX CA Trust
 
 - name: Verify certificate file exists and is readable
-  stat:
+  ansible.builtin.stat:
     path: "{{ hx_ca_cert_full_path }}"
   register: hx_ca_cert_stat
   tags: [health_checks]
 
 - name: Assert certificate file is present
-  assert:
+  ansible.builtin.assert:
     that:
       - hx_ca_cert_stat.stat.exists
       - hx_ca_cert_stat.stat.isreg
@@ -69,7 +69,7 @@
   tags: [health_checks]
 
 - name: Check certificate health endpoint (if health URLs provided)
-  uri:
+  ansible.builtin.uri:
     url: "{{ item.health_url }}"
     method: GET
     status_code: 200
@@ -83,7 +83,7 @@
   tags: [health_checks]
 
 - name: Generate health check report
-  template:
+  ansible.builtin.template:
     src: health_report.j2
     dest: "{{ hx_ca_log_dir }}/health_check_{{ hx_ca_backup_timestamp }}.txt"
     owner: root
@@ -93,7 +93,7 @@
   tags: [health_checks]
 
 - name: Display health check results
-  debug:
+  ansible.builtin.debug:
     msg:
       - "Health Check Results:"
       - "Certificate File: {{ hx_ca_cert_stat.stat.exists | ternary('✓ Present', '✗ Missing') }}"
