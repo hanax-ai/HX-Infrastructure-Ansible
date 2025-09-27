@@ -1,9 +1,9 @@
 name: hygiene
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, phase-1.0-deployment ]
   push:
-    branches: [ main ]
+    branches: [ main, phase-1.0-deployment ]
 
 jobs:
   detect-changes:
