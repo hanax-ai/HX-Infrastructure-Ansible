@@ -1,4 +1,8 @@
 ---
+title: "Wave 3 — Module Migration & Idempotency Plan"
+rules_acknowledged: true
+---
+
 # Wave 3 — Module Migration & Idempotency Plan
 
 I have read and understood RULES.md before beginning this task.
@@ -52,5 +56,5 @@ Replace obvious shell/command module usage with appropriate Ansible modules and 
 
 ---
 
-**Status**: Planning Phase  
+**Status**: Planning Phase
 **Next Steps**: Begin discovery scan of roles for shell/command usage
