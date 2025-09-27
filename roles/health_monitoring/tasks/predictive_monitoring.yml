@@ -1,4 +1,3 @@
-
 ---
 # Predictive Failure Detection
 - name: Install predictive monitoring dependencies
@@ -35,16 +34,16 @@
   shell: |
     # Collect system metrics for the last 24 hours
     echo "timestamp,cpu_usage,memory_usage,disk_usage,load_avg,network_errors" > /tmp/metrics_history.csv
-    
+
     # Get current metrics
     cpu=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | awk -F'%' '{print $1}')
     memory=$(free | grep Mem | awk '{printf "%.1f", ($3/$2) * 100.0}')
     disk=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
     load=$(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//')
-    
+
     # Network errors from interface statistics
     net_errors=$(cat /proc/net/dev | grep {{ ansible_default_ipv4.interface }} | awk '{print $4+$12}')
-    
+
     echo "$(date +%s),$cpu,$memory,$disk,$load,$net_errors" >> /tmp/metrics_history.csv
   register: metrics_collection
   changed_when: false
@@ -58,7 +57,7 @@
 - name: Parse prediction results
   set_fact:
     prediction_data: "{{ prediction_result.stdout | from_json }}"
-  when: 
+  when:
     - prediction_result is succeeded
     - prediction_result.stdout | length > 0
 
@@ -79,7 +78,7 @@
   copy:
     content: "{{ predictive_metrics | to_nice_json }}"
     dest: "/var/log/hx-infrastructure/predictive-metrics-{{ ansible_date_time.epoch }}.json"
-  when: 
+  when:
     - predictive_metrics is defined
     - log_predictive_metrics | default(true)
 
@@ -90,7 +89,7 @@
     alert_message: "High failure probability detected on {{ inventory_hostname }}: {{ predictive_metrics.failure_probability }}%"
     alert_data: "{{ predictive_metrics }}"
     alert_severity: "warning"
-  when: 
+  when:
     - predictive_metrics is defined
     - (predictive_metrics.failure_probability | float) > (prediction_threshold | default(0.8) * 100)
     - alerting_enabled | default(true)
@@ -99,7 +98,7 @@
   shell: |
     # Append current metrics to training dataset
     echo "$(date +%s),{{ ansible_processor_vcpus }},{{ ansible_memtotal_mb }},$(df / | tail -1 | awk '{print $5}' | sed 's/%//'),$(uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//'),0" >> /opt/hx-infrastructure/data/training_data.csv
-  when: 
+  when:
     - predictive_monitoring_enabled | default(true)
     - update_training_data | default(true)
 

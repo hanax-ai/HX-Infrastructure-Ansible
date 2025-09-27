@@ -1,0 +1,39 @@
+---
+# Users role - metadata
+# Role information and dependencies
+
+galaxy_info:
+  role_name: users
+  author: HX Infrastructure Team
+  description: User account management and access control
+  company: Hana-X AI
+  license: MIT
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - system
+    - users
+    - security
+    - access-control
+
+dependencies:
+  - role: common
+
+# Collections used by this role
+collections:
+  - ansible.builtin
+  - ansible.posix

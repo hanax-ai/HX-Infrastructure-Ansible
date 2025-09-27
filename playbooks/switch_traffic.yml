@@ -1,0 +1,82 @@
+
+---
+# Traffic Switching Playbook for Blue-Green Deployment
+# Usage: ansible-playbook -i inventories/production playbooks/switch_traffic.yml -e "active_color=green"
+
+- name: Switch Traffic to Active Color
+  hosts: load_balancers
+  become: yes
+  serial: 1
+  
+  vars:
+    switch_timestamp: "{{ ansible_date_time.epoch }}"
+    validation_timeout: 300
+    
+  pre_tasks:
+    - name: Validate active color parameter
+      fail:
+        msg: "active_color must be 'blue' or 'green'"
+      when: active_color not in ['blue', 'green']
+      
+    - name: Determine inactive color
+      set_fact:
+        inactive_color: "{{ 'blue' if active_color == 'green' else 'green' }}"
+        
+    - name: Pre-switch health check on target environment
+      uri:
+        url: "http://{{ hostvars[item]['ansible_default_ipv4']['address'] }}:{{ service_port | default(8080) }}/health"
+        method: GET
+        status_code: 200
+      with_items: "{{ groups['prod_' + active_color] | default([]) }}"
+      delegate_to: localhost
+      
+    - name: Create traffic switch log
+      local_action:
+        module: lineinfile
+        path: "/tmp/traffic_switch_{{ switch_timestamp }}.log"
+        line: "{{ ansible_date_time.iso8601 }} - Starting traffic switch from {{ inactive_color }} to {{ active_color }}"
+        create: yes
+      run_once: yes
+      
+  tasks:
+    - name: Update load balancer configuration
+      template:
+        src: lb_config.j2
+        dest: /etc/nginx/sites-available/default
+        backup: yes
+      vars:
+        target_environment: "{{ active_color }}"
+      notify: reload nginx
+      
+    - name: Validate configuration syntax
+      nginx:
+        state: present
+        configfile: /etc/nginx/sites-available/default
+      check_mode: yes
+      
+  post_tasks:
+    - name: Wait for configuration reload
+      wait_for:
+        timeout: 30
+        
+    - name: Validate traffic switch success
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}/health"
+        method: GET
+        status_code: 200
+        headers:
+          Host: "{{ app_domain | default('localhost') }}"
+      retries: 10
+      delay: 10
+      
+    - name: Log traffic switch completion
+      local_action:
+        module: lineinfile
+        path: "/tmp/traffic_switch_{{ switch_timestamp }}.log"
+        line: "{{ ansible_date_time.iso8601 }} - Traffic switch completed successfully to {{ active_color }}"
+        
+  handlers:
+    - name: reload nginx
+      service:
+        name: nginx
+        state: reloaded

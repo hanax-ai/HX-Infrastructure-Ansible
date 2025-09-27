@@ -1,4 +1,3 @@
-
 ---
 # Preparation tasks for hx_domain_join_standardized role
 # System preparation and dependency installation for domain join
@@ -258,7 +257,7 @@
   changed_when: false
   failed_when: false
   no_log: true
-  when: not hx_domain_already_joined | default(false)
+  when: falset hx_domain_already_joined | default(false)
 
 - name: Configure firewall for domain services
   block:

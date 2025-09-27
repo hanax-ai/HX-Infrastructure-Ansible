@@ -1,0 +1,39 @@
+---
+# Common role - preparation tasks
+# System preparation before package installation
+
+- name: "common : Update package cache"
+  ansible.builtin.package:
+    update_cache: true
+  become: true
+  tags:
+    - role:common
+    - phase:prepare
+    - packages:update
+
+- name: "common : Create common system directories"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  loop: "{{ common_system_directories }}"
+  become: true
+  tags:
+    - role:common
+    - phase:prepare
+    - filesystem:directories
+
+- name: "common : Setup log rotation directory"
+  ansible.builtin.file:
+    path: /etc/logrotate.d
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  become: true
+  tags:
+    - role:common
+    - phase:prepare
+    - logging:setup

@@ -1,24 +1,23 @@
-
 ---
 # Rollback Tasks
 - name: Stop failed deployment
   ansible.builtin.systemd:
     name: "{{ application_name }}-{{ new_deploy_color }}"
     state: stopped
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Restore previous configuration
   ansible.builtin.copy:
     src: "/opt/backups/{{ deployment_timestamp }}/config/"
     dest: "/opt/{{ application_name }}/config/"
-    remote_src: yes
+    remote_src: true
   when: deployment_timestamp is defined
 
 - name: Ensure current environment is running
   ansible.builtin.systemd:
     name: "{{ application_name }}-{{ current_deploy_color }}"
     state: started
-    enabled: yes
+    enabled: true
 
 - name: Verify rollback health
   ansible.builtin.uri:
@@ -31,7 +30,7 @@
   ansible.builtin.lineinfile:
     path: /var/log/deployments.log
     line: "{{ ansible_date_time.iso8601 }} - ROLLBACK: Failed deployment to {{ new_environment }}, reverted to {{ current_environment }}"
-    create: yes
+    create: true
 
 - name: Send rollback notification
   ansible.builtin.mail:
@@ -41,4 +40,4 @@
       Deployment to {{ new_environment }} failed and was rolled back.
       Current active environment: {{ current_environment }}
       Timestamp: {{ ansible_date_time.iso8601 }}
-  when: notification_email is defined
+  when: falsetification_email is defined

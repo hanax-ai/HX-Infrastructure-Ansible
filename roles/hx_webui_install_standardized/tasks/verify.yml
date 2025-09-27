@@ -73,7 +73,7 @@
       - ((hx_webui_cert_info.not_after | to_datetime('%Y%m%d%H%M%SZ')) - (ansible_date_time.iso8601 | to_datetime())).days >= 30
     fail_msg: "SSL certificate expires within 30 days"
     success_msg: "SSL certificate is valid for more than 30 days"
-  when: 
+  when:
     - hx_webui_ssl_enabled | default(false) | bool
     - hx_webui_cert_info is defined
   tags: ['verify']

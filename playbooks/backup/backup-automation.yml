@@ -3,9 +3,9 @@
 # Phase 3.3 - Comprehensive Backup Automation Framework
 - name: Deploy HX Infrastructure Backup Automation
   hosts: all
-  become: yes
-  gather_facts: yes
-  
+  become: true
+  gather_facts: true
+
   vars:
     # Override default configurations if needed
     backup_automation:
@@ -16,7 +16,7 @@
         weekly: 4
         monthly: 12
         yearly: 3
-      
+
   pre_tasks:
     - name: Validate target hosts
       assert:
@@ -58,7 +58,7 @@
       command: /var/lib/backup/scripts/test-backup-system.sh
       register: backup_test
       become_user: backup
-      when: not ansible_check_mode
+      when: falset ansible_check_mode
 
     - name: Display backup test results
       debug:
@@ -68,15 +68,15 @@
 # Database-specific backup deployment
 - name: Deploy Database Backup Automation
   hosts: database
-  become: yes
-  gather_facts: yes
-  
+  become: true
+  gather_facts: true
+
   vars:
     database_backup_enabled: true
-    
+
   collections:
     - community.postgresql
-  
+
   tasks:
     - name: Ensure PostgreSQL client tools are installed
       package:
@@ -95,20 +95,20 @@
       command: /var/lib/backup/scripts/test-postgresql-connection.sh
       register: db_test
       become_user: backup
-      when: not ansible_check_mode
+      when: falset ansible_check_mode
 
     - name: Schedule immediate database backup test
       command: /var/lib/backup/scripts/postgresql-backup.sh test
       register: backup_test
       become_user: backup
-      when: not ansible_check_mode
+      when: falset ansible_check_mode
 
 # Application server backup deployment
 - name: Deploy Application Backup Automation
   hosts: application
-  become: yes
-  gather_facts: yes
-  
+  become: true
+  gather_facts: true
+
   tasks:
     - name: Verify application data paths exist
       stat:
@@ -121,14 +121,14 @@
       command: /var/lib/backup/scripts/test-application-backup.sh
       register: app_backup_test
       become_user: backup
-      when: not ansible_check_mode
+      when: falset ansible_check_mode
 
 # Monitoring integration
 - name: Integrate Backup Monitoring
   hosts: monitoring
-  become: yes
-  gather_facts: yes
-  
+  become: true
+  gather_facts: true
+
   tasks:
     - name: Copy backup monitoring rules to Prometheus
       copy:
@@ -137,7 +137,7 @@
         owner: prometheus
         group: prometheus
         mode: '0644'
-        remote_src: yes
+        remote_src: true
       notify: reload prometheus
       when: backup_automation.monitoring.prometheus_metrics
 
@@ -162,7 +162,7 @@
           Content-Type: "application/json"
         status_code: [200, 412]
         validate_certs: "{{ grafana_validate_certs | default(true) }}"
-      when: 
+      when:
         - backup_automation.monitoring.prometheus_metrics
         - grafana_api_key is defined
         - grafana_dash is defined
@@ -176,9 +176,9 @@
 # Final validation and reporting
 - name: Backup Automation Validation and Reporting
   hosts: all
-  become: yes
-  gather_facts: no
-  
+  become: true
+  gather_facts: false
+
   tasks:
     - name: Generate backup automation report
       template:
@@ -194,7 +194,7 @@
           ========================================
           HX Infrastructure Backup Automation Deployment Complete
           ========================================
-          
+
           Deployment Summary:
           - Backup Base Directory: {{ backup_automation.base_directory }}
           - Database Backup: {{ 'Enabled' if database_backup.enabled else 'Disabled' }}
@@ -203,23 +203,23 @@
           - Encryption: {{ 'Enabled' if backup_automation.encryption.enabled else 'Disabled' }}
           - Remote Storage: {{ 'Enabled' if remote_storage.enabled else 'Disabled' }}
           - Monitoring: {{ 'Enabled' if backup_monitoring.enabled else 'Disabled' }}
-          
+
           Next Steps:
           1. Review backup schedules in crontab
           2. Test backup and restore procedures
           3. Configure monitoring alerts
           4. Set up remote storage credentials
           5. Proceed to Phase 3.4
-          
+
           Documentation: {{ backup_automation.base_directory }}/deployment-report.md
           ========================================
 
     - name: Send deployment notification
       command: >
-        /var/lib/backup/scripts/send-backup-notification.sh 
-        "Backup Automation Deployed" 
+        /var/lib/backup/scripts/send-backup-notification.sh
+        "Backup Automation Deployed"
         "HX Infrastructure backup automation has been successfully deployed on {{ inventory_hostname }}"
       become_user: backup
-      when: 
+      when:
         - backup_automation.notifications.enabled
         - not ansible_check_mode

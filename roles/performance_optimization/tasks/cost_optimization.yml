@@ -1,4 +1,3 @@
-
 ---
 # Cost Optimization Tasks
 - name: Create cost optimization directory
@@ -124,4 +123,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/cost_optimization.log
     line: "{{ ansible_date_time.iso8601 }} - Cost optimization setup completed - Baseline: {{ cost_baseline.stdout_lines[-1] if cost_baseline.stdout_lines else 'Generated' }}"
-    create: yes
+    create: true

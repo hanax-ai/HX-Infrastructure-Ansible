@@ -1,4 +1,3 @@
-
 ---
 # Security Tasks for HX PostgreSQL Authentication
 
@@ -7,7 +6,7 @@
     path: "{{ hx_pg_conf_path }}"
     regexp: '^\s*#?\s*password_encryption\s*='
     line: "password_encryption = '{{ hx_pg_password_encryption }}'"
-    backup: yes
+    backup: true
   notify: reload postgresql config
   tags: [security]
 
@@ -16,7 +15,7 @@
     path: "{{ hx_pg_conf_path }}"
     regexp: '^\s*#?\s*ssl\s*='
     line: "ssl = {{ hx_pg_ssl_enabled | ternary('on', 'off') }}"
-    backup: yes
+    backup: true
   notify: reload postgresql config
   tags: [security]
 
@@ -25,7 +24,7 @@
     path: "{{ hx_pg_conf_path }}"
     regexp: '^\s*#?\s*ssl_min_protocol_version\s*='
     line: "ssl_min_protocol_version = '{{ hx_pg_ssl_min_protocol_version }}'"
-    backup: yes
+    backup: true
   when:
     - hx_pg_enforce_tls_floor | bool
     - hx_pg_ssl_min_protocol_version | length > 0
@@ -37,7 +36,7 @@
     path: "{{ hx_pg_conf_path }}"
     regexp: '^\s*#?\s*ssl_ciphers\s*='
     line: "ssl_ciphers = '{{ hx_pg_ssl_ciphers }}'"
-    backup: yes
+    backup: true
   when: hx_pg_ssl_enabled | bool
   notify: reload postgresql config
   tags: [security]
@@ -47,7 +46,7 @@
     path: "{{ hx_pg_conf_path }}"
     regexp: '^\s*#?\s*ssl_ca_file\s*='
     line: "ssl_ca_file = '{{ hx_pg_ssl_ca_file }}'"
-    backup: yes
+    backup: true
   when:
     - hx_pg_ssl_enabled | bool
     - hx_pg_ca_enabled | bool
@@ -173,10 +172,10 @@
     export PGPASSWORD="{{ hx_pg_app_password }}"
 
     # Test SSL connection
-    psql "host={{ ansible_default_ipv4.address }} port={{ hx_pg_port }} \
-          dbname={{ hx_pg_db }} user={{ hx_pg_app_user }} \
-          sslmode=require sslrootcert={{ hx_pg_ca_path }}" \
-      -c "SELECT version(), current_setting('ssl_version');" \
+    psql "host={{ ansible_default_ipv4.address }} port={{ hx_pg_port }} 
+          dbname={{ hx_pg_db }} user={{ hx_pg_app_user }} 
+          sslmode=require sslrootcert={{ hx_pg_ca_path }}" 
+      -c "SELECT version(), current_setting('ssl_version');" 
       -c "\conninfo"
   args:
     executable: /bin/bash
@@ -284,7 +283,7 @@
   lineinfile:
     path: "{{ hx_pg_log_dir }}/security.log"
     line: "{{ ansible_date_time.iso8601 }} - PostgreSQL security configuration completed"
-    create: yes
+    create: true
     owner: postgres
     group: postgres
     mode: '0640'

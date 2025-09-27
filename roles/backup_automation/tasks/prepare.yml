@@ -2,7 +2,7 @@
 # Backup automation preparation tasks
 - name: Update package cache
   package:
-    update_cache: yes
+    update_cache: true
   when: ansible_os_family in ['Debian', 'RedHat']
 
 - name: Install required system packages
@@ -69,7 +69,7 @@
       unarchive:
         src: "/tmp/awscliv2.zip"
         dest: "/tmp"
-        remote_src: yes
+        remote_src: true
 
     - name: Install AWS CLI
       command: /tmp/aws/install
@@ -83,7 +83,7 @@
       loop:
         - "/tmp/awscliv2.zip"
         - "/tmp/aws"
-  when: 
+  when:
     - (remote_storage is defined) and (remote_storage.enabled | default(false))
     - remote_storage.type == 's3'
     - aws_cli_check.rc != 0
@@ -114,11 +114,11 @@
   lineinfile:
     path: "{{ backup_automation.log_directory }}/backup-automation.log"
     line: "{{ ansible_date_time.iso8601 }} [INFO] Backup automation preparation started on {{ ansible_hostname }}"
-    create: yes
+    create: true
     mode: '0640'
     owner: "{{ backup_security.owner }}"
     group: "{{ backup_security.group }}"
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Check system resources
   shell: |
@@ -137,7 +137,7 @@
     url: "{{ item }}"
     method: HEAD
     timeout: 10
-    validate_certs: yes
+    validate_certs: true
   register: connectivity_check
   failed_when: false
   loop:

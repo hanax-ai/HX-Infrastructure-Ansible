@@ -1,4 +1,3 @@
-
 ---
 # Incident Documentation and Reporting
 - name: Create incident documentation directory
@@ -63,7 +62,7 @@
     if [ ! -f "$incident_db" ]; then
       echo '{"incidents": [], "statistics": {"total": 0, "resolved": 0, "escalated": 0}}' > "$incident_db"
     fi
-    
+
     # Add incident to database
     jq --argjson incident '{{ comprehensive_incident_data | to_json }}' '
       .incidents += [$incident] |
@@ -109,7 +108,7 @@
     if [ ! -f "$dashboard_data" ]; then
       echo '{"active_incidents": [], "recent_incidents": [], "statistics": {}}' > "$dashboard_data"
     fi
-    
+
     jq --argjson summary '{{ incident_summary | to_json }}' '
       if $summary.status == "active" then
         .active_incidents += [$summary]
@@ -138,7 +137,7 @@
     hour: "{{ (ansible_date_time.hour | int + 24) % 24 }}"
     job: "/opt/hx-infrastructure/scripts/post_incident_analysis.sh {{ incident_id }}"
     state: present
-  when: 
+  when:
     - post_incident_analysis | default(true)
     - comprehensive_incident_data.incident_metadata.status == 'resolved'
 

@@ -1,4 +1,3 @@
-
 ---
 # Performance Monitoring Setup Tasks
 - name: Install performance monitoring tools
@@ -18,21 +17,21 @@
   ansible.builtin.template:
     src: pcp.conf.j2
     dest: /etc/pcp.conf
-    backup: yes
+    backup: true
   notify: restart pcp
 
 - name: Setup PCP logging
   ansible.builtin.template:
     src: pmlogger.config.j2
     dest: /etc/pcp/pmlogger/config.default
-    backup: yes
+    backup: true
   notify: restart pmlogger
 
 - name: Configure collectd for metrics collection
   ansible.builtin.template:
     src: collectd.conf.j2
     dest: /etc/collectd/collectd.conf
-    backup: yes
+    backup: true
   notify: restart collectd
 
 - name: Create performance monitoring scripts
@@ -71,7 +70,7 @@
     path: /etc/security/limits.conf
     regexp: "^{{ item.domain }}\\s+{{ item.type }}\\s+{{ item.item }}"
     line: "{{ item.domain }} {{ item.type }} {{ item.item }} {{ item.value }}"
-    backup: yes
+    backup: true
   loop: "{{ system_limits | default([]) }}"
 
 - name: Setup performance dashboards directory
@@ -94,8 +93,8 @@
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: started
-    enabled: yes
-    daemon_reload: yes
+    enabled: true
+    daemon_reload: true
   loop:
     - pmcd
     - pmlogger
@@ -122,4 +121,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/performance_setup.log
     line: "{{ ansible_date_time.iso8601 }} - Performance monitoring setup completed on {{ inventory_hostname }}"
-    create: yes
+    create: true

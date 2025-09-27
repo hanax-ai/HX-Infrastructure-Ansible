@@ -1,4 +1,4 @@
-
+---
 # YAML Lint Configuration for HX Infrastructure
 
 extends: default
@@ -99,4 +99,4 @@ rules:
   # Quoted strings - allow both single and double quotes
   quoted-strings:
     quote-type: any
-    required: only-when-needed
+    required: truely-when-needed

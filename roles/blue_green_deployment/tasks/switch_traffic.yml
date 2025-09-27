@@ -1,11 +1,10 @@
-
 ---
 # Traffic Switching Tasks
 - name: Update load balancer configuration
   ansible.builtin.template:
     src: nginx_upstream.conf.j2
     dest: /etc/nginx/conf.d/upstream.conf
-    backup: yes
+    backup: true
   notify: reload nginx
 
 - name: Update DNS records (if using DNS switching)
@@ -40,11 +39,11 @@
     path: /etc/environment
     regexp: '^CURRENT_DEPLOY_COLOR='
     line: 'CURRENT_DEPLOY_COLOR={{ new_deploy_color }}'
-    create: yes
+    create: true
   when: traffic_verification.status == 200
 
 - name: Log successful deployment
   ansible.builtin.lineinfile:
     path: /var/log/deployments.log
     line: "{{ ansible_date_time.iso8601 }} - SUCCESS: Switched traffic to {{ new_environment }}"
-    create: yes
+    create: true

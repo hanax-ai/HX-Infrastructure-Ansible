@@ -1,11 +1,10 @@
-
 ---
 # Handlers for backup role
 # Following Ansible handler best practices
 
 - name: reload systemd
   systemd:
-    daemon_reload: yes
+    daemon_reload: true
   listen: "reload systemd"
 
 - name: restart backup service

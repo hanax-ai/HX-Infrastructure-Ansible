@@ -1,4 +1,3 @@
-
 ---
 # Service management tasks for backup automation
 # Manages backup-related services and daemons
@@ -26,9 +25,9 @@
 - name: Enable and start backup timer
   systemd:
     name: backup.timer
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
+    daemon_reload: true
   when: backup_systemd_timer_enabled | default(false)
   tags: [backup, service, systemd, timer]
 
@@ -46,9 +45,9 @@
 - name: Enable backup monitoring service
   systemd:
     name: backup-monitor.service
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
+    daemon_reload: true
   when: backup_monitoring_enabled | default(false)
   tags: [backup, service, systemd, monitoring]
 

@@ -67,7 +67,7 @@
     login_user: "{{ hx_litellm_database_user }}"
     login_password: "{{ hx_litellm_database_password }}"
     login_db: "{{ hx_litellm_database_name }}"
-  when: 
+  when:
     - hx_litellm_database_enabled | default(false) | bool
     - hx_litellm_database_type == "postgresql"
     - "'CHANGE_ME' not in hx_litellm_database_password"
@@ -78,7 +78,7 @@
   command: redis-cli ping
   register: hx_litellm_redis_test
   changed_when: false
-  when: 
+  when:
     - hx_litellm_caching_enabled | default(false) | bool
     - hx_litellm_cache_type == "redis"
   tags: ['verify']
@@ -89,7 +89,7 @@
       - hx_litellm_redis_test.stdout == "PONG"
     fail_msg: "Redis is not responding"
     success_msg: "Redis is responding correctly"
-  when: 
+  when:
     - hx_litellm_caching_enabled | default(false) | bool
     - hx_litellm_cache_type == "redis"
     - hx_litellm_redis_test is defined
@@ -135,7 +135,7 @@
     status_code: 200
   register: hx_litellm_model_test
   loop: "{{ hx_litellm_providers | dict2items }}"
-  when: 
+  when:
     - item.value.enabled | default(false) | bool
     - (item.value.models | default([])) | length > 0
     - "'CHANGE_ME' not in hx_litellm_master_key"

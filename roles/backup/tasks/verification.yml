@@ -1,4 +1,3 @@
-
 ---
 # Verification tasks for backup automation
 # Validates backup integrity and completeness
@@ -16,13 +15,13 @@
 - name: Fail if backup directories are missing
   fail:
     msg: "Backup directory {{ item.item }} does not exist"
-  when: not item.stat.exists
+  when: falset item.stat.exists
   loop: "{{ backup_dir_check.results }}"
   tags: [backup, verification, directories]
 
 - name: Generate backup checksums
   shell: |
-    find {{ backup_base_dir | default('/opt/backups') }} -type f -name "*.tar.gz" -o -name "*.sql" | \
+    find {{ backup_base_dir | default('/opt/backups') }} -type f -name "*.tar.gz" -o -name "*.sql" | 
     xargs -I {} sh -c 'echo "$(sha256sum "{}")" >> {{ backup_base_dir | default('/opt/backups') }}/checksums-{{ ansible_date_time.date }}.txt'
   tags: [backup, verification, checksums]
 
@@ -42,6 +41,6 @@
   lineinfile:
     path: "{{ backup_log_dir | default('/var/log/backup') }}/verification.log"
     line: "{{ ansible_date_time.iso8601 }} - Backup verification completed: {{ backup_test_result.stdout | default('No backups found') }}"
-    create: yes
+    create: true
     mode: '0644'
   tags: [backup, verification, logging]

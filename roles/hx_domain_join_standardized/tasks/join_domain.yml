@@ -1,4 +1,3 @@
-
 ---
 # Domain Join Tasks for HX Domain Join
 
@@ -50,7 +49,7 @@
 - name: Join the server to the Active Directory domain
   shell: |
     set -euo pipefail
-    echo "{{ hx_ad_admin_password }}" | {{ hx_realm_join_cmd }} \
+    echo "{{ hx_ad_admin_password }}" | {{ hx_realm_join_cmd }} 
       {% if hx_ad_ou_path %}--computer-ou="{{ hx_ad_ou_path }}" \{% endif %}
       {% if hx_ad_computer_name != ansible_hostname | upper %}--computer-name="{{ hx_ad_computer_name }}" \{% endif %}
       --stdin
@@ -86,7 +85,7 @@
     owner: root
     group: root
     mode: '0600'
-    backup: yes
+    backup: true
   when:
     - hx_sssd_enabled | bool
     - hx_domain_join_needed | bool
@@ -121,7 +120,7 @@
   lineinfile:
     path: "{{ hx_domain_log_dir }}/domain_join.log"
     line: "{{ ansible_date_time.iso8601 }} - Successfully joined domain {{ hx_ad_domain }} as {{ hx_ad_computer_name }}"
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0644'

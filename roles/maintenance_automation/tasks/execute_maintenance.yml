@@ -1,4 +1,3 @@
-
 ---
 # Execute Maintenance Tasks
 - name: Create maintenance execution log
@@ -80,7 +79,7 @@
     name: "{{ item.item }}"
     state: started
   loop: "{{ stopped_services.results }}"
-  when: 
+  when:
     - item is succeeded
     - item.item is defined
 

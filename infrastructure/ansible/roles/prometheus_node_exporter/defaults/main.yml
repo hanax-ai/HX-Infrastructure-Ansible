@@ -1,0 +1,85 @@
+---
+# Prometheus Node Exporter role - default variables
+# System metrics collection configuration
+
+# Installation configuration
+prometheus_node_exporter_version: "1.6.1"
+prometheus_node_exporter_binary_checksum: "sha256:4032c6bd036c0e3697e411b9c6d8d6f2b7b2c6e4"
+prometheus_node_exporter_binary_url: >
+  https://github.com/prometheus/node_exporter/releases/download/v{{ prometheus_node_exporter_version }}/node_exporter-{{ prometheus_node_exporter_version }}.linux-amd64.tar.gz
+
+# User and group configuration
+prometheus_node_exporter_user: "node-exporter"
+prometheus_node_exporter_group: "node-exporter"
+prometheus_node_exporter_create_user: true
+
+# Directory configuration
+prometheus_node_exporter_binary_install_dir: "/usr/local/bin"
+prometheus_node_exporter_config_dir: "/etc/prometheus"
+prometheus_node_exporter_textfile_dir: "/var/lib/node_exporter/textfile_collector"
+
+# Service configuration
+prometheus_node_exporter_web_listen_address: "0.0.0.0:9100"
+prometheus_node_exporter_web_telemetry_path: "/metrics"
+prometheus_node_exporter_log_level: "info"
+prometheus_node_exporter_log_format: "logfmt"
+
+# Collector configuration
+prometheus_node_exporter_enabled_collectors:
+  - boottime
+  - cpu
+  - diskstats
+  - filesystem
+  - loadavg
+  - meminfo
+  - netdev
+  - netstat
+  - stat
+  - time
+  - uname
+  - vmstat
+
+prometheus_node_exporter_disabled_collectors:
+  - arp
+  - bcache
+  - conntrack
+  - entropy
+  - filefd
+  - hwmon
+  - infiniband
+  - ipvs
+  - mdadm
+  - nfs
+  - nfsd
+  - sockstat
+  - textfile
+  - timex
+  - wifi
+  - xfs
+  - zfs
+
+# Filesystem collector configuration
+prometheus_node_exporter_filesystem_ignored_mount_points: '^/(dev|proc|sys|var/lib/docker/.+)($|/)'
+prometheus_node_exporter_filesystem_ignored_fs_types: '^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$'
+
+# Textfile collector configuration (if enabled)
+prometheus_node_exporter_textfile_collections_paths: []
+
+# TLS configuration (optional)
+prometheus_node_exporter_tls_server_config: {}
+# Example:
+# prometheus_node_exporter_tls_server_config:
+#   cert_file: "/etc/prometheus/node_exporter.crt"
+#   key_file: "/etc/prometheus/node_exporter.key"
+
+# Authentication configuration (optional)
+prometheus_node_exporter_basic_auth_users: {}
+# Example:
+# prometheus_node_exporter_basic_auth_users:
+#   prometheus: "$2b$12$hNf2lSsxfm0.i4a.1kVpSOVyBCfIB51VRjgBUyv6kdnyTlgWj81Ay"
+
+# Service management
+prometheus_node_exporter_service_enabled: true
+prometheus_node_exporter_service_state: "started"
+prometheus_node_exporter_systemd_service_restart: "always"
+prometheus_node_exporter_systemd_service_restart_sec: 10

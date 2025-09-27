@@ -1,0 +1,76 @@
+---
+# Users role - default variables
+# User account management with secure defaults
+
+# User management configuration
+users_manage_home_permissions: true
+users_default_shell: "/bin/bash"
+users_default_system_shell: "/bin/false"
+
+# Groups to create (system and user groups)
+users_groups: []
+# Example:
+# users_groups:
+#   - name: developers
+#     gid: 3000
+#     system: false
+#   - name: operators
+#     gid: 3001
+#     system: false
+
+# Users to create
+users_accounts: []
+# Example:
+# users_accounts:
+#   - username: alice
+#     uid: 2000
+#     groups: [developers, sudo]
+#     shell: /bin/bash
+#     create_home: true
+#     ssh_keys:
+#       - "ssh-rsa AAAAB3N... alice@example.com"
+#     state: present
+
+# System users (service accounts)
+users_system_accounts: []
+# Example:
+# users_system_accounts:
+#   - username: appuser
+#     uid: 1500
+#     group: appuser
+#     home: /opt/app
+#     shell: /bin/false
+#     system: true
+
+# Users to remove
+users_remove_accounts: []
+# Example:
+# users_remove_accounts:
+#   - username: olduser
+#     remove_home: true
+#     force: false
+
+# Sudo configuration
+users_sudo_group: "sudo"
+users_manage_sudoers: true
+users_sudoers_passwordless: []
+# Example:
+# users_sudoers_passwordless:
+#   - alice
+#   - bob
+
+# SSH key management
+users_ssh_key_type: "rsa"
+users_ssh_key_bits: 4096
+users_manage_ssh_config: true
+
+# Password policy enforcement
+users_enforce_password_policy: true
+users_password_max_age: 90
+users_password_min_age: 1
+users_password_warn_age: 7
+
+# Home directory settings
+users_home_base_path: "/home"
+users_skel_path: "/etc/skel"
+users_home_mode: "0750"

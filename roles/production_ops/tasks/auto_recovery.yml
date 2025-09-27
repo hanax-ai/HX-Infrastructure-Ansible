@@ -1,4 +1,3 @@
-
 ---
 # Auto-Recovery Implementation
 - name: Check for failed services
@@ -20,7 +19,7 @@
     state: restarted
   register: recovery_attempt
   loop: "{{ failed_services | default([]) }}"
-  when: 
+  when:
     - auto_recovery_enabled | default(true)
     - failed_services is defined
     - failed_services | length > 0
@@ -54,8 +53,8 @@
     alert_type: "auto_recovery"
     alert_message: "Auto-recovery attempted for services: {{ failed_services | join(', ') }}"
     alert_severity: "warning"
-  when: 
-    - failed_services is defined 
+  when:
+    - failed_services is defined
     - failed_services | length > 0
     - alerting_enabled | default(true)
 

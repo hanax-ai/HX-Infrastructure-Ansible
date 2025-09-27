@@ -1,0 +1,41 @@
+---
+# Molecule verify playbook for common role
+
+- name: Verify
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: "Verify essential packages are installed"
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: "Assert curl is installed"
+      ansible.builtin.assert:
+        that:
+          - "'curl' in ansible_facts.packages"
+        fail_msg: "curl package not found"
+        success_msg: "curl package verified"
+
+    - name: "Assert wget is installed"
+      ansible.builtin.assert:
+        that:
+          - "'wget' in ansible_facts.packages"
+        fail_msg: "wget package not found"
+        success_msg: "wget package verified"
+
+    - name: "Verify system directories exist"
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: common_dirs
+      loop:
+        - /var/log/ansible
+        - /etc/ansible/facts.d
+        - /opt/scripts
+
+    - name: "Assert system directories are present"
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.isdir
+        fail_msg: "Directory not found: {{ item.item }}"
+      loop: "{{ common_dirs.results }}"
