@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include backup_automation"
+      include_role:
+        name: "backup_automation"

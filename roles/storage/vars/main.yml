@@ -1,0 +1,4 @@
+---
+# Internal variables for storage role
+storage_role_version: "1.0.0"
+storage_role_name: "storage"

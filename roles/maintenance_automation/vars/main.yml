@@ -1,0 +1,5 @@
+---
+# Internal variables for maintenance_automation role - DO NOT override these
+maintenance_automation_role_version: "1.0.0"
+maintenance_automation_role_name: "maintenance_automation"
+maintenance_automation_internal_config_path: "/etc/hx-infrastructure/maintenance_automation"

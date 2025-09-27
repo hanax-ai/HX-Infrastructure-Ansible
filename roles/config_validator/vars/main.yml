@@ -1,0 +1,5 @@
+---
+# Internal variables for config_validator role - DO NOT override these
+config_validator_role_version: "1.0.0"
+config_validator_role_name: "config_validator"
+config_validator_internal_config_path: "/etc/hx-infrastructure/config_validator"

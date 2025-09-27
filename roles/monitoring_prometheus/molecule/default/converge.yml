@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    monitoring_prometheus_enabled: true
+  roles:
+    - role: monitoring_prometheus

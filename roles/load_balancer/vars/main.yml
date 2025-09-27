@@ -1,0 +1,4 @@
+---
+# Internal variables for load_balancer role
+load_balancer_role_version: "1.0.0"
+load_balancer_role_name: "load_balancer"

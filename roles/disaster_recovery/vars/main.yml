@@ -1,0 +1,5 @@
+---
+# Internal variables for disaster_recovery role - DO NOT override these
+disaster_recovery_role_version: "1.0.0"
+disaster_recovery_role_name: "disaster_recovery"
+disaster_recovery_internal_config_path: "/etc/hx-infrastructure/disaster_recovery"

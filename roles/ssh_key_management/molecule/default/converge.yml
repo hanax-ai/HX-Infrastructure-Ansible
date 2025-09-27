@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include ssh_key_management"
+      include_role:
+        name: "ssh_key_management"

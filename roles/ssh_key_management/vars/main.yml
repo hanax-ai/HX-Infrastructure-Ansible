@@ -1,0 +1,4 @@
+---
+# Internal variables for ssh_key_management role
+ssh_key_management_role_version: "1.0.0"
+ssh_key_management_role_name: "ssh_key_management"

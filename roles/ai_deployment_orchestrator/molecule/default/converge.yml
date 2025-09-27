@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include ai_deployment_orchestrator"
+      include_role:
+        name: "ai_deployment_orchestrator"

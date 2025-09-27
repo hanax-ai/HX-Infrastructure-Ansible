@@ -1,0 +1,4 @@
+---
+# Internal variables for security role
+security_role_version: "1.0.0"
+security_role_name: "security"

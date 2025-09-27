@@ -1,0 +1,4 @@
+---
+# Internal variables for logging role
+logging_role_version: "1.0.0"
+logging_role_name: "logging"

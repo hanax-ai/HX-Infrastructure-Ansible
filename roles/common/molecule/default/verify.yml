@@ -1,0 +1,7 @@
+---
+- name: Verify
+  hosts: all
+  tasks:
+    - name: "Verify common role execution"
+      ansible.builtin.debug:
+        msg: "Role common verification complete"

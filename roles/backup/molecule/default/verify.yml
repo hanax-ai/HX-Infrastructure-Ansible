@@ -1,0 +1,7 @@
+---
+- name: Verify
+  hosts: all
+  tasks:
+    - name: "Verify backup role execution"
+      ansible.builtin.debug:
+        msg: "Role backup verification complete"

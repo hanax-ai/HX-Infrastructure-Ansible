@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    enterprise_integration_enabled: true
+  roles:
+    - role: enterprise_integration

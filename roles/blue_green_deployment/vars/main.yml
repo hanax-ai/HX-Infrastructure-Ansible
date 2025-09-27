@@ -1,0 +1,4 @@
+---
+# Internal variables for blue_green_deployment role
+blue_green_deployment_role_version: "1.0.0"
+blue_green_deployment_role_name: "blue_green_deployment"

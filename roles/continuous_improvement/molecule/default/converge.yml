@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: "Include continuous_improvement"
+      include_role:
+        name: "continuous_improvement"

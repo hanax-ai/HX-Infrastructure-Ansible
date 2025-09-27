@@ -1,0 +1,4 @@
+---
+# Internal variables for common_templates role
+common_templates_role_version: "1.0.0"
+common_templates_role_name: "common_templates"

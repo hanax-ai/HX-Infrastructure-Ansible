@@ -1,0 +1,8 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    operational_safety_enabled: true
+  roles:
+    - role: operational_safety
