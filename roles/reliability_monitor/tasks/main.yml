@@ -1,6 +1,4 @@
 ---
-
----
 - name: Install reliability monitoring dependencies
   package:
     name: "{{ item }}"

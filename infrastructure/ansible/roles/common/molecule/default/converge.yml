@@ -1,6 +1,4 @@
 ---
-
----
 # Molecule converge playbook for common role
 
 - name: Converge

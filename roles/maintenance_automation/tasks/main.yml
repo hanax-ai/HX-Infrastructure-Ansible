@@ -1,6 +1,4 @@
 ---
-
----
 # Maintenance Automation Role - Main Tasks
 - name: Include maintenance automation tasks
   include_tasks: "{{ item }}"

@@ -1,6 +1,4 @@
 ---
-
----
 # Application Deployment Tasks
 - name: Stop existing application in new environment
   ansible.builtin.systemd:

@@ -1,6 +1,4 @@
 ---
-
----
 # Remote storage tasks for backup automation
 # Handles backup synchronization to remote locations
 
@@ -49,8 +47,8 @@
 
 - name: Verify remote backup integrity
   shell: |
-    ssh {{ backup_remote_host | default('backup-server') }} \
-    "find {{ backup_remote_path | default('backups/') }} -name '*.tar.gz' -exec sha256sum {} \;" > \
+    ssh {{ backup_remote_host | default('backup-server') }} 
+    "find {{ backup_remote_path | default('backups/') }} -name '*.tar.gz' -exec sha256sum {} \;" > 
     {{ backup_base_dir | default('/opt/backups') }}/remote-checksums-{{ ansible_date_time.date }}.txt
   when: backup_remote_enabled | default(false) and backup_remote_host is defined
   tags: [backup, remote_storage, verification]

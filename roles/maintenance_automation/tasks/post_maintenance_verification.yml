@@ -1,6 +1,4 @@
 ---
-
----
 # Post-maintenance verification
 - name: Wait for system stabilization
   wait_for:

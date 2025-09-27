@@ -242,13 +242,13 @@ jobs:
     steps:
       - name: Check all gates passed
         run: |
-          if [[ "${{ needs.integration-gate.result }}" == "success" && \
-                "${{ needs.performance-gate.result }}" == "success" && \
-                "${{ needs.security-gate.result }}" == "success" && \
-                "${{ needs.golden-path-tests.result }}" == "success" && \
-                "${{ needs.lint-and-syntax.result }}" == "success" && \
-                "${{ needs.security-scan.result }}" == "success" && \
-                "${{ needs.monitoring-validation.result }}" == "success" && \
+          if [[ "${{ needs.integration-gate.result }}" == "success" && 
+                "${{ needs.performance-gate.result }}" == "success" && 
+                "${{ needs.security-gate.result }}" == "success" && 
+                "${{ needs.golden-path-tests.result }}" == "success" && 
+                "${{ needs.lint-and-syntax.result }}" == "success" && 
+                "${{ needs.security-scan.result }}" == "success" && 
+                "${{ needs.monitoring-validation.result }}" == "success" && 
                 "${{ needs.docs-validation.result }}" == "success" ]]; then
             echo "🎉 All Phase 2C gates passed!"
             echo "Ready for production deployment"

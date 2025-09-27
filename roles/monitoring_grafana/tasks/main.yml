@@ -1,6 +1,4 @@
 ---
-
----
 - name: Add Grafana APT repository key
   apt_key:
     url: https://apt.grafana.com/gpg.key

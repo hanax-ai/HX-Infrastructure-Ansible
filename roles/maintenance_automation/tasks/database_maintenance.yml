@@ -1,6 +1,4 @@
 ---
-
----
 # Database maintenance automation
 - name: Check database connection
   postgresql_ping:

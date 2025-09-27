@@ -1,6 +1,4 @@
 ---
-
----
 # Operational Dashboards Tasks
 - name: Create operational dashboards directory
   ansible.builtin.file:

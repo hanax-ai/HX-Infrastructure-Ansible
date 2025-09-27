@@ -1,10 +1,8 @@
 ---
-
----
 # Blue-Green Deployment Implementation
 - name: Create blue environment backup
   shell: |
-    docker-compose -f /opt/hx-infrastructure/docker-compose.yml \
+    docker-compose -f /opt/hx-infrastructure/docker-compose.yml 
     -p hx-blue stop
     docker commit hx-blue-app hx-blue-backup:{{ ansible_date_time.epoch }}
   register: blue_backup
@@ -12,7 +10,7 @@
 
 - name: Deploy to green environment
   shell: |
-    docker-compose -f /opt/hx-infrastructure/docker-compose.yml \
+    docker-compose -f /opt/hx-infrastructure/docker-compose.yml 
     -p hx-green up -d
   register: green_deployment
   environment:

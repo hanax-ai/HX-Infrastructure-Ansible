@@ -1,6 +1,4 @@
 ---
-
----
 # Configuration Tasks for HX Domain Join
 
 - name: Configure realmd for domain discovery

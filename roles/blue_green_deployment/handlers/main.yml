@@ -1,6 +1,4 @@
 ---
-
----
 # Blue-Green Deployment Handlers
 - name: reload nginx
   ansible.builtin.systemd:

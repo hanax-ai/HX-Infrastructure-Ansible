@@ -1,6 +1,4 @@
 ---
-
----
 # Blue-Green Deployment Role - Main Tasks
 - name: Include environment detection tasks
   include_tasks: detect_environment.yml

@@ -1,6 +1,4 @@
 ---
-
----
 # Traffic Switching Tasks
 - name: Update load balancer configuration
   ansible.builtin.template:

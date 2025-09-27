@@ -1,6 +1,4 @@
 ---
-
----
 # Phase 3.4 - Production Operations and Maintenance Automation
 # Main site playbook for production operations
 - name: HX Infrastructure Production Operations

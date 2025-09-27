@@ -1,6 +1,4 @@
 ---
-
----
 # Trigger Alert Task
 - name: Create alert payload
   set_fact:

@@ -1,6 +1,4 @@
 ---
-
----
 # Production Operations Role Handlers
 - name: restart consul
   systemd:

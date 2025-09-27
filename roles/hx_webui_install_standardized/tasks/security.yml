@@ -1,23 +1,23 @@
 ---
-- name: "Hx | Web UI | Configure firewall rules"\
-  ufw:\
-    rule: allow\
-    port: "{{ hx_webui_listen_port }}"\
-    proto: tcp\
-  when:\
-    - hx_webui_firewall_enabled | default(false) | bool\
-    - ansible_facts['os_family'] == "Debian"\
-  tags: ['security']\
-\
-- name: "Hx | Web UI | Configure SSL firewall rule"\
-  ufw:\
-    rule: allow\
-    port: "{{ hx_webui_ssl_port }}"\
-    proto: tcp\
-  when:\
-    - hx_webui_firewall_enabled | default(false) | bool\
-    - hx_webui_ssl_enabled | default(false) | bool\
-    - ansible_facts['os_family'] == "Debian"\
+- name: "Hx | Web UI | Configure firewall rules"
+  ufw:
+    rule: allow
+    port: "{{ hx_webui_listen_port }}"
+    proto: tcp
+  when:
+    - hx_webui_firewall_enabled | default(false) | bool
+    - ansible_facts['os_family'] == "Debian"
+  tags: ['security']
+
+- name: "Hx | Web UI | Configure SSL firewall rule"
+  ufw:
+    rule: allow
+    port: "{{ hx_webui_ssl_port }}"
+    proto: tcp
+  when:
+    - hx_webui_firewall_enabled | default(false) | bool
+    - hx_webui_ssl_enabled | default(false) | bool
+    - ansible_facts['os_family'] == "Debian"
   tags: ['security']
 
 - name: "Hx | Web UI | Block malicious IPs"
@@ -121,23 +121,23 @@
   notify: restart apache2
   tags: ['security']
 
-- name: "Hx | Web UI | Configure security headers"\
-  template:\
-    src: "{{ hx_webui_server_type }}-security-headers.conf.j2"\
-    dest: "{{ (hx_webui_server_type == 'nginx') | ternary('/etc/nginx/conf.d/security-headers.conf', '/etc/apache2/conf-available/security-headers.conf') }}"\
-    owner: root\
-    group: root\
-    mode: "0644"\
-  notify: "{{ (hx_webui_server_type == 'nginx') | ternary('restart nginx', 'restart apache2') }}"\
-  tags: ['security']\
-\
-- name: "Hx | Web UI | Enable Apache security headers config"\
-  file:\
-    src: "/etc/apache2/conf-available/security-headers.conf"\
-    dest: "/etc/apache2/conf-enabled/security-headers.conf"\
-    state: link\
-  when: hx_webui_server_type == "apache"\
-  notify: "restart apache2"\
+- name: "Hx | Web UI | Configure security headers"
+  template:
+    src: "{{ hx_webui_server_type }}-security-headers.conf.j2"
+    dest: "{{ (hx_webui_server_type == 'nginx') | ternary('/etc/nginx/conf.d/security-headers.conf', '/etc/apache2/conf-available/security-headers.conf') }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: "{{ (hx_webui_server_type == 'nginx') | ternary('restart nginx', 'restart apache2') }}"
+  tags: ['security']
+
+- name: "Hx | Web UI | Enable Apache security headers config"
+  file:
+    src: "/etc/apache2/conf-available/security-headers.conf"
+    dest: "/etc/apache2/conf-enabled/security-headers.conf"
+    state: link
+  when: hx_webui_server_type == "apache"
+  notify: "restart apache2"
   tags: ['security']
 
 - name: "Hx | Web UI | Create security audit script"

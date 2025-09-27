@@ -1,6 +1,4 @@
 ---
-
----
 # Operational Excellence Validation Tasks
 - name: Create validation directory
   ansible.builtin.file:

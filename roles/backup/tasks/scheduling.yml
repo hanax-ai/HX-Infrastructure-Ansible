@@ -1,6 +1,4 @@
 ---
-
----
 # Scheduling tasks for backup automation
 # Sets up cron jobs and backup schedules
 

@@ -1,6 +1,4 @@
 ---
-
----
 # Health Check Tasks
 - name: Perform application health check
   ansible.builtin.uri:

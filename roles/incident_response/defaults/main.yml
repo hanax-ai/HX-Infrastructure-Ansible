@@ -1,6 +1,4 @@
 ---
-
----
 # Incident Response Role Defaults
 incident_response_enabled: true
 incident_monitoring_enabled: true

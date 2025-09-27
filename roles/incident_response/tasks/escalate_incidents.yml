@@ -1,6 +1,4 @@
 ---
-
----
 # Incident Escalation Procedures
 - name: Identify incidents requiring escalation
   set_fact:

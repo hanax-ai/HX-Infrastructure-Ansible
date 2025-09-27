@@ -1,6 +1,4 @@
 ---
-
----
 # Backup Validation Tasks
 - name: Create validation environment
   ansible.builtin.file:

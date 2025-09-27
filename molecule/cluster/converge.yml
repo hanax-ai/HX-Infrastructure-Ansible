@@ -1,6 +1,4 @@
 ---
-
----
 - name: Converge Cluster Test
   hosts: k8s_cluster
   connection: kubectl

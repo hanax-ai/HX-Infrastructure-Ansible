@@ -1,6 +1,4 @@
 ---
-
----
 # Execute Maintenance Tasks
 - name: Create maintenance execution log
   file:

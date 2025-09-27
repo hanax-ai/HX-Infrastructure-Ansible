@@ -1,6 +1,4 @@
 ---
-
----
 # Enterprise Change Management Integration Tasks
 - name: Install change management tools
   ansible.builtin.package:

@@ -1,6 +1,4 @@
 ---
-
----
 # Blue-Green Deployment Default Variables
 application_name: "myapp"
 app_port: 8080

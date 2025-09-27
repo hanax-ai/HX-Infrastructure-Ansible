@@ -1,6 +1,4 @@
 ---
-
----
 # Compliance and Audit Tasks
 - name: Install compliance tools
   ansible.builtin.package:

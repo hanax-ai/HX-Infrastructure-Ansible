@@ -1,6 +1,4 @@
 ---
-
----
 # Production Operations Role - Main Tasks
 - name: Include production operations tasks
   include_tasks: "{{ item }}"

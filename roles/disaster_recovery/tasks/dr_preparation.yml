@@ -1,6 +1,4 @@
 ---
-
----
 # Disaster Recovery Preparation Tasks
 - name: Create DR documentation
   ansible.builtin.template:

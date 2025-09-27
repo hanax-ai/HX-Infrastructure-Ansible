@@ -1,6 +1,4 @@
 ---
-
----
 # Canary Deployment Automation
 - name: Canary Deployment Strategy
   hosts: "{{ target_environment | default('production') }}"

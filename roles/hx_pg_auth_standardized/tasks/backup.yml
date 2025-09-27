@@ -1,6 +1,4 @@
 ---
-
----
 # Backup Tasks for HX PostgreSQL Authentication
 
 - name: Create backup directory

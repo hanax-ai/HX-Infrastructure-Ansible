@@ -1,6 +1,4 @@
 ---
-
----
 # Backup Automation Configuration
 backup_automation:
   # Global backup settings

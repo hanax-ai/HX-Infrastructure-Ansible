@@ -1,6 +1,4 @@
 ---
-
----
 # Security Tasks for HX PostgreSQL Authentication
 
 - name: Ensure password encryption is set to SCRAM-SHA-256
@@ -174,10 +172,10 @@
     export PGPASSWORD="{{ hx_pg_app_password }}"
 
     # Test SSL connection
-    psql "host={{ ansible_default_ipv4.address }} port={{ hx_pg_port }} \
-          dbname={{ hx_pg_db }} user={{ hx_pg_app_user }} \
-          sslmode=require sslrootcert={{ hx_pg_ca_path }}" \
-      -c "SELECT version(), current_setting('ssl_version');" \
+    psql "host={{ ansible_default_ipv4.address }} port={{ hx_pg_port }} 
+          dbname={{ hx_pg_db }} user={{ hx_pg_app_user }} 
+          sslmode=require sslrootcert={{ hx_pg_ca_path }}" 
+      -c "SELECT version(), current_setting('ssl_version');" 
       -c "\conninfo"
   args:
     executable: /bin/bash

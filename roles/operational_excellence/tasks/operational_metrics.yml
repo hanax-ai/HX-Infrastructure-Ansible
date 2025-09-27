@@ -1,6 +1,4 @@
 ---
-
----
 # Operational Metrics and KPIs Tasks
 - name: Create operational metrics directory
   ansible.builtin.file:

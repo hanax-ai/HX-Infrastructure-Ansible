@@ -1,6 +1,4 @@
 ---
-
----
 # Security Tasks for HX CA Trust
 
 - name: Verify certificate file permissions

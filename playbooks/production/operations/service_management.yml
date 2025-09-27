@@ -1,6 +1,4 @@
 ---
-
----
 # Service Management Automation
 - name: Production Service Management
   hosts: "{{ target_hosts | default('all') }}"

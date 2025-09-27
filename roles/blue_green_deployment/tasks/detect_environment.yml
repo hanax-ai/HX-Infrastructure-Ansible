@@ -1,6 +1,4 @@
 ---
-
----
 # Environment Detection Tasks
 - name: Get current deployment color from parameter store
   ansible.builtin.set_fact:

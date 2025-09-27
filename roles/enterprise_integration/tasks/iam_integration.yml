@@ -1,6 +1,4 @@
 ---
-
----
 # Identity and Access Management Integration Tasks
 - name: Install IAM integration tools
   ansible.builtin.package:

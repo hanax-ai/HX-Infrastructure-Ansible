@@ -1,5 +1,4 @@
 ---
-
 # LiteLLM Gateway Configuration for PostgreSQL Integration
 # This configuration demonstrates SQLAlchemy + PostgreSQL backend integration
 

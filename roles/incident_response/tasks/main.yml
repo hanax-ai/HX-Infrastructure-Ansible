@@ -1,6 +1,4 @@
 ---
-
----
 # Incident Response Role - Main Tasks
 - name: Include incident response tasks
   include_tasks: "{{ item }}"

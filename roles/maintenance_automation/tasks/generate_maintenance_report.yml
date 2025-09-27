@@ -1,6 +1,4 @@
 ---
-
----
 # Generate comprehensive maintenance report
 - name: Collect maintenance execution data
   set_fact:

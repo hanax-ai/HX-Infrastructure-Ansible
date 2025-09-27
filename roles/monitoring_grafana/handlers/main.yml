@@ -1,6 +1,4 @@
 ---
-
----
 - name: restart grafana
   systemd:
     name: grafana-server

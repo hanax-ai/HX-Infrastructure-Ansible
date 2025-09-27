@@ -1,6 +1,4 @@
 ---
-
----
 # Traffic switching for blue-green deployment
 - name: Update load balancer configuration
   template:

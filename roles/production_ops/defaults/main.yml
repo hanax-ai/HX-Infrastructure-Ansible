@@ -1,6 +1,4 @@
 ---
-
----
 # Production Operations Role Defaults
 production_ops_enabled: true
 monitoring_enabled: true

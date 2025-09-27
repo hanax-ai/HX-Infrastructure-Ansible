@@ -1,6 +1,4 @@
 ---
-
----
 # Pre-maintenance validation checks
 - name: Check system status before maintenance
   include_role:

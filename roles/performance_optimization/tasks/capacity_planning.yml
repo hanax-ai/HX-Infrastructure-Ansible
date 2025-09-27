@@ -1,6 +1,4 @@
 ---
-
----
 # Capacity Planning Tasks
 - name: Create capacity planning directory
   ansible.builtin.file:

@@ -1,6 +1,4 @@
 ---
-
----
 # Operational Excellence Framework Role - Main Tasks
 - name: Include operational metrics tasks
   include_tasks: operational_metrics.yml

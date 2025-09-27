@@ -1,6 +1,4 @@
 ---
-
----
 # User Management Tasks for HX PostgreSQL Authentication
 
 - name: Create application database
@@ -75,8 +73,8 @@
   shell: |
     set -euo pipefail
     export PGPASSWORD="{{ hx_pg_app_password }}"
-    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" \
-         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" \
+    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" 
+         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" 
          -c '\conninfo' -c 'SELECT current_user, current_database();'
   args:
     executable: /bin/bash
@@ -110,8 +108,8 @@
   shell: |
     set -euo pipefail
     export PGPASSWORD="{{ hx_pg_app_password }}"
-    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" \
-         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" \
+    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" 
+         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" 
          -c '\conninfo' -c 'SELECT current_user, current_database();'
   args:
     executable: /bin/bash

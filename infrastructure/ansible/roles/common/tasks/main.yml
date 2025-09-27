@@ -1,6 +1,4 @@
 ---
-
----
 # Common role - main task orchestration
 # Follows SOLID principles: single responsibility for OS baseline setup
 

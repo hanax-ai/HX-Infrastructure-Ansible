@@ -1,6 +1,4 @@
 ---
-
----
 # Cost Optimization Tasks
 - name: Create cost optimization directory
   ansible.builtin.file:

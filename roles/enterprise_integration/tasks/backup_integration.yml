@@ -1,6 +1,4 @@
 ---
-
----
 # Enterprise Backup Integration Tasks
 - name: Install enterprise backup tools
   ansible.builtin.package:

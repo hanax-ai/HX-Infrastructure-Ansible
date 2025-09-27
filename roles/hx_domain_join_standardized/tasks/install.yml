@@ -1,6 +1,4 @@
 ---
-
----
 # Installation Tasks for HX Domain Join
 
 - name: Create required directories

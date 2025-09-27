@@ -1,6 +1,4 @@
 ---
-
----
 # Automated Incident Remediation
 - name: Initialize remediation tracking
   set_fact:

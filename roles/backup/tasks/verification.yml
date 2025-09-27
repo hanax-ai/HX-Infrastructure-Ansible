@@ -1,6 +1,4 @@
 ---
-
----
 # Verification tasks for backup automation
 # Validates backup integrity and completeness
 
@@ -23,7 +21,7 @@
 
 - name: Generate backup checksums
   shell: |
-    find {{ backup_base_dir | default('/opt/backups') }} -type f -name "*.tar.gz" -o -name "*.sql" | \
+    find {{ backup_base_dir | default('/opt/backups') }} -type f -name "*.tar.gz" -o -name "*.sql" | 
     xargs -I {} sh -c 'echo "$(sha256sum "{}")" >> {{ backup_base_dir | default('/opt/backups') }}/checksums-{{ ansible_date_time.date }}.txt'
   tags: [backup, verification, checksums]
 

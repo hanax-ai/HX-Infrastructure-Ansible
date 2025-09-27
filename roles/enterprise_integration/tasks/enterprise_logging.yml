@@ -1,6 +1,4 @@
 ---
-
----
 # Enterprise Logging Integration Tasks
 - name: Install enterprise logging tools
   ansible.builtin.package:

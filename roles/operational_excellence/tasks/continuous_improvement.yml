@@ -1,6 +1,4 @@
 ---
-
----
 # Continuous Improvement Process Tasks
 - name: Create continuous improvement directory
   ansible.builtin.file:

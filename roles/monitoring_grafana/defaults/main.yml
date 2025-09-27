@@ -1,6 +1,4 @@
 ---
-
----
 # Grafana configuration
 grafana_port: 3000
 grafana_protocol: "http"

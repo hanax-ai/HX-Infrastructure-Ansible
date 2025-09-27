@@ -1,6 +1,4 @@
 ---
-
----
 # Health Monitoring Role Defaults
 health_monitoring_enabled: true
 dashboards_enabled: true

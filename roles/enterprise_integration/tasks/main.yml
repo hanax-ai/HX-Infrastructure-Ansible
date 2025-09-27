@@ -1,6 +1,4 @@
 ---
-
----
 # Enterprise Integration Role - Main Tasks
 - name: Include identity and access management tasks
   include_tasks: iam_integration.yml

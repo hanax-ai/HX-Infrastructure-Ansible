@@ -1,6 +1,4 @@
 ---
-
----
 # Incident Management Tasks
 - name: Create incident management directory
   ansible.builtin.file:

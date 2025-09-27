@@ -1,6 +1,4 @@
 ---
-
----
 # Performance Optimization Tasks
 - name: Optimize kernel parameters
   ansible.builtin.sysctl:

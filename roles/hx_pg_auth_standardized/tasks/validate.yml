@@ -1,6 +1,4 @@
 ---
-
----
 # Variable Validation Tasks for HX PostgreSQL Authentication
 
 - name: Load validation rules

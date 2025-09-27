@@ -1,6 +1,4 @@
 ---
-
----
 # Infrastructure Monitoring
 - name: Install monitoring tools
   package:
@@ -30,7 +28,7 @@
 
 - name: Check network interface statistics
   shell: |
-    cat /proc/net/dev | grep {{ ansible_default_ipv4.interface }} | \
+    cat /proc/net/dev | grep {{ ansible_default_ipv4.interface }} | 
     awk '{print "rx_bytes:" $2 ",tx_bytes:" $10 ",rx_packets:" $3 ",tx_packets:" $11}'
   register: network_stats
   changed_when: false
@@ -43,7 +41,7 @@
 
 - name: Check system uptime and load
   shell: |
-    uptime | awk -F'up ' '{print $2}' | awk -F',' '{print "uptime:" $1 ",users:" $2}' && \
+    uptime | awk -F'up ' '{print $2}' | awk -F',' '{print "uptime:" $1 ",users:" $2}' && 
     cat /proc/loadavg | awk '{print "load_1min:" $1 ",load_5min:" $2 ",load_15min:" $3}'
   register: system_uptime_load
   changed_when: false

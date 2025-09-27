@@ -1,6 +1,4 @@
 ---
-
----
 - name: Verify Cluster Deployment
   hosts: k8s_cluster
   connection: kubectl

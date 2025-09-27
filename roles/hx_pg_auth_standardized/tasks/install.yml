@@ -1,6 +1,4 @@
 ---
-
----
 # Installation Tasks for HX PostgreSQL Authentication
 
 - name: Create required directories
@@ -104,8 +102,8 @@
       openssl genrsa -out "$cert_dir/{{ hx_pg_ssl_key_file }}" 2048
 
       # Generate certificate
-      openssl req -new -x509 -key "$cert_dir/{{ hx_pg_ssl_key_file }}" \
-        -out "$cert_dir/{{ hx_pg_ssl_cert_file }}" -days 365 \
+      openssl req -new -x509 -key "$cert_dir/{{ hx_pg_ssl_key_file }}" 
+        -out "$cert_dir/{{ hx_pg_ssl_cert_file }}" -days 365 
         -subj "/C=US/ST=State/L=City/O=HX Infrastructure/CN={{ ansible_fqdn }}"
 
       # Set proper permissions

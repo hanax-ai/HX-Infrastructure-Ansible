@@ -1,6 +1,4 @@
 ---
-
----
 # Auto-Recovery Implementation
 - name: Check for failed services
   systemd:

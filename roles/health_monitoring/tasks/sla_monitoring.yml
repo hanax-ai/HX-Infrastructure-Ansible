@@ -1,6 +1,4 @@
 ---
-
----
 # SLA Monitoring and Reporting
 - name: Calculate availability metrics
   shell: |

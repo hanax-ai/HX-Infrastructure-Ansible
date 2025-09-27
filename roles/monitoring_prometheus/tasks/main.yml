@@ -1,6 +1,4 @@
 ---
-
----
 - name: Create prometheus system user
   user:
     name: prometheus

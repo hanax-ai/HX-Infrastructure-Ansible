@@ -1,6 +1,4 @@
 ---
-
----
 # Production Health Monitoring
 - name: Comprehensive Health Monitoring
   hosts: "{{ target_hosts | default('all') }}"

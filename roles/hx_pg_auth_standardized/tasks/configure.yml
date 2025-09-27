@@ -1,6 +1,4 @@
 ---
-
----
 # Configuration Tasks for HX PostgreSQL Authentication
 
 - name: Configure PostgreSQL main configuration

@@ -1,6 +1,4 @@
 ---
-
----
 # Health Check Tasks for HX CA Trust
 
 - name: Verify certificate file exists and is readable

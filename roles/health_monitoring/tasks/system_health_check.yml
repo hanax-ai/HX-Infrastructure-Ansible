@@ -1,6 +1,4 @@
 ---
-
----
 # Comprehensive System Health Checks
 - name: Check CPU usage
   shell: |

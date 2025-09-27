@@ -1,6 +1,4 @@
 ---
-
----
 # Domain Join Tasks for HX Domain Join
 
 - name: Discover the Active Directory domain
@@ -51,7 +49,7 @@
 - name: Join the server to the Active Directory domain
   shell: |
     set -euo pipefail
-    echo "{{ hx_ad_admin_password }}" | {{ hx_realm_join_cmd }} \
+    echo "{{ hx_ad_admin_password }}" | {{ hx_realm_join_cmd }} 
       {% if hx_ad_ou_path %}--computer-ou="{{ hx_ad_ou_path }}" \{% endif %}
       {% if hx_ad_computer_name != ansible_hostname | upper %}--computer-name="{{ hx_ad_computer_name }}" \{% endif %}
       --stdin

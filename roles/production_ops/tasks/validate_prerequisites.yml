@@ -1,6 +1,4 @@
 ---
-
----
 # Validate deployment prerequisites
 - name: Check system resources
   shell: |

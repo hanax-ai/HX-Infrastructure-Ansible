@@ -1,6 +1,4 @@
 ---
-
----
 # Molecule verify playbook for common role
 
 - name: Verify

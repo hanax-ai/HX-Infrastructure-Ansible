@@ -1,6 +1,4 @@
 ---
-
----
 # Incident Documentation and Reporting
 - name: Create incident documentation directory
   file:

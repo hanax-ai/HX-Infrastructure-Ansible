@@ -1,6 +1,4 @@
 ---
-
----
 # System Updates and Patching
 - name: Automated System Updates and Patching
   hosts: "{{ update_targets | default('all') }}"

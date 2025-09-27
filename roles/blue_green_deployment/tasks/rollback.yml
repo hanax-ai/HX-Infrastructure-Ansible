@@ -1,6 +1,4 @@
 ---
-
----
 # Rollback Tasks
 - name: Stop failed deployment
   ansible.builtin.systemd:

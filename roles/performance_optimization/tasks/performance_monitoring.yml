@@ -1,6 +1,4 @@
 ---
-
----
 # Performance Monitoring Setup Tasks
 - name: Install performance monitoring tools
   ansible.builtin.package:

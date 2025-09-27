@@ -1,6 +1,4 @@
 ---
-
----
 # Blue-Green Deployment Automation
 - name: Blue-Green Deployment Strategy
   hosts: "{{ target_environment | default('production') }}"

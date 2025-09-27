@@ -1,6 +1,4 @@
 ---
-
----
 # Disaster Recovery Tasks
 - name: Stop services for recovery
   ansible.builtin.systemd:

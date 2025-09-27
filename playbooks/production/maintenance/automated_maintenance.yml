@@ -1,6 +1,4 @@
 ---
-
----
 # Automated Maintenance Windows
 - name: Automated Maintenance Execution
   hosts: "{{ maintenance_targets | default('all') }}"

@@ -1,6 +1,4 @@
 ---
-
----
 # Canary Deployment Implementation
 - name: Identify canary instances
   set_fact:
@@ -9,7 +7,7 @@
 
 - name: Deploy to canary instances
   shell: |
-    docker-compose -f /opt/hx-infrastructure/docker-compose.yml \
+    docker-compose -f /opt/hx-infrastructure/docker-compose.yml 
     -p hx-canary-{{ ansible_date_time.epoch }} up -d
   register: canary_deployment
   environment:

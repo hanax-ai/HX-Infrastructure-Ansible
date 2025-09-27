@@ -1,6 +1,4 @@
 ---
-
----
 # Auto-scaling Configuration Tasks
 - name: Install auto-scaling dependencies
   ansible.builtin.package:
@@ -37,53 +35,53 @@
 - name: Configure AWS Auto Scaling (if using AWS)
   ansible.builtin.shell: |
     # Create Auto Scaling Group
-    aws autoscaling create-auto-scaling-group \
-      --auto-scaling-group-name {{ autoscaling_group_name }} \
-      --launch-template LaunchTemplateName={{ launch_template_name }},Version='$Latest' \
-      --min-size {{ min_instances }} \
-      --max-size {{ max_instances }} \
-      --desired-capacity {{ desired_instances }} \
-      --vpc-zone-identifier "{{ subnet_ids | join(',') }}" \
-      --health-check-type ELB \
-      --health-check-grace-period 300 \
+    aws autoscaling create-auto-scaling-group 
+      --auto-scaling-group-name {{ autoscaling_group_name }} 
+      --launch-template LaunchTemplateName={{ launch_template_name }},Version='$Latest' 
+      --min-size {{ min_instances }} 
+      --max-size {{ max_instances }} 
+      --desired-capacity {{ desired_instances }} 
+      --vpc-zone-identifier "{{ subnet_ids | join(',') }}" 
+      --health-check-type ELB 
+      --health-check-grace-period 300 
       --tags "Key=Name,Value={{ autoscaling_group_name }},PropagateAtLaunch=true"
 
     # Create scaling policies
-    aws autoscaling put-scaling-policy \
-      --auto-scaling-group-name {{ autoscaling_group_name }} \
-      --policy-name scale-out-policy \
-      --policy-type TargetTrackingScaling \
+    aws autoscaling put-scaling-policy 
+      --auto-scaling-group-name {{ autoscaling_group_name }} 
+      --policy-name scale-out-policy 
+      --policy-type TargetTrackingScaling 
       --target-tracking-configuration file://{{ autoscaling_config_path }}/scale_out_policy.json
 
-    aws autoscaling put-scaling-policy \
-      --auto-scaling-group-name {{ autoscaling_group_name }} \
-      --policy-name scale-in-policy \
-      --policy-type TargetTrackingScaling \
+    aws autoscaling put-scaling-policy 
+      --auto-scaling-group-name {{ autoscaling_group_name }} 
+      --policy-name scale-in-policy 
+      --policy-type TargetTrackingScaling 
       --target-tracking-configuration file://{{ autoscaling_config_path }}/scale_in_policy.json
   when: cloud_provider == "aws" and create_autoscaling_group | default(false)
 
 - name: Configure Azure Auto Scaling (if using Azure)
   ansible.builtin.shell: |
     # Create Virtual Machine Scale Set
-    az vmss create \
-      --resource-group {{ resource_group_name }} \
-      --name {{ vmss_name }} \
-      --image {{ vm_image }} \
-      --vm-sku {{ vm_sku }} \
-      --instance-count {{ desired_instances }} \
-      --vnet-name {{ vnet_name }} \
-      --subnet {{ subnet_name }} \
-      --lb {{ load_balancer_name }} \
+    az vmss create 
+      --resource-group {{ resource_group_name }} 
+      --name {{ vmss_name }} 
+      --image {{ vm_image }} 
+      --vm-sku {{ vm_sku }} 
+      --instance-count {{ desired_instances }} 
+      --vnet-name {{ vnet_name }} 
+      --subnet {{ subnet_name }} 
+      --lb {{ load_balancer_name }} 
       --backend-pool-name {{ backend_pool_name }}
 
     # Configure autoscale settings
-    az monitor autoscale create \
-      --resource-group {{ resource_group_name }} \
-      --resource {{ vmss_name }} \
-      --resource-type Microsoft.Compute/virtualMachineScaleSets \
-      --name {{ autoscale_name }} \
-      --min-count {{ min_instances }} \
-      --max-count {{ max_instances }} \
+    az monitor autoscale create 
+      --resource-group {{ resource_group_name }} 
+      --resource {{ vmss_name }} 
+      --resource-type Microsoft.Compute/virtualMachineScaleSets 
+      --name {{ autoscale_name }} 
+      --min-count {{ min_instances }} 
+      --max-count {{ max_instances }} 
       --count {{ desired_instances }}
   when: cloud_provider == "azure" and create_vmss | default(false)
 

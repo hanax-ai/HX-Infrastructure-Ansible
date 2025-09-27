@@ -1,6 +1,4 @@
 ---
-
----
 # Main backup automation tasks
 # Includes all backup-related task files following Ansible standards
 

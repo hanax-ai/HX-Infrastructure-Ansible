@@ -1,6 +1,4 @@
 ---
-
----
 # Installation Tasks for HX CA Trust
 
 - name: Create required directories

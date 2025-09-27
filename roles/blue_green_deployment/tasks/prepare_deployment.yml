@@ -1,6 +1,4 @@
 ---
-
----
 # Deployment Preparation Tasks
 - name: Create deployment directory
   ansible.builtin.file:

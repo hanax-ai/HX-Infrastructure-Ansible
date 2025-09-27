@@ -1,6 +1,4 @@
 ---
-
----
 # Comprehensive Backup Tasks
 - name: Create backup directories
   ansible.builtin.file:

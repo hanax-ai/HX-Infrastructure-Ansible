@@ -1,6 +1,4 @@
 ---
-
----
 # Configuration Tasks for HX CA Trust
 
 - name: Ensure CA trust store is updated

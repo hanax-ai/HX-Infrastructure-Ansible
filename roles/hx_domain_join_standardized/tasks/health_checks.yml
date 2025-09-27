@@ -1,6 +1,4 @@
 ---
-
----
 # Health Check Tasks for HX Domain Join
 
 - name: Check domain membership status

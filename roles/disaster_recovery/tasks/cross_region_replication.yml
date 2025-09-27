@@ -1,6 +1,4 @@
 ---
-
----
 # Cross-Region Replication Tasks
 - name: Setup cross-region replication configuration
   ansible.builtin.template:

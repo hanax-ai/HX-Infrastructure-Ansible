@@ -1,6 +1,4 @@
 ---
-
----
 - name: Production Environment Smoke Tests
   hosts: production
   gather_facts: true

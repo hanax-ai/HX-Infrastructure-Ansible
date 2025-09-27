@@ -1,6 +1,4 @@
 ---
-
----
 # Performance Optimization and Auto-scaling Role - Main Tasks
 - name: Include performance monitoring setup tasks
   include_tasks: performance_monitoring.yml

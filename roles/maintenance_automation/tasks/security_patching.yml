@@ -1,6 +1,4 @@
 ---
-
----
 # Security Patching Automation
 - name: Update package repositories
   shell: |
@@ -44,8 +42,8 @@
 - name: Create pre-patch system snapshot
   shell: |
     # Create a simple system state snapshot
-    dpkg -l > /var/backups/pre-patch-packages-$(date +%Y%m%d-%H%M%S).list 2>/dev/null || \
-    rpm -qa > /var/backups/pre-patch-packages-$(date +%Y%m%d-%H%M%S).list 2>/dev/null || \
+    dpkg -l > /var/backups/pre-patch-packages-$(date +%Y%m%d-%H%M%S).list 2>/dev/null || 
+    rpm -qa > /var/backups/pre-patch-packages-$(date +%Y%m%d-%H%M%S).list 2>/dev/null || 
     echo "Package list creation failed"
   when: create_patch_snapshot | default(true)
 

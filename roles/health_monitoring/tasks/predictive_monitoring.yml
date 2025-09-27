@@ -1,6 +1,4 @@
 ---
-
----
 # Predictive Failure Detection
 - name: Install predictive monitoring dependencies
   package:

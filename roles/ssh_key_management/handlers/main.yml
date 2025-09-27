@@ -1,6 +1,4 @@
 ---
-
----
 # SSH Key Management Handlers - Phase 2 Day 2
 
 - name: restart sshd

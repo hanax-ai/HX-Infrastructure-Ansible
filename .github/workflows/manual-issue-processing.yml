@@ -1,5 +1,5 @@
 ---
-_# .github/workflows/manual-issue-processing.yml
+# .github/workflows/manual-issue-processing.yml
 name: Manual Issue Processing & Testing
 
 on:
@@ -96,15 +96,15 @@ jobs:
           "sprint4_batch")
             echo "Running Sprint 4 batch processing..."
             if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-              python3 scripts/automation/cursor/cursor_ai_engine.py \
-                --issues-file manual_batch.json \
-                --config-file scripts/automation/config/cursor_config.yml \
-                --output-file manual_results.json \
+              python3 scripts/automation/cursor/cursor_ai_engine.py 
+                --issues-file manual_batch.json 
+                --config-file scripts/automation/config/cursor_config.yml 
+                --output-file manual_results.json 
                 --dry-run
             else
-              python3 scripts/automation/cursor/cursor_ai_engine.py \
-                --issues-file manual_batch.json \
-                --config-file scripts/automation/config/cursor_config.yml \
+              python3 scripts/automation/cursor/cursor_ai_engine.py 
+                --issues-file manual_batch.json 
+                --config-file scripts/automation/config/cursor_config.yml 
                 --output-file manual_results.json
             fi
             ;;
@@ -114,8 +114,8 @@ jobs:
             ;;
           "full_pipeline_test")
             echo "Running full pipeline test..."
-            python3 scripts/automation/classification/ai_classifier.py \
-              --input-file manual_batch.json \
+            python3 scripts/automation/classification/ai_classifier.py 
+              --input-file manual_batch.json 
               --output-file manual_classified.json
             ;;
         esac
@@ -181,9 +181,9 @@ jobs:
         EOF
 
         # Create GitHub issue using gh CLI
-        gh issue create \
-          --title "Manual Processing Results - Batch ${{ github.run_number }}" \
-          --body-file issue_body.md \
+        gh issue create 
+          --title "Manual Processing Results - Batch ${{ github.run_number }}" 
+          --body-file issue_body.md 
           --label "automation,sprint4,manual-processing"
 
   workflow-health-check:
