@@ -1,3 +1,4 @@
+---
 
 ---
 # Health Check Tasks for HX CA Trust
@@ -75,7 +76,7 @@
     method: GET
     status_code: 200
     timeout: 10
-    validate_certs: yes
+    validate_certs: true
     ca_path: "{{ hx_ca_cert_full_path }}"
   register: hx_ca_health_endpoint_check
   failed_when: false

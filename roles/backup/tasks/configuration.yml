@@ -1,3 +1,4 @@
+---
 
 ---
 # Configuration tasks for backup automation
@@ -32,7 +33,7 @@
 
 - name: Configure backup notification settings
   template:
-    src: notifications.conf.j2
+    src: falsetifications.conf.j2
     dest: "{{ backup_config_dir | default('/etc/backup') }}/notifications.conf"
     mode: '0640'
     owner: "{{ backup_user | default('backup') }}"

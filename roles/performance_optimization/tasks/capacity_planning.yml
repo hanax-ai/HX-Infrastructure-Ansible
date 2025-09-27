@@ -1,3 +1,4 @@
+---
 
 ---
 # Capacity Planning Tasks
@@ -90,4 +91,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/capacity_planning.log
     line: "{{ ansible_date_time.iso8601 }} - Capacity planning setup completed - Baseline: {{ capacity_baseline.stdout_lines[-1] if capacity_baseline.stdout_lines else 'Generated' }}"
-    create: yes
+    create: true

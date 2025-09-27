@@ -1,3 +1,4 @@
+---
 _# .github/workflows/enhanced-classification-workflow.yml
 name: Enhanced AI Classification Workflow
 # Phase 2: Advanced Issue Classification Engine
@@ -104,7 +105,7 @@ jobs:
         violations=$(echo "$changed" | grep -v '^$' | grep -Ev "$allowlist_pattern" || true)
 
         if [ -n "$violations" ]; then
-          echo "❌ ERROR: Non-allowlisted paths modified by automation:"
+          echo "❌ ERROR: falsen-allowlisted paths modified by automation:"
           echo "$violations"
           echo ""
           echo "Allowed paths for automation:"

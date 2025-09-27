@@ -1,3 +1,4 @@
+---
 
 ---
 # Installation Tasks for HX CA Trust
@@ -44,7 +45,7 @@
   fetch:
     src: "{{ hx_ca_root_ca_path_on_ca }}"
     dest: "/tmp/{{ hx_ca_root_ca_filename }}"
-    flat: yes
+    flat: true
   delegate_to: "{{ hx_ca_host }}"
   register: hx_ca_fetch_result
   retries: "{{ hx_ca_validation_retries }}"
@@ -66,7 +67,7 @@
     owner: "{{ hx_ca_cert_owner }}"
     group: "{{ hx_ca_cert_group }}"
     mode: "{{ hx_ca_cert_mode }}"
-    backup: yes
+    backup: true
   notify: update ca trust store
   register: hx_ca_deploy_result
   tags: [install]
@@ -81,7 +82,7 @@
   lineinfile:
     path: "{{ hx_ca_log_dir }}/deployment.log"
     line: "{{ ansible_date_time.iso8601 }} - Certificate {{ hx_ca_root_ca_filename }} deployed from {{ hx_ca_host }}"
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0644'

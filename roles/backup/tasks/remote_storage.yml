@@ -1,3 +1,4 @@
+---
 
 ---
 # Remote storage tasks for backup automation
@@ -37,7 +38,7 @@
   synchronize:
     src: "{{ backup_base_dir | default('/opt/backups') }}/"
     dest: "{{ backup_remote_path | default('backups/') }}"
-    delete: no
+    delete: false
     rsync_opts:
       - "--archive"
       - "--compress"

@@ -1,3 +1,4 @@
+---
 
 ---
 # Application Deployment Tasks
@@ -5,13 +6,13 @@
   ansible.builtin.systemd:
     name: "{{ application_name }}-{{ new_deploy_color }}"
     state: stopped
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Deploy application to new environment
   ansible.builtin.copy:
     src: "/opt/deployments/{{ new_environment }}/"
     dest: "/opt/{{ application_name }}-{{ new_deploy_color }}/"
-    remote_src: yes
+    remote_src: true
     mode: preserve
 
 - name: Update application permissions
@@ -19,14 +20,14 @@
     path: "/opt/{{ application_name }}-{{ new_deploy_color }}"
     owner: "{{ app_user | default('app') }}"
     group: "{{ app_group | default('app') }}"
-    recurse: yes
+    recurse: true
 
 - name: Start application in new environment
   ansible.builtin.systemd:
     name: "{{ application_name }}-{{ new_deploy_color }}"
     state: started
-    enabled: yes
-    daemon_reload: yes
+    enabled: true
+    daemon_reload: true
 
 - name: Wait for application startup
   ansible.builtin.wait_for:

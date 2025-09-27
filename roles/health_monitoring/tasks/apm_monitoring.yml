@@ -1,3 +1,4 @@
+---
 
 ---
 # Application Performance Monitoring (APM)
@@ -58,10 +59,10 @@
     login_user: "{{ database_user | default('postgres') }}"
     login_password: "{{ database_password }}"
     query: |
-      SELECT 
+      SELECT
         count(*) as active_connections,
         avg(extract(epoch from (now() - query_start))) as avg_query_time
-      FROM pg_stat_activity 
+      FROM pg_stat_activity
       WHERE state = 'active';
   register: db_performance
   when: monitor_database | default(true)
@@ -96,6 +97,6 @@
     alert_type: "apm_performance"
     alert_message: "APM performance thresholds exceeded on {{ inventory_hostname }}"
     alert_data: "{{ apm_metrics }}"
-  when: 
+  when:
     - apm_metrics.response_time.status == 'critical' or apm_metrics.error_rate.status == 'critical'
     - alerting_enabled | default(true)

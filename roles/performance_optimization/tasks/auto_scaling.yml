@@ -1,3 +1,4 @@
+---
 
 ---
 # Auto-scaling Configuration Tasks
@@ -46,14 +47,14 @@
       --health-check-type ELB \
       --health-check-grace-period 300 \
       --tags "Key=Name,Value={{ autoscaling_group_name }},PropagateAtLaunch=true"
-    
+
     # Create scaling policies
     aws autoscaling put-scaling-policy \
       --auto-scaling-group-name {{ autoscaling_group_name }} \
       --policy-name scale-out-policy \
       --policy-type TargetTrackingScaling \
       --target-tracking-configuration file://{{ autoscaling_config_path }}/scale_out_policy.json
-    
+
     aws autoscaling put-scaling-policy \
       --auto-scaling-group-name {{ autoscaling_group_name }} \
       --policy-name scale-in-policy \
@@ -74,7 +75,7 @@
       --subnet {{ subnet_name }} \
       --lb {{ load_balancer_name }} \
       --backend-pool-name {{ backend_pool_name }}
-    
+
     # Configure autoscale settings
     az monitor autoscale create \
       --resource-group {{ resource_group_name }} \
@@ -112,7 +113,7 @@
   ansible.builtin.template:
     src: lb_health_check.conf.j2
     dest: /etc/nginx/conf.d/health_check.conf
-    backup: yes
+    backup: true
   notify: reload nginx
   when: configure_load_balancer | default(false)
 
@@ -125,16 +126,16 @@
 - name: Test auto-scaling configuration
   ansible.builtin.shell: |
     echo "Testing auto-scaling configuration..."
-    
+
     # Test scaling decision logic
     {{ autoscaling_scripts_path }}/scaling_decision.sh --dry-run
-    
+
     # Test health check
     {{ autoscaling_scripts_path }}/health_check_scaling.sh
-    
+
     # Test metrics collection
     {{ autoscaling_scripts_path }}/scaling_metrics.sh --test
-    
+
     echo "Auto-scaling configuration test completed"
   register: autoscaling_test_result
 
@@ -142,4 +143,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/autoscaling_setup.log
     line: "{{ ansible_date_time.iso8601 }} - Auto-scaling setup completed - Test result: {{ autoscaling_test_result.stdout_lines[-1] }}"
-    create: yes
+    create: true

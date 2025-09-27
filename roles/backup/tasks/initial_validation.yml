@@ -1,3 +1,4 @@
+---
 
 ---
 # Initial validation tasks for backup automation
@@ -62,6 +63,6 @@
   lineinfile:
     path: "{{ backup_log_dir | default('/var/log/backup') }}/validation.log"
     line: "{{ ansible_date_time.iso8601 }} - Initial validation completed successfully"
-    create: yes
+    create: true
     mode: '0644'
   tags: [backup, validation, logging]

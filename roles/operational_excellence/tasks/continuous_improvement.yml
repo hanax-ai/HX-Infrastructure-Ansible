@@ -1,3 +1,4 @@
+---
 
 ---
 # Continuous Improvement Process Tasks
@@ -113,4 +114,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/continuous_improvement.log
     line: "{{ ansible_date_time.iso8601 }} - Continuous improvement setup completed - Baseline: {{ improvement_baseline.stdout_lines[-1] if improvement_baseline.stdout_lines else 'Generated' }}"
-    create: yes
+    create: true

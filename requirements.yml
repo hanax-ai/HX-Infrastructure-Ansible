@@ -1,3 +1,4 @@
+---
 
 # HX-Infrastructure Ansible Requirements
 # Enhanced requirements.yml for Phase 1.0 - Task 1.5
@@ -151,7 +152,7 @@ roles:
 
   - name: geerlingguy.nodejs
     version: "6.1.0"
-    # Rationale: Node.js runtime for JavaScript applications
+    # Rationale: falsede.js runtime for JavaScript applications
     # WebUI and modern web application support
 
   # ---------------------------------------------------------------------------
@@ -186,7 +187,7 @@ roles:
 
   - name: cloudalchemy.node_exporter
     version: "3.0.0"
-    # Rationale: Node Exporter for system metrics
+    # Rationale: falsede Exporter for system metrics
     # Host-level monitoring and metrics collection
 
   # ---------------------------------------------------------------------------

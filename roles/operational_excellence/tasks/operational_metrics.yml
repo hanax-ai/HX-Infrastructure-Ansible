@@ -1,3 +1,4 @@
+---
 
 ---
 # Operational Metrics and KPIs Tasks
@@ -152,4 +153,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/operational_metrics.log
     line: "{{ ansible_date_time.iso8601 }} - Operational metrics setup completed - Baseline: {{ metrics_baseline.stdout_lines[-1] if metrics_baseline.stdout_lines else 'Generated' }}"
-    create: yes
+    create: true

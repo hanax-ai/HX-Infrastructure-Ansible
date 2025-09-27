@@ -1,3 +1,4 @@
+---
 
 ---
 # Operational Dashboards Tasks
@@ -73,7 +74,7 @@
   ansible.builtin.template:
     src: dashboard_nginx.conf.j2
     dest: /etc/nginx/sites-available/operational_dashboards
-    backup: yes
+    backup: true
 
 - name: Enable dashboard nginx site
   ansible.builtin.file:
@@ -138,8 +139,8 @@
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: started
-    enabled: yes
-    daemon_reload: yes
+    enabled: true
+    daemon_reload: true
   loop:
     - operational-dashboard
     - nginx
@@ -163,4 +164,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/operational_dashboards.log
     line: "{{ ansible_date_time.iso8601 }} - Operational dashboards setup completed - Status: {{ 'SUCCESS' if dashboard_test.status == 200 else 'PARTIAL' }}"
-    create: yes
+    create: true

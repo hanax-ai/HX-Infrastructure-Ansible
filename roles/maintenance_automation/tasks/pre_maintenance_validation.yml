@@ -1,3 +1,4 @@
+---
 
 ---
 # Pre-maintenance validation checks
@@ -22,7 +23,7 @@
 - name: Check maintenance window
   shell: |
     current_hour=$(date +%H)
-    if [ $current_hour -ge {{ maintenance_window_start | default(2) }} ] && 
+    if [ $current_hour -ge {{ maintenance_window_start | default(2) }} ] &&
        [ $current_hour -le {{ maintenance_window_end | default(6) }} ]; then
       echo "in_window"
     else

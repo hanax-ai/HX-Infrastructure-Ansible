@@ -4,14 +4,14 @@
 
 - name: HX Infrastructure System Updates
   hosts: all
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   serial: "{{ hx_update_serial | default('25%') }}"
   vars:
     hx_update_timestamp: "{{ ansible_date_time.epoch }}"
     hx_update_reboot_required: false
     hx_update_backup_before: true
-  
+
   pre_tasks:
     - name: Create pre-update snapshot
       block:
@@ -39,7 +39,7 @@
   tasks:
     - name: Update package cache
       apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 0
       when: ansible_os_family == "Debian"
       tags:
@@ -49,7 +49,7 @@
     - name: Check for available updates
       apt:
         upgrade: "no"
-        update_cache: yes
+        update_cache: true
       register: hx_available_updates
       when: ansible_os_family == "Debian"
       tags:
@@ -61,8 +61,8 @@
         msg: |
           Available Updates Summary:
           - Total packages to upgrade: {{ hx_available_updates.changed | default(0) }}
-          - Security updates included: Yes (if any)
-          
+          - Security updates included: true (if any)
+
           Proceeding with safe update process...
       when: hx_available_updates is defined
       tags:
@@ -72,8 +72,8 @@
     - name: Perform security updates only
       apt:
         upgrade: safe
-        autoremove: yes
-        autoclean: yes
+        autoremove: true
+        autoclean: true
       register: hx_security_updates
       when: ansible_os_family == "Debian"
       tags:
@@ -99,9 +99,9 @@
     - name: Update system packages (non-kernel)
       apt:
         upgrade: safe
-        autoremove: yes
-        autoclean: yes
-      when: 
+        autoremove: true
+        autoclean: true
+      when:
         - ansible_os_family == "Debian"
         - not hx_update_reboot_required
       register: hx_package_updates
@@ -111,8 +111,8 @@
 
     - name: Clean package cache
       apt:
-        autoclean: yes
-        autoremove: yes
+        autoclean: true
+        autoremove: true
       when: ansible_os_family == "Debian"
       tags:
         - hx_update
@@ -141,17 +141,17 @@
       debug:
         msg: |
           HX Infrastructure Update Complete!
-          
+
           Update Summary:
           - Security updates: {{ 'Applied' if hx_security_updates.changed else 'None available' }}
           - Package updates: {{ 'Applied' if hx_package_updates.changed else 'None available' }}
           - Reboot required: {{ 'Yes' if hx_update_reboot_required else 'No' }}
-          
+
           {% if hx_update_reboot_required %}
           WARNING: System reboot is required to complete updates.
           Schedule maintenance window and run: sudo reboot
           {% endif %}
-          
+
           Reports saved to:
           - /tmp/update-report-{{ hx_update_timestamp }}.txt
           - /tmp/packages-after-update-{{ hx_update_timestamp }}.txt
@@ -161,28 +161,28 @@
 
 - name: Handle Reboot Required Systems
   hosts: all
-  become: yes
-  gather_facts: no
+  become: true
+  gather_facts: false
   vars:
     hx_auto_reboot: false
     hx_reboot_timeout: 300
-  
+
   tasks:
     - name: Check reboot requirement
       stat:
         path: /var/run/reboot-required
       register: hx_needs_reboot
 
-    - name: Notify about required reboot
+    - name: falsetify about required reboot
       debug:
         msg: |
           ATTENTION: {{ inventory_hostname }} requires a reboot to complete updates.
-          
+
           {% if hx_auto_reboot %}
           Auto-reboot is ENABLED. System will reboot automatically.
           {% else %}
           Auto-reboot is DISABLED. Manual reboot required.
-          
+
           To reboot manually:
           1. Schedule maintenance window
           2. Run: sudo reboot
@@ -194,7 +194,7 @@
       reboot:
         reboot_timeout: "{{ hx_reboot_timeout }}"
         msg: "HX Infrastructure automatic reboot for system updates"
-      when: 
+      when:
         - hx_needs_reboot.stat.exists
         - hx_auto_reboot
       tags:
@@ -209,10 +209,10 @@
         - sshd
         - fail2ban
         - ufw
-      when: 
+      when:
         - hx_needs_reboot.stat.exists
         - hx_auto_reboot
-      ignore_errors: yes
+      ignore_errors: true
       tags:
         - hx_update
         - hx_verification

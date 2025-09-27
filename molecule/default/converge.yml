@@ -1,3 +1,4 @@
+---
 
 ---
 - name: Converge
@@ -6,14 +7,14 @@
   gather_facts: true
   vars:
     ansible_python_interpreter: "{{ ansible_playbook_python }}"
-  
+
   pre_tasks:
     - name: Update package cache (Ubuntu/Debian)
       apt:
         update_cache: true
         cache_valid_time: 3600
       when: ansible_os_family == "Debian"
-    
+
     - name: Update package cache (CentOS/RHEL)
       yum:
         update_cache: true

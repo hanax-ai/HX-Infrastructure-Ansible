@@ -1,3 +1,4 @@
+---
 
 ---
 # Disaster Recovery Tasks
@@ -6,7 +7,7 @@
     name: "{{ item }}"
     state: stopped
   loop: "{{ services_to_stop | default([]) }}"
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Download latest backup from remote storage
   ansible.builtin.shell: |
@@ -23,7 +24,7 @@
   ansible.builtin.unarchive:
     src: "{{ recovery_temp_path }}/{{ backup_download_result.stdout | basename }}"
     dest: "{{ recovery_temp_path }}/"
-    remote_src: yes
+    remote_src: true
 
 - name: Verify backup integrity
   ansible.builtin.shell: |
@@ -31,7 +32,7 @@
     if [ -f checksums.txt ]; then
       sha256sum -c checksums.txt
     else
-      echo "WARNING: No checksum file found"
+      echo "WARNING: false checksum file found"
     fi
   register: integrity_check
 
@@ -52,7 +53,7 @@
   ansible.builtin.unarchive:
     src: "{{ recovery_temp_path }}/configs/{{ item.name }}_*.tar.gz"
     dest: "{{ item.path | dirname }}"
-    remote_src: yes
+    remote_src: true
   loop: "{{ config_paths_to_backup | default([]) }}"
   when: integrity_check.rc == 0
 
@@ -60,8 +61,8 @@
   ansible.builtin.synchronize:
     src: "{{ recovery_temp_path }}/applications/{{ item.name }}/"
     dest: "{{ item.src }}"
-    delete: yes
-    recursive: yes
+    delete: true
+    recursive: true
   loop: "{{ application_paths_to_backup | default([]) }}"
   delegate_to: "{{ inventory_hostname }}"
   when: integrity_check.rc == 0
@@ -72,15 +73,15 @@
     owner: "{{ item.owner | default('root') }}"
     group: "{{ item.group | default('root') }}"
     mode: "{{ item.mode | default('0644') }}"
-    recurse: yes
+    recurse: true
   loop: "{{ application_paths_to_backup | default([]) }}"
 
 - name: Start services after recovery
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: started
-    enabled: yes
-    daemon_reload: yes
+    enabled: true
+    daemon_reload: true
   loop: "{{ services_to_stop | default([]) }}"
 
 - name: Wait for services to be ready
@@ -111,13 +112,13 @@
     subject: "DR Recovery Completed - {{ inventory_hostname }}"
     body: |
       Disaster recovery completed for {{ inventory_hostname }}
-      
+
       Recovery Status: {{ 'SUCCESS' if recovery_validation_results.results | selectattr('status', 'equalto', 200) | list | length == recovery_validation_results.results | length else 'PARTIAL' }}
       Recovery Time: {{ ansible_date_time.iso8601 }}
-      
+
       Services Restored: {{ services_to_stop | join(', ') }}
       Databases Restored: {{ databases_to_backup | map(attribute='name') | join(', ') if databases_to_backup is defined else 'None' }}
-      
+
       Please verify all systems are functioning correctly.
   when: dr_notification_email is defined
 
@@ -131,4 +132,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/dr_recovery.log
     line: "{{ ansible_date_time.iso8601 }} - DR recovery completed for {{ inventory_hostname }} - Status: {{ 'SUCCESS' if recovery_validation_results.results | selectattr('status', 'equalto', 200) | list | length == recovery_validation_results.results | length else 'PARTIAL' }}"
-    create: yes
+    create: true

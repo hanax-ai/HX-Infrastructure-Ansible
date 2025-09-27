@@ -60,7 +60,7 @@
     fail_msg: "SSL certificate file {{ item.item }} does not exist"
     success_msg: "SSL certificate file {{ item.item }} found"
   loop: "{{ hx_pg_ssl_files.results }}"
-  when: 
+  when:
     - hx_pg_ssl_enabled | default(false) | bool
     - hx_pg_ssl_files is defined
   tags: ['prepare']

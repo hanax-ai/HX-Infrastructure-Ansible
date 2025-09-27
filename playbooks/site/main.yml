@@ -4,8 +4,8 @@
 
 - name: Deploy HX Infrastructure - Common Configuration
   hosts: all
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   vars_files:
     - "../../vars/secrets.yml"
   roles:
@@ -16,8 +16,8 @@
 
 - name: Deploy HX Infrastructure - Security Hardening
   hosts: all
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   vars_files:
     - "../../vars/secrets.yml"
   roles:
@@ -28,8 +28,8 @@
 
 - name: Deploy HX Infrastructure - Control Nodes
   hosts: control_nodes
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   vars_files:
     - "../../vars/secrets.yml"
   tasks:
@@ -48,7 +48,7 @@
     - name: Configure control node services
       systemd:
         name: docker
-        enabled: yes
+        enabled: true
         state: started
       tags:
         - hx_control
@@ -56,8 +56,8 @@
 
 - name: Deploy HX Infrastructure - LLM Servers
   hosts: llm_servers
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   vars_files:
     - "../../vars/secrets.yml"
   roles:
@@ -77,18 +77,18 @@
     - name: Configure GPU services
       systemd:
         name: nvidia-persistenced
-        enabled: yes
+        enabled: true
         state: started
       when: gpu_count is defined and gpu_count > 0
-      ignore_errors: yes
+      ignore_errors: true
       tags:
         - hx_llm
         - hx_gpu
 
 - name: Deploy HX Infrastructure - Database Servers
   hosts: database_servers
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   vars_files:
     - "../../vars/secrets.yml"
   roles:
@@ -98,8 +98,8 @@
 
 - name: Deploy HX Infrastructure - Web UI Servers
   hosts: webui_servers
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   vars_files:
     - "../../vars/secrets.yml"
   roles:
@@ -109,8 +109,8 @@
 
 - name: Deploy HX Infrastructure - Final Validation
   hosts: all
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
   tasks:
     - name: Validate all services are running
       systemd:
@@ -120,7 +120,7 @@
         - sshd
         - fail2ban
         - ufw
-      ignore_errors: yes
+      ignore_errors: true
       tags:
         - hx_validation
 
@@ -131,7 +131,7 @@
         - "fail2ban-client status"
         - "systemctl is-active sshd"
       register: hx_security_status
-      ignore_errors: yes
+      ignore_errors: true
       tags:
         - hx_validation
 
@@ -139,12 +139,12 @@
       debug:
         msg: |
           HX Infrastructure Deployment Complete!
-          
+
           Security Status:
           - UFW Firewall: {{ 'Active' if 'Status: active' in hx_security_status.results[0].stdout else 'Inactive' }}
           - Fail2ban: {{ 'Active' if hx_security_status.results[1].rc == 0 else 'Inactive' }}
           - SSH Service: {{ 'Active' if 'active' in hx_security_status.results[2].stdout else 'Inactive' }}
-          
+
           Next Steps:
           1. Review security configurations
           2. Test application connectivity

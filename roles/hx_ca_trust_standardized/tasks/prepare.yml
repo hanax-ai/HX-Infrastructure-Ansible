@@ -1,3 +1,4 @@
+---
 
 ---
 # Preparation tasks for hx_ca_trust_standardized role
@@ -46,7 +47,7 @@
       - openjdk-11-jre-headless
     state: present
   become: true
-  when: 
+  when:
     - hx_ca_trust_java_keystore_update | default(false)
     - ansible_os_family == "Debian"
 
@@ -106,7 +107,7 @@
     - src: "{{ hx_ca_trust_ca_cert_path }}"
       dest: "hx-ca-backup-{{ ansible_date_time.epoch }}.crt"
   become: true
-  when: 
+  when:
     - existing_ca_cert.stat.exists
     - hx_ca_trust_backup_enabled | default(false)
 
@@ -119,7 +120,7 @@
     mode: '0600'
     remote_src: true
   become: true
-  when: 
+  when:
     - existing_ca_key.stat.exists
     - hx_ca_trust_backup_enabled | default(false)
 

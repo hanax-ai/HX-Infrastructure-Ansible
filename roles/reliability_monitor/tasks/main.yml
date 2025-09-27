@@ -1,3 +1,4 @@
+---
 
 ---
 - name: Install reliability monitoring dependencies
@@ -78,9 +79,9 @@
 - name: Enable and start reliability monitor service
   systemd:
     name: reliability-monitor
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
+    daemon_reload: true
   when: service_monitoring.enabled | default(true)
   tags:
     - reliability

@@ -1,3 +1,4 @@
+---
 
 ---
 # Post-maintenance verification
@@ -108,7 +109,7 @@
     alert_message: "Post-maintenance verification failed on {{ inventory_hostname }}"
     alert_data: "{{ verification_report }}"
     alert_severity: "critical"
-  when: 
+  when:
     - verification_report.overall_status == 'failed'
     - alerting_enabled | default(true)
 
@@ -125,6 +126,6 @@
 - name: Fail if verification failed
   fail:
     msg: "Post-maintenance verification failed. Check the verification report for details."
-  when: 
+  when:
     - verification_report.overall_status == 'failed'
     - fail_on_verification_failure | default(true)

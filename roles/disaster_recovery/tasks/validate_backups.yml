@@ -1,3 +1,4 @@
+---
 
 ---
 # Backup Validation Tasks
@@ -49,16 +50,16 @@
     subject: "Backup Validation Report - {{ inventory_hostname }}"
     body: |
       Backup validation completed for {{ inventory_hostname }}
-      
+
       Validation Summary:
       - Total backups validated: {{ validation_total_count }}
       - Successful validations: {{ validation_success_count }}
       - Failed validations: {{ validation_total_count | int - validation_success_count | int }}
-      
+
       {% if validation_success_count | int < validation_total_count | int %}
       WARNING: Some backup validations failed. Please review the detailed report.
       {% endif %}
-      
+
       Validation Time: {{ ansible_date_time.iso8601 }}
       Report Location: {{ dr_docs_path }}/backup_validation_report_{{ ansible_date_time.epoch }}.json
   when: backup_validation_email is defined or dr_notification_email is defined
@@ -73,4 +74,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/backup_validation.log
     line: "{{ ansible_date_time.iso8601 }} - Backup validation completed - {{ validation_success_count }}/{{ validation_total_count }} successful"
-    create: yes
+    create: true

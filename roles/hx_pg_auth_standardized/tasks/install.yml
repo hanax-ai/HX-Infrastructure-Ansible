@@ -1,3 +1,4 @@
+---
 
 ---
 # Installation Tasks for HX PostgreSQL Authentication
@@ -86,7 +87,7 @@
     owner: postgres
     group: postgres
     mode: '0644'
-    remote_src: yes
+    remote_src: true
   when:
     - hx_pg_ssl_enabled | bool
     - hx_pg_ca_enabled | bool
@@ -149,7 +150,7 @@
   lineinfile:
     path: "{{ hx_pg_log_dir }}/installation.log"
     line: "{{ ansible_date_time.iso8601 }} - PostgreSQL authentication installation completed"
-    create: yes
+    create: true
     owner: postgres
     group: postgres
     mode: '0644'

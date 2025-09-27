@@ -1,3 +1,4 @@
+---
 
 ---
 # Deployment Preparation Tasks
@@ -11,8 +12,8 @@
   ansible.builtin.copy:
     src: "/opt/{{ application_name }}/config/"
     dest: "/opt/backups/{{ deployment_timestamp }}/config/"
-    remote_src: yes
-    backup: yes
+    remote_src: true
+    backup: true
 
 - name: Download application artifacts
   ansible.builtin.get_url:
@@ -25,7 +26,7 @@
   ansible.builtin.unarchive:
     src: "/opt/deployments/{{ new_environment }}/{{ artifact_name }}"
     dest: "/opt/deployments/{{ new_environment }}/"
-    remote_src: yes
+    remote_src: true
   when: artifact_name is defined
 
 - name: Template configuration files

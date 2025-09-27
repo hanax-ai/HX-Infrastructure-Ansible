@@ -1,3 +1,4 @@
+---
 
 ---
 # HX CA Trust Handlers
@@ -34,7 +35,7 @@
   lineinfile:
     path: "{{ hx_ca_log_dir }}/updates.log"
     line: "{{ ansible_date_time.iso8601 }} - CA trust store updated: {{ ca_update_result.stdout | default('No output') }}"
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0644'

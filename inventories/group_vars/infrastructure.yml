@@ -1,3 +1,4 @@
+---
 
 # Infrastructure Services Group Variables
 # Domain Controllers and Certificate Authorities
@@ -18,7 +19,7 @@ active_directory:
   database_path: "C:\\Windows\\NTDS"
   sysvol_path: "C:\\Windows\\SYSVOL"
   log_path: "C:\\Windows\\NTDS"
-  
+
   # Organizational Units
   organizational_units:
     - name: "HX-Infrastructure"
@@ -45,7 +46,7 @@ dns:
     - 8.8.8.8
     - 8.8.4.4
     - 1.1.1.1
-  
+
   zones:
     - name: "{{ domain_name }}"
       type: primary
@@ -72,7 +73,7 @@ certificate_authority:
   key_length: 4096
   hash_algorithm: SHA256
   validity_period: "10 years"
-  
+
   # Certificate Templates
   certificate_templates:
     - name: "HX-Server-Certificate"
@@ -80,13 +81,13 @@ certificate_authority:
       key_usage: ["Digital Signature", "Key Encipherment"]
       enhanced_key_usage: ["Server Authentication"]
       validity_period: "2 years"
-    
+
     - name: "HX-Client-Certificate"
       description: "Client certificates for HX Infrastructure"
       key_usage: ["Digital Signature"]
       enhanced_key_usage: ["Client Authentication"]
       validity_period: "1 year"
-    
+
     - name: "HX-Code-Signing"
       description: "Code signing certificates"
       key_usage: ["Digital Signature"]
@@ -199,7 +200,7 @@ logging:
   log_level: "Information"
   max_log_size: "100MB"
   log_retention_days: 90
-  
+
   # Event Log Sizes
   event_log_sizes:
     Application: "100MB"

@@ -1,3 +1,4 @@
+---
 
 ---
 # Verification tasks for backup automation
@@ -16,7 +17,7 @@
 - name: Fail if backup directories are missing
   fail:
     msg: "Backup directory {{ item.item }} does not exist"
-  when: not item.stat.exists
+  when: falset item.stat.exists
   loop: "{{ backup_dir_check.results }}"
   tags: [backup, verification, directories]
 
@@ -42,6 +43,6 @@
   lineinfile:
     path: "{{ backup_log_dir | default('/var/log/backup') }}/verification.log"
     line: "{{ ansible_date_time.iso8601 }} - Backup verification completed: {{ backup_test_result.stdout | default('No backups found') }}"
-    create: yes
+    create: true
     mode: '0644'
   tags: [backup, verification, logging]

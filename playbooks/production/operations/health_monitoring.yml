@@ -1,3 +1,4 @@
+---
 
 ---
 # Production Health Monitoring
@@ -11,28 +12,28 @@
       cpu_usage: 80
       memory_usage: 85
       disk_usage: 90
-      
+
   tasks:
     - name: System Health Checks
       include_role:
         name: health_monitoring
         tasks_from: system_health_check
-        
+
     - name: Application Performance Monitoring
       include_role:
         name: health_monitoring
         tasks_from: apm_monitoring
-        
+
     - name: Infrastructure Monitoring
       include_role:
         name: health_monitoring
         tasks_from: infrastructure_monitoring
-        
+
     - name: SLA Monitoring and Reporting
       include_role:
         name: health_monitoring
         tasks_from: sla_monitoring
-        
+
     - name: Predictive Failure Detection
       include_role:
         name: health_monitoring

@@ -1,3 +1,4 @@
+---
 
 ---
 # Safety Testing Playbook - Phase 2 Day 2
@@ -90,7 +91,7 @@
               - rollback_scripts.files | length > 0
             fail_msg: "Rollback script not generated"
             success_msg: "Rollback script generated successfully"
-          when: not safety_test_mode | default(false)
+          when: falset safety_test_mode | default(false)
       tags: [safety_test, rollback]
 
     - name: Test SSH key management

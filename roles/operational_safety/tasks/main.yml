@@ -1,3 +1,4 @@
+---
 
 ---
 # Enhanced Operational Safety Framework - Phase 2 Day 2
@@ -81,7 +82,7 @@
       ║ CONFIRMATION REQUIRED:
       ║ Type 'PROCEED_WITH_CAUTION' to continue or Ctrl+C to abort
       ╚══════════════════════════════════════════════════════════════════════════════╝
-    echo: yes
+    echo: true
   register: enhanced_safety_confirmation
   when:
     - safety_confirmation_required | default(true) | bool
@@ -119,7 +120,7 @@
       lineinfile:
         path: "{{ operational_safety_log_dir | default('/var/log/ansible-safety') }}/dangerous-commands.log"
         line: "{{ ansible_date_time.iso8601 }} - DANGEROUS: {{ ansible_task_name | default('Unknown') }} by {{ ansible_user_id }} on {{ inventory_hostname }}"
-        create: yes
+        create: true
         owner: root
         group: root
         mode: '0640'
@@ -170,7 +171,7 @@
         line: |
           {{ ansible_date_time.iso8601 }} - PRODUCTION_OP: {{ safety_operation_name | default('Unknown') }}
           User: {{ ansible_user_id }} | Host: {{ inventory_hostname }} | Backup: {{ current_backup_path | default('None') }}
-        create: yes
+        create: true
         owner: root
         group: root
         mode: '0640'

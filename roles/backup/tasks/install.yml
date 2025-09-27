@@ -1,3 +1,4 @@
+---
 
 ---
 # Installation tasks for backup automation
@@ -21,14 +22,14 @@
     group: "{{ backup_group | default('backup') }}"
     home: "{{ backup_home_dir | default('/home/backup') }}"
     shell: /bin/bash
-    system: yes
-    create_home: yes
+    system: true
+    create_home: true
   tags: [backup, install, user]
 
 - name: Create backup group
   group:
     name: "{{ backup_group | default('backup') }}"
-    system: yes
+    system: true
   tags: [backup, install, group]
 
 - name: Install backup scripts

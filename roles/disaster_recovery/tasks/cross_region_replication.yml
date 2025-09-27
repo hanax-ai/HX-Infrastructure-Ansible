@@ -1,3 +1,4 @@
+---
 
 ---
 # Cross-Region Replication Tasks
@@ -47,4 +48,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/dr_replication.log
     line: "{{ ansible_date_time.iso8601 }} - Cross-region replication setup completed - Status: {{ replication_validation.stdout }}"
-    create: yes
+    create: true

@@ -1,3 +1,4 @@
+---
 
 ---
 # Identity and Access Management Integration Tasks
@@ -18,20 +19,20 @@
     src: sssd.conf.j2
     dest: /etc/sssd/sssd.conf
     mode: '0600'
-    backup: yes
+    backup: true
   notify: restart sssd
 
 - name: Configure Kerberos authentication
   ansible.builtin.template:
     src: krb5.conf.j2
     dest: /etc/krb5.conf
-    backup: yes
+    backup: true
   when: enable_kerberos | default(true)
 
 - name: Join domain (if configured)
   ansible.builtin.shell: |
     echo "{{ domain_admin_password }}" | realm join --user={{ domain_admin_user }} {{ domain_name }}
-  when: 
+  when:
     - join_domain | default(false)
     - domain_name is defined
     - domain_admin_user is defined
@@ -41,7 +42,7 @@
   ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
-    backup: yes
+    backup: true
   loop:
     - { src: "pam_system_auth.j2", dest: "/etc/pam.d/system-auth" }
     - { src: "pam_password_auth.j2", dest: "/etc/pam.d/password-auth" }
@@ -51,7 +52,7 @@
   ansible.builtin.template:
     src: ldap.conf.j2
     dest: /etc/openldap/ldap.conf
-    backup: yes
+    backup: true
   when: enable_ldap | default(false)
 
 - name: Configure sudo rules for enterprise groups
@@ -71,7 +72,7 @@
   ansible.builtin.template:
     src: iam_audit.conf.j2
     dest: /etc/rsyslog.d/50-iam-audit.conf
-    backup: yes
+    backup: true
   notify: restart rsyslog
 
 - name: Configure SSH for enterprise authentication
@@ -79,7 +80,7 @@
     path: /etc/ssh/sshd_config
     regexp: "^{{ item.key }}"
     line: "{{ item.key }} {{ item.value }}"
-    backup: yes
+    backup: true
   loop:
     - { key: "GSSAPIAuthentication", value: "yes" }
     - { key: "GSSAPICleanupCredentials", value: "yes" }
@@ -148,7 +149,7 @@
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: started
-    enabled: yes
+    enabled: true
   loop:
     - sssd
     - rsyslog
@@ -159,11 +160,11 @@
     if [ "{{ join_domain | default(false) }}" = "true" ]; then
       realm list
     fi
-    
+
     # Test SSSD
     sss_cache -E
     getent passwd | grep -q "@{{ domain_name | default('example.com') }}" || echo "No domain users found"
-    
+
     # Test Kerberos
     if [ "{{ enable_kerberos | default(true) }}" = "true" ]; then
       klist -k /etc/krb5.keytab 2>/dev/null || echo "No Kerberos keytab found"
@@ -175,4 +176,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/iam_integration.log
     line: "{{ ansible_date_time.iso8601 }} - IAM integration completed - Validation: {{ iam_validation.stdout_lines | join(' | ') }}"
-    create: yes
+    create: true

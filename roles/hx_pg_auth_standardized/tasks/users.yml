@@ -1,3 +1,4 @@
+---
 
 ---
 # User Management Tasks for HX PostgreSQL Authentication
@@ -32,7 +33,7 @@
   postgresql_user:
     name: "{{ hx_pg_app_user }}"
     password: "{{ hx_pg_app_password }}"
-    encrypted: yes
+    encrypted: true
     state: present
     role_attr_flags: LOGIN
   become: true
@@ -92,7 +93,7 @@
   postgresql_user:
     name: "{{ hx_pg_app_user }}"
     password: "{{ hx_pg_app_password }}"
-    encrypted: yes
+    encrypted: true
     state: present
   become: true
   become_user: postgres
@@ -184,7 +185,7 @@
   lineinfile:
     path: "{{ hx_pg_log_dir }}/users.log"
     line: "{{ ansible_date_time.iso8601 }} - User management completed: {{ hx_pg_user_summary | to_json }}"
-    create: yes
+    create: true
     owner: postgres
     group: postgres
     mode: '0644'

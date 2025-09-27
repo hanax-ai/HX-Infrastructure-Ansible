@@ -48,7 +48,7 @@
     group: root
     mode: "0644"
   notify: restart nginx
-  when: 
+  when:
     - hx_webui_server_type == "nginx"
     - hx_webui_rate_limiting_enabled | default(false) | bool
   tags: ['configure']
@@ -88,7 +88,7 @@
     find {{ item.location }} -name "*.css" -exec cleancss -o {} {} \;
     find {{ item.location }} -name "*.js" -exec uglifyjs {} -o {} \;
   loop: "{{ hx_webui_static_dirs }}"
-  when: 
+  when:
     - hx_webui_optimize_assets | default(false) | bool
     - hx_webui_minify_css | default(false) | bool or hx_webui_minify_js | default(false) | bool
   changed_when: false
@@ -99,7 +99,7 @@
     find {{ item.location }} -name "*.png" -exec optipng -quiet {} \;
     find {{ item.location }} \( -name "*.jpg" -o -name "*.jpeg" \) -exec jpegoptim --quiet {} \;
   loop: "{{ hx_webui_static_dirs }}"
-  when: 
+  when:
     - hx_webui_optimize_assets | default(false) | bool
     - hx_webui_optimize_images | default(false) | bool
   changed_when: false

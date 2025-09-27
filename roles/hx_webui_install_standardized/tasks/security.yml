@@ -25,7 +25,7 @@
     rule: deny
     src: "{{ item }}"
   loop: "{{ hx_webui_blocked_ips }}"
-  when: 
+  when:
     - hx_webui_firewall_enabled | default(false) | bool
     - hx_webui_blocked_ips | length > 0
   tags: ['security']
@@ -48,7 +48,7 @@
     src: "{{ item }}"
     proto: tcp
   loop: "{{ hx_webui_allowed_ips | default([]) }}"
-  when: 
+  when:
     - hx_webui_firewall_enabled | default(false) | bool
     - (hx_webui_allowed_ips | default([])) | length > 0
   tags: ['security']

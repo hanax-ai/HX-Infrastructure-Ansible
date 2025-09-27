@@ -1,3 +1,4 @@
+---
 
 ---
 # Backup Tasks for HX PostgreSQL Authentication
@@ -118,7 +119,7 @@
   lineinfile:
     path: "{{ hx_pg_log_dir }}/backup.log"
     line: "{{ ansible_date_time.iso8601 }} - PostgreSQL configuration backup completed: {{ hx_pg_backup_subdir.path }}"
-    create: yes
+    create: true
     owner: postgres
     group: postgres
     mode: '0644'

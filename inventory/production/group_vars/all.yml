@@ -1,3 +1,4 @@
+---
 
 ---
 # Global Production Variables
@@ -41,7 +42,7 @@ health_monitoring:
   apm_enabled: true
   predictive_monitoring_enabled: true
   log_health_status: true
-  
+
   # Alert Thresholds
   thresholds:
     cpu_usage: 80
@@ -50,7 +51,7 @@ health_monitoring:
     response_time: 2000
     error_rate: 5
     system_load: 5.0
-  
+
   # SLA Targets
   sla_targets:
     availability: 99.9
@@ -64,14 +65,14 @@ maintenance:
   window_end: 6
   enforce_window: true
   duration: 120
-  
+
   # Security Patching
   security_patching:
     enabled: true
     security_only: false
     auto_reboot: false
     create_snapshot: true
-  
+
   # Database Maintenance
   database:
     perform_reindex: true
@@ -87,7 +88,7 @@ incident_response:
   escalation_timeout: 300
   documentation_enabled: true
   post_incident_analysis: true
-  
+
   # Notification Channels
   notifications:
     email_enabled: false
@@ -102,11 +103,11 @@ services:
     - docker
     - ssh
     - consul
-  
+
   non_critical:
     - apache2
     - httpd
-  
+
   auto_remediable:
     - nginx
     - docker
@@ -141,7 +142,7 @@ application:
     - "http://{{ ansible_default_ipv4.address }}/health"
     - "http://{{ ansible_default_ipv4.address }}/api/status"
     - "http://{{ ansible_default_ipv4.address }}/metrics"
-  
+
   health_check_paths:
     - "/health"
     - "/api/status"
@@ -152,7 +153,7 @@ logging:
   log_level: INFO
   log_format: json
   centralized_logging: true
-  
+
   # Log Paths
   paths:
     application: "/var/log/hx-infrastructure/application.log"
@@ -165,7 +166,7 @@ backup:
   enabled: true
   retention_days: 30
   verification_enabled: true
-  
+
 # Security Configuration
 security:
   hardening_enabled: true
@@ -182,7 +183,7 @@ reporting:
   destinations:
     - "/var/log/hx-infrastructure/reports/"
     - "/var/www/html/reports/"
-  
+
   # Report Types
   types:
     - health_monitoring

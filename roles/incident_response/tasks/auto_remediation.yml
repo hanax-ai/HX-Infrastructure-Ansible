@@ -1,3 +1,4 @@
+---
 
 ---
 # Automated Incident Remediation
@@ -12,7 +13,7 @@
     state: restarted
   register: service_restart_result
   loop: "{{ classified_incidents | selectattr('type', 'equalto', 'service_failure') | selectattr('auto_remediation', 'equalto', true) | list }}"
-  when: 
+  when:
     - auto_remediation_enabled | default(true)
     - classified_incidents is defined
 
@@ -35,7 +36,7 @@
     echo 1 > /proc/sys/vm/drop_caches
     echo "Memory cache cleared at $(date)"
   register: memory_remediation
-  when: 
+  when:
     - auto_remediation_enabled | default(true)
     - "'high_memory_usage' in resource_incidents | default([])"
 
@@ -58,7 +59,7 @@
     sleep 5
     ps aux | awk '$3 > 80 {print $2}' | head -5 | xargs -r kill -KILL
   register: cpu_remediation
-  when: 
+  when:
     - auto_remediation_enabled | default(true)
     - "'high_cpu_usage' in resource_incidents | default([])"
     - kill_high_cpu_processes | default(false)
@@ -89,7 +90,7 @@
       yum clean all
     fi
   register: disk_remediation
-  when: 
+  when:
     - auto_remediation_enabled | default(true)
     - "'high_disk_usage' in resource_incidents | default([])"
 
@@ -110,7 +111,7 @@
     name: nginx
     state: restarted
   register: nginx_restart_result
-  when: 
+  when:
     - auto_remediation_enabled | default(true)
     - failed_endpoints is defined
     - failed_endpoints | length > 0
@@ -173,7 +174,7 @@
     alert_message: "Auto-remediation completed on {{ inventory_hostname }}. {{ remediation_attempts | length }} attempts made, {{ remediation_attempts | selectattr('success', 'equalto', true) | list | length }} successful"
     alert_data: "{{ remediation_report }}"
     alert_severity: "{{ 'info' if remediation_effectiveness.remediation_successful else 'warning' }}"
-  when: 
+  when:
     - remediation_attempts | length > 0
     - send_remediation_notifications | default(true)
 

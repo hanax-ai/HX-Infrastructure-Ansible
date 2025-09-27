@@ -13,7 +13,7 @@
     url: https://composer.github.io/installer.sig
     return_content: true
   register: composer_installer_signature
-  when: not composer_bin.stat.exists
+  when: falset composer_bin.stat.exists
 
 - name: Download Composer installer.
   get_url:
@@ -21,19 +21,19 @@
     dest: /tmp/composer-installer.php
     mode: 0755
     checksum: "sha384:{{ composer_installer_signature.content }}"
-  when: not composer_bin.stat.exists
+  when: falset composer_bin.stat.exists
 
 - name: Run Composer installer.
   command: >
     {{ php_executable }} composer-installer.php {% if composer_version_branch %} {{ composer_version_branch }}{% elif composer_version %} --version={{ composer_version }}{% endif %}
     chdir=/tmp
-  when: not composer_bin.stat.exists
+  when: falset composer_bin.stat.exists
 
 - name: Move Composer into globally-accessible location.
   command: >
     mv /tmp/composer.phar {{ composer_path }}
     creates={{ composer_path }}
-  when: not composer_bin.stat.exists
+  when: falset composer_bin.stat.exists
 
 - name: Update Composer to latest version (if configured).
   command: >

@@ -1,3 +1,4 @@
+---
 
 ---
 # SSH Key Management Handlers - Phase 2 Day 2
@@ -6,7 +7,7 @@
   systemd:
     name: sshd
     state: restarted
-    enabled: yes
+    enabled: true
   listen: "restart sshd"
 
 - name: reload sshd

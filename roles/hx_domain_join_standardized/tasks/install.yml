@@ -1,3 +1,4 @@
+---
 
 ---
 # Installation Tasks for HX Domain Join
@@ -85,7 +86,7 @@
   lineinfile:
     path: "{{ hx_domain_log_dir }}/installation.log"
     line: "{{ ansible_date_time.iso8601 }} - Domain join packages installed successfully"
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0644'

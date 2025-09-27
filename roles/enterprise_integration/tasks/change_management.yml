@@ -1,3 +1,4 @@
+---
 
 ---
 # Enterprise Change Management Integration Tasks
@@ -83,4 +84,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/change_management.log
     line: "{{ ansible_date_time.iso8601 }} - Change management integration completed"
-    create: yes
+    create: true

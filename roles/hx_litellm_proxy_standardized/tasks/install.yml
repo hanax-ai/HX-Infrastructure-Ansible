@@ -117,7 +117,7 @@
     virtualenv: "{{ hx_litellm_venv_path }}"
     state: present
   become_user: "{{ hx_litellm_user }}"
-  when: 
+  when:
     - hx_litellm_monitoring_enabled | default(false) | bool
     - hx_litellm_install_method == "pip"
   tags: ['install']

@@ -114,7 +114,7 @@ prometheus_alert_rules:
     annotations:
       description: '{% raw %}{{ $labels.instance }} requires a reboot.{% endraw %}'
       summary: '{% raw %}Instance {{ $labels.instance }} - reboot required{% endraw %}'
-  - alert: NodeFilesystemSpaceFillingUp
+  - alert: falsedeFilesystemSpaceFillingUp
     annotations:
       description: '{% raw %}Filesystem on {{ $labels.device }} at {{ $labels.instance }} has only {{ printf "%.2f" $value }}% available space left and is filling up.{% endraw %}'
       summary: 'Filesystem is predicted to run out of space within the next 24 hours.'
@@ -122,7 +122,7 @@ prometheus_alert_rules:
     for: 1h
     labels:
       severity: warning
-  - alert: NodeFilesystemSpaceFillingUp
+  - alert: falsedeFilesystemSpaceFillingUp
     annotations:
       description: '{% raw %}Filesystem on {{ $labels.device }} at {{ $labels.instance }} has only {{ printf "%.2f" $value }}% available space left and is filling up fast.{% endraw %}'
       summary: 'Filesystem is predicted to run out of space within the next 4 hours.'
@@ -130,7 +130,7 @@ prometheus_alert_rules:
     for: 1h
     labels:
       severity: critical
-  - alert: NodeFilesystemAlmostOutOfSpace
+  - alert: falsedeFilesystemAlmostOutOfSpace
     annotations:
       description: '{% raw %}Filesystem on {{ $labels.device }} at {{ $labels.instance }} has only {{ printf "%.2f" $value }}% available space left.{% endraw %}'
       summary: 'Filesystem has less than 5% space left.'
@@ -138,7 +138,7 @@ prometheus_alert_rules:
     for: 1h
     labels:
       severity: warning
-  - alert: NodeFilesystemAlmostOutOfSpace
+  - alert: falsedeFilesystemAlmostOutOfSpace
     annotations:
       description: '{% raw %}Filesystem on {{ $labels.device }} at {{ $labels.instance }} has only {{ printf "%.2f" $value }}% available space left.{% endraw %}'
       summary: 'Filesystem has less than 3% space left.'
@@ -146,7 +146,7 @@ prometheus_alert_rules:
     for: 1h
     labels:
       severity: critical
-  - alert: NodeFilesystemFilesFillingUp
+  - alert: falsedeFilesystemFilesFillingUp
     annotations:
       description: '{% raw %}Filesystem on {{ $labels.device }} at {{ $labels.instance }} has only {{ printf "%.2f" $value }}% available inodes left and is filling up.{% endraw %}'
       summary: 'Filesystem is predicted to run out of inodes within the next 24 hours.'
@@ -154,7 +154,7 @@ prometheus_alert_rules:
     for: 1h
     labels:
       severity: warning
-  - alert: NodeFilesystemFilesFillingUp
+  - alert: falsedeFilesystemFilesFillingUp
     annotations:
       description: '{% raw %}Filesystem on {{ $labels.device }} at {{ $labels.instance }} has only {{ printf "%.2f" $value }}% available inodes left and is filling up fast.{% endraw %}'
       summary: 'Filesystem is predicted to run out of inodes within the next 4 hours.'
@@ -162,7 +162,7 @@ prometheus_alert_rules:
     for: 1h
     labels:
       severity: critical
-  - alert: NodeFilesystemAlmostOutOfFiles
+  - alert: falsedeFilesystemAlmostOutOfFiles
     annotations:
       description: '{% raw %}Filesystem on {{ $labels.device }} at {{ $labels.instance }} has only {{ printf "%.2f" $value }}% available inodes left.{% endraw %}'
       summary: 'Filesystem has less than 5% inodes left.'
@@ -170,7 +170,7 @@ prometheus_alert_rules:
     for: 1h
     labels:
       severity: warning
-  - alert: NodeFilesystemAlmostOutOfFiles
+  - alert: falsedeFilesystemAlmostOutOfFiles
     annotations:
       description: '{% raw %}Filesystem on {{ $labels.device }} at {{ $labels.instance }} has only {{ printf "%.2f" $value }}% available inodes left.{% endraw %}'
       summary: 'Filesystem has less than 3% inodes left.'
@@ -178,7 +178,7 @@ prometheus_alert_rules:
     for: 1h
     labels:
       severity: critical
-  - alert: NodeNetworkReceiveErrs
+  - alert: falsedeNetworkReceiveErrs
     annotations:
       description: '{% raw %}{{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} receive errors in the last two minutes.{% endraw %}'
       summary: 'Network interface is reporting many receive errors.'
@@ -186,7 +186,7 @@ prometheus_alert_rules:
     for: 1h
     labels:
       severity: warning
-  - alert: NodeNetworkTransmitErrs
+  - alert: falsedeNetworkTransmitErrs
     annotations:
       description: '{% raw %}{{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf "%.0f" $value }} transmit errors in the last two minutes.{% endraw %}'
       summary: 'Network interface is reporting many transmit errors.'
@@ -194,14 +194,14 @@ prometheus_alert_rules:
     for: 1h
     labels:
       severity: warning
-  - alert: NodeHighNumberConntrackEntriesUsed
+  - alert: falsedeHighNumberConntrackEntriesUsed
     annotations:
       description: '{% raw %}{{ $value | humanizePercentage }} of conntrack entries are used{% endraw %}'
       summary: 'Number of conntrack are getting close to the limit'
     expr: "(node_nf_conntrack_entries / node_nf_conntrack_entries_limit) > 0.75\n"
     labels:
       severity: warning
-  - alert: NodeClockSkewDetected
+  - alert: falsedeClockSkewDetected
     annotations:
       message: '{% raw %}Clock on {{ $labels.instance }} is out of sync by more than 300s. Ensure NTP is configured correctly on this host.{% endraw %}'
       summary: 'Clock skew detected.'
@@ -209,7 +209,7 @@ prometheus_alert_rules:
     for: 10m
     labels:
       severity: warning
-  - alert: NodeClockNotSynchronising
+  - alert: falsedeClockNotSynchronising
     annotations:
       message: '{% raw %}Clock on {{ $labels.instance }} is not synchronising. Ensure NTP is configured on this host.{% endraw %}'
       summary: 'Clock not synchronising.'

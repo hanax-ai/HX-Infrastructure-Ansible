@@ -1,3 +1,4 @@
+---
 
 ---
 # HX PostgreSQL Authentication Handlers
@@ -13,7 +14,7 @@
   systemd:
     name: "{{ hx_pg_service_name }}"
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true
   listen: "restart postgresql"
 
 - name: backup postgresql config
@@ -72,7 +73,7 @@
   lineinfile:
     path: "{{ hx_pg_log_dir }}/changes.log"
     line: "{{ ansible_date_time.iso8601 }} - PostgreSQL configuration changed, service reloaded"
-    create: yes
+    create: true
     owner: postgres
     group: postgres
     mode: '0644'

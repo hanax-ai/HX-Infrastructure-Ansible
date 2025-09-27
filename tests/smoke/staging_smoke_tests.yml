@@ -1,3 +1,4 @@
+---
 
 ---
 - name: Staging Environment Smoke Tests
@@ -5,12 +6,12 @@
   gather_facts: true
   vars:
     target_slot: "{{ target_slot | default('blue') }}"
-    
+
   tasks:
     - name: Test basic connectivity
       ping:
       register: ping_result
-      
+
     - name: Verify system is responsive
       assert:
         that:
@@ -76,7 +77,7 @@
     - name: Check disk space
       shell: df -h / | awk 'NR==2 {print $5}' | sed 's/%//'
       register: disk_usage
-      
+
     - name: Verify sufficient disk space
       assert:
         that:
@@ -87,7 +88,7 @@
     - name: Check memory usage
       shell: free | awk 'NR==2{printf "%.2f", $3*100/$2}'
       register: memory_usage
-      
+
     - name: Verify memory usage is reasonable
       assert:
         that:
@@ -98,7 +99,7 @@
     - name: Check CPU load
       shell: uptime | awk -F'load average:' '{print $2}' | awk '{print $1}' | sed 's/,//'
       register: cpu_load
-      
+
     - name: Verify CPU load is reasonable
       assert:
         that:
@@ -119,14 +120,14 @@
                 test_data VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
               )
-              
+
         - name: Insert test data
           mysql_query:
             login_user: "{{ mysql_user | default('root') }}"
             login_password: "{{ mysql_password }}"
             login_db: "{{ app_database_name | default('staging_db') }}"
             query: "INSERT INTO smoke_test (test_data) VALUES ('staging_smoke_test_{{ ansible_date_time.epoch }}')"
-            
+
         - name: Read test data
           mysql_query:
             login_user: "{{ mysql_user | default('root') }}"
@@ -134,14 +135,14 @@
             login_db: "{{ app_database_name | default('staging_db') }}"
             query: "SELECT COUNT(*) as count FROM smoke_test WHERE test_data LIKE 'staging_smoke_test_%'"
           register: test_data_count
-          
+
         - name: Verify test data was inserted
           assert:
             that:
               - test_data_count.query_result[0][0] | int > 0
             fail_msg: "Database write/read test failed"
             success_msg: "Database write/read test passed"
-            
+
         - name: Clean up test data
           mysql_query:
             login_user: "{{ mysql_user | default('root') }}"
@@ -158,7 +159,7 @@
             value: "staging_test_value"
             login_host: localhost
             login_port: 6379
-            
+
         - name: Get test value from Redis
           redis:
             command: get
@@ -166,14 +167,14 @@
             login_host: localhost
             login_port: 6379
           register: redis_test_value
-          
+
         - name: Verify Redis operations
           assert:
             that:
               - redis_test_value.value == "staging_test_value"
             fail_msg: "Redis read/write test failed"
             success_msg: "Redis read/write test passed"
-            
+
         - name: Clean up Redis test data
           redis:
             command: delete
@@ -185,7 +186,7 @@
       shell: |
         find /var/log -name "*.log" -type f -exec grep -l "ERROR\|CRITICAL\|FATAL" {} \; | head -5
       register: error_logs
-      
+
     - name: Report error logs (if any)
       debug:
         msg: "Error logs found: {{ error_logs.stdout_lines }}"
@@ -200,7 +201,7 @@
         - /etc/mysql/mysql.conf.d/mysqld.cnf
         - /etc/redis/redis.conf
         - "{{ app_config_path | default('/opt/app/config.yml') }}"
-      failed_when: not config_files.stat.exists
+      failed_when: falset config_files.stat.exists
 
     - name: Test network connectivity to external services
       uri:
@@ -226,11 +227,11 @@
         - name: Verify firewall is active
           shell: ufw status
           register: firewall_status
-          
+
         - name: Check SSH configuration
           shell: sshd -T | grep -E "PermitRootLogin|PasswordAuthentication|Port"
           register: ssh_config
-          
+
         - name: Verify SSL/TLS configuration
           shell: |
             if [ -f /etc/nginx/nginx.conf ]; then
@@ -248,7 +249,7 @@
             method: GET
             status_code: 200
           register: response_time_check
-          
+
         - name: Verify response time is acceptable
           assert:
             that:
@@ -282,7 +283,7 @@
         name: nginx
         state: restarted
       become: true
-      
+
     - name: Restart mysql
       systemd:
         name: mysql

@@ -1,3 +1,4 @@
+---
 
 ---
 # HX Domain Join Handlers
@@ -7,7 +8,7 @@
   systemd:
     name: "{{ hx_sssd_service }}"
     state: restarted
-    daemon_reload: yes
+    daemon_reload: true
   listen: "restart sssd"
 
 - name: reload sssd
@@ -59,7 +60,7 @@
   lineinfile:
     path: "{{ hx_domain_log_dir }}/changes.log"
     line: "{{ ansible_date_time.iso8601 }} - Domain configuration changed, services restarted"
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0644'

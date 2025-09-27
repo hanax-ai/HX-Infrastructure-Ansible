@@ -1,3 +1,4 @@
+---
 
 ---
 # Health Check Tasks
@@ -27,9 +28,9 @@
 
 - name: Set health check status
   ansible.builtin.set_fact:
-    deployment_health_check_passed: "{{ 
-      health_check_result.status == 200 and 
-      smoke_test_results.results | selectattr('status', 'equalto', 200) | list | length == smoke_test_results.results | length 
+    deployment_health_check_passed: "{{
+      health_check_result.status == 200 and
+      smoke_test_results.results | selectattr('status', 'equalto', 200) | list | length == smoke_test_results.results | length
     }}"
 
 - name: Display health check results

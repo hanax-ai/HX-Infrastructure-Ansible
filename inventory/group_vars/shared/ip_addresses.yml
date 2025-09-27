@@ -17,7 +17,7 @@ ip_addresses:
       cache: "10.0.5.0/24"
       monitoring: "10.0.6.0/24"
       management: "10.0.10.0/24"
-    
+
     # Gateway Addresses
     gateways:
       load_balancer: "10.0.1.1"
@@ -27,44 +27,44 @@ ip_addresses:
       cache: "10.0.5.1"
       monitoring: "10.0.6.1"
       management: "10.0.10.1"
-    
+
     # Load Balancer Tier
     load_balancer:
       hx-prod-lb-01: "10.0.1.10"
       hx-prod-lb-02: "10.0.1.11"
       vip: "10.0.1.100"
       keepalived_vip: "10.0.1.100"
-    
+
     # Web Tier
     web:
       hx-prod-web-01: "10.0.2.10"
       hx-prod-web-02: "10.0.2.11"
       hx-prod-web-03: "10.0.2.12"
-    
+
     # Application Tier
     application:
       hx-prod-app-01: "10.0.3.10"
       hx-prod-app-02: "10.0.3.11"
       hx-prod-app-03: "10.0.3.12"
-    
+
     # Database Tier
     database:
       hx-prod-db-01: "10.0.4.10"
       hx-prod-db-02: "10.0.4.11"
       hx-prod-db-03: "10.0.4.12"
       cluster_vip: "10.0.4.100"
-    
+
     # Cache Tier
     cache:
       hx-prod-cache-01: "10.0.5.10"
       hx-prod-cache-02: "10.0.5.11"
       cluster_vip: "10.0.5.100"
-    
+
     # Monitoring Tier
     monitoring:
       hx-prod-monitor-01: "10.0.6.10"
       hx-prod-monitor-02: "10.0.6.11"
-    
+
     # Management Network
     management:
       bastion: "10.0.10.10"
@@ -84,7 +84,7 @@ ip_addresses:
       cache: "10.2.5.0/24"
       monitoring: "10.2.6.0/24"
       management: "10.2.10.0/24"
-    
+
     # Gateway Addresses
     gateways:
       load_balancer: "10.2.1.1"
@@ -94,44 +94,44 @@ ip_addresses:
       cache: "10.2.5.1"
       monitoring: "10.2.6.1"
       management: "10.2.10.1"
-    
+
     # Load Balancer Tier
     load_balancer:
       hx-stg-lb-01: "10.2.1.10"
       hx-stg-lb-02: "10.2.1.11"
       vip: "10.2.1.100"
       keepalived_vip: "10.2.1.100"
-    
+
     # Web Tier
     web:
       hx-stg-web-01: "10.2.2.10"
       hx-stg-web-02: "10.2.2.11"
       hx-stg-web-03: "10.2.2.12"
-    
+
     # Application Tier
     application:
       hx-stg-app-01: "10.2.3.10"
       hx-stg-app-02: "10.2.3.11"
       hx-stg-app-03: "10.2.3.12"
-    
+
     # Database Tier
     database:
       hx-stg-db-01: "10.2.4.10"
       hx-stg-db-02: "10.2.4.11"
       hx-stg-db-03: "10.2.4.12"
       cluster_vip: "10.2.4.100"
-    
+
     # Cache Tier
     cache:
       hx-stg-cache-01: "10.2.5.10"
       hx-stg-cache-02: "10.2.5.11"
       cluster_vip: "10.2.5.100"
-    
+
     # Monitoring Tier
     monitoring:
       hx-stg-monitor-01: "10.2.6.10"
       hx-stg-monitor-02: "10.2.6.11"
-    
+
     # Management Network
     management:
       bastion: "10.2.10.10"
@@ -151,7 +151,7 @@ ip_addresses:
       cache: "10.1.5.0/24"
       monitoring: "10.1.6.0/24"
       management: "10.1.10.0/24"
-    
+
     # Gateway Addresses
     gateways:
       load_balancer: "10.1.1.1"
@@ -161,39 +161,39 @@ ip_addresses:
       cache: "10.1.5.1"
       monitoring: "10.1.6.1"
       management: "10.1.10.1"
-    
+
     # Load Balancer Tier
     load_balancer:
       hx-dev-lb-01: "10.1.1.10"
       hx-dev-lb-02: "10.1.1.11"
       vip: "10.1.1.100"
       keepalived_vip: "10.1.1.100"
-    
+
     # Web Tier
     web:
       hx-dev-web-01: "10.1.2.10"
       hx-dev-web-02: "10.1.2.11"
-    
+
     # Application Tier
     application:
       hx-dev-app-01: "10.1.3.10"
       hx-dev-app-02: "10.1.3.11"
-    
+
     # Database Tier
     database:
       hx-dev-db-01: "10.1.4.10"
       hx-dev-db-02: "10.1.4.11"
       cluster_vip: "10.1.4.100"
-    
+
     # Cache Tier
     cache:
       hx-dev-cache-01: "10.1.5.10"
       cluster_vip: "10.1.5.100"
-    
+
     # Monitoring Tier
     monitoring:
       hx-dev-monitor-01: "10.1.6.10"
-    
+
     # Management Network
     management:
       bastion: "10.1.10.10"
@@ -211,18 +211,18 @@ shared_networks:
     static_range_end: ".49"
     vip_range_start: ".100"
     vip_range_end: ".110"
-  
+
   # Common Network Services
   dns_servers:
     primary: "8.8.8.8"
     secondary: "8.8.4.4"
     tertiary: "1.1.1.1"
-  
+
   ntp_servers:
     primary: "0.pool.ntp.org"
     secondary: "1.pool.ntp.org"
     tertiary: "2.pool.ntp.org"
-  
+
   # VLAN Configuration
   vlans:
     dmz: 10
@@ -241,24 +241,24 @@ firewall_rules:
       destination: "{{ ip_addresses[environment].subnets.application }}"
       ports: [8080, 8081]
       protocol: "tcp"
-    
+
     - source: "{{ ip_addresses[environment].subnets.application }}"
       destination: "{{ ip_addresses[environment].subnets.database }}"
       ports: [5432]
       protocol: "tcp"
-    
+
     - source: "{{ ip_addresses[environment].subnets.application }}"
       destination: "{{ ip_addresses[environment].subnets.cache }}"
       ports: [6379]
       protocol: "tcp"
-  
+
   # Management access rules
   management_rules:
     - source: "{{ ip_addresses[environment].subnets.management }}"
       destination: "any"
       ports: [22]
       protocol: "tcp"
-  
+
   # Monitoring access rules
   monitoring_rules:
     - source: "{{ ip_addresses[environment].subnets.monitoring }}"
@@ -276,14 +276,14 @@ load_balancer_vips:
     priority_map:
       hx-prod-lb-01: 100
       hx-prod-lb-02: 90
-  
+
   staging:
     external_vip: "{{ ip_addresses.staging.load_balancer.vip }}"
     internal_vip: "{{ ip_addresses.staging.load_balancer.vip }}"
     priority_map:
       hx-stg-lb-01: 100
       hx-stg-lb-02: 90
-  
+
   development:
     external_vip: "{{ ip_addresses.development.load_balancer.vip }}"
     internal_vip: "{{ ip_addresses.development.load_balancer.vip }}"
@@ -298,11 +298,11 @@ database_cluster_vips:
   production:
     read_write_vip: "{{ ip_addresses.production.database.cluster_vip }}"
     read_only_vip: "10.0.4.101"
-  
+
   staging:
     read_write_vip: "{{ ip_addresses.staging.database.cluster_vip }}"
     read_only_vip: "10.2.4.101"
-  
+
   development:
     read_write_vip: "{{ ip_addresses.development.database.cluster_vip }}"
     read_only_vip: "10.1.4.101"

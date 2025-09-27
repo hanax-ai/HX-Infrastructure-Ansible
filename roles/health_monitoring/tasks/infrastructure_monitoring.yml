@@ -1,3 +1,4 @@
+---
 
 ---
 # Infrastructure Monitoring
@@ -50,7 +51,7 @@
 - name: Monitor process count and states
   shell: |
     ps aux | awk 'NR>1 {states[substr($8,1,1)]++; total++} END {
-      for (state in states) printf "%s:%d,", state, states[state]; 
+      for (state in states) printf "%s:%d,", state, states[state];
       printf "total:%d", total
     }'
   register: process_stats
@@ -59,7 +60,7 @@
 - name: Check filesystem usage details
   shell: |
     df -h | awk 'NR>1 && $6!="/dev" && $6!="/run" {
-      gsub(/%/, "", $5); 
+      gsub(/%/, "", $5);
       printf "%s:size=%s,used=%s,avail=%s,use_pct=%s;", $6, $2, $3, $4, $5
     }'
   register: filesystem_details
@@ -112,6 +113,6 @@
     alert_type: "infrastructure_monitoring"
     alert_message: "Infrastructure monitoring alerts: {{ infrastructure_alerts | join(', ') }}"
     alert_data: "{{ infrastructure_metrics }}"
-  when: 
+  when:
     - infrastructure_alerts | length > 0
     - alerting_enabled | default(true)

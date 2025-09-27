@@ -1,3 +1,4 @@
+---
 
 ---
 # Configuration Tasks for HX CA Trust
@@ -70,7 +71,7 @@
   lineinfile:
     path: "{{ hx_ca_log_dir }}/deployment.log"
     line: "{{ ansible_date_time.iso8601 }} - Certificate configuration completed. Fingerprint: {{ hx_ca_actual_fingerprint.stdout }}"
-    create: yes
+    create: true
     owner: root
     group: root
     mode: '0644'

@@ -1,3 +1,4 @@
+---
 
 ---
 # Infrastructure Services Role Defaults
@@ -19,7 +20,7 @@ active_directory:
   database_path: "{{ ad_database_path | default('C:\\Windows\\NTDS') }}"
   sysvol_path: "{{ ad_sysvol_path | default('C:\\Windows\\SYSVOL') }}"
   log_path: "{{ ad_log_path | default('C:\\Windows\\NTDS') }}"
-  
+
   # Organizational Units Template
   organizational_units_template:
     - name: "{{ organization | replace(' ', '-') }}"
@@ -48,7 +49,7 @@ active_directory:
 # DNS Configuration
 dns:
   forwarders: "{{ dns_forwarders | default(dns_servers) }}"
-  
+
   zones_template:
     - name: "{{ domain_name }}"
       type: "{{ dns_primary_zone_type | default('primary') }}"
@@ -75,7 +76,7 @@ certificate_authority:
   key_length: "{{ ca_key_length | default(4096) }}"
   hash_algorithm: "{{ ca_hash_algorithm | default('SHA256') }}"
   validity_period: "{{ ca_validity_period | default('10 years') }}"
-  
+
   # Certificate Templates
   certificate_templates_default:
     - name: "{{ organization | replace(' ', '-') }}-Server-Certificate"
@@ -83,13 +84,13 @@ certificate_authority:
       key_usage: "{{ ca_server_key_usage | default(['Digital Signature', 'Key Encipherment']) }}"
       enhanced_key_usage: "{{ ca_server_enhanced_key_usage | default(['Server Authentication']) }}"
       validity_period: "{{ ca_server_validity_period | default('2 years') }}"
-    
+
     - name: "{{ organization | replace(' ', '-') }}-Client-Certificate"
       description: "Client certificates for {{ organization }}"
       key_usage: "{{ ca_client_key_usage | default(['Digital Signature']) }}"
       enhanced_key_usage: "{{ ca_client_enhanced_key_usage | default(['Client Authentication']) }}"
       validity_period: "{{ ca_client_validity_period | default('1 year') }}"
-    
+
     - name: "{{ organization | replace(' ', '-') }}-Code-Signing"
       description: "Code signing certificates for {{ organization }}"
       key_usage: "{{ ca_code_signing_key_usage | default(['Digital Signature']) }}"
@@ -211,7 +212,7 @@ logging:
   log_level: "{{ infrastructure_log_level | default('Information') }}"
   max_log_size: "{{ infrastructure_max_log_size | default('100MB') }}"
   log_retention_days: "{{ infrastructure_log_retention_days | default(90) }}"
-  
+
   # Event Log Sizes
   event_log_sizes_default:
     Application: "{{ infrastructure_application_log_size | default('100MB') }}"
@@ -246,12 +247,12 @@ infrastructure_environment_config:
     debug_mode: "{{ infrastructure_debug_mode | default(true) }}"
     log_level: "{{ infrastructure_dev_log_level | default('DEBUG') }}"
     security_level: "{{ infrastructure_dev_security_level | default('relaxed') }}"
-    
+
   test:
     debug_mode: "{{ infrastructure_debug_mode | default(true) }}"
     log_level: "{{ infrastructure_test_log_level | default('INFO') }}"
     security_level: "{{ infrastructure_test_security_level | default('standard') }}"
-    
+
   production:
     debug_mode: "{{ infrastructure_debug_mode | default(false) }}"
     log_level: "{{ infrastructure_prod_log_level | default('WARN') }}"

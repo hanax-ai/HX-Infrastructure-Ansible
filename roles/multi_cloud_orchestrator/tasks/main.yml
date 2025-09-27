@@ -31,7 +31,7 @@
   unarchive:
     src: "https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip"
     dest: /usr/local/bin
-    remote_src: yes
+    remote_src: true
     mode: '0755'
     creates: /usr/local/bin/terraform
 
@@ -125,8 +125,8 @@
   systemd:
     name: hx-multi-cloud-orchestrator
     state: started
-    enabled: yes
-    daemon_reload: yes
+    enabled: true
+    daemon_reload: true
 
 - name: Verify multi-cloud orchestrator health
   uri:

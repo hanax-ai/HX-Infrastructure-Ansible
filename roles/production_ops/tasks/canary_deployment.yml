@@ -1,3 +1,4 @@
+---
 
 ---
 # Canary Deployment Implementation
@@ -33,7 +34,7 @@
   template:
     src: canary_routing.conf.j2
     dest: /etc/nginx/conf.d/canary.conf
-    backup: yes
+    backup: true
   vars:
     canary_percentage: "{{ canary_traffic_percentage | default(10) }}"
   notify: reload nginx

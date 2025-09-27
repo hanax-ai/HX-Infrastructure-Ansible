@@ -1,3 +1,4 @@
+---
 
 ---
 # Service Management Automation
@@ -8,29 +9,29 @@
   vars:
     service_discovery_enabled: true
     auto_recovery_enabled: true
-    
+
   tasks:
     - name: Service Discovery and Registration
       include_role:
         name: production_ops
         tasks_from: service_discovery
-        
+
     - name: Service Health Monitoring
       include_role:
         name: health_monitoring
         tasks_from: service_health_check
-        
+
     - name: Service Dependency Management
       include_role:
         name: production_ops
         tasks_from: dependency_management
-        
+
     - name: Auto-Recovery Implementation
       include_role:
         name: production_ops
         tasks_from: auto_recovery
       when: auto_recovery_enabled | default(true)
-      
+
     - name: Graceful Service Management
       include_role:
         name: production_ops

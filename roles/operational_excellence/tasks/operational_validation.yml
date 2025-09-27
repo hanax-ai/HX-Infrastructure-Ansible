@@ -1,3 +1,4 @@
+---
 
 ---
 # Operational Excellence Validation Tasks
@@ -103,17 +104,17 @@
     subject: "Operational Excellence Validation - {{ inventory_hostname }}"
     body: |
       Operational Excellence Validation Completed
-      
+
       Validation Results:
       - Operational Validation: {{ 'PASSED' if operational_validation_result.rc == 0 else 'FAILED' }}
       - Readiness Check: {{ 'PASSED' if readiness_check_result.rc == 0 else 'FAILED' }}
       - Certification: {{ 'PASSED' if certification_result.rc == 0 else 'FAILED' }}
       - Compliance: {{ 'PASSED' if compliance_validation_result.rc == 0 else 'FAILED' }}
       - Performance: {{ 'PASSED' if performance_validation_result.rc == 0 else 'FAILED' }}
-      
+
       Timestamp: {{ ansible_date_time.iso8601 }}
       Host: {{ inventory_hostname }}
-      
+
       Detailed report: {{ operational_validation_path }}/operational_excellence_report_{{ ansible_date_time.epoch }}.html
   when: operational_excellence_email is defined
 
@@ -121,4 +122,4 @@
   ansible.builtin.lineinfile:
     path: /var/log/operational_validation.log
     line: "{{ ansible_date_time.iso8601 }} - Operational excellence validation completed - Overall Status: {{ 'CERTIFIED' if (operational_validation_result.rc == 0 and readiness_check_result.rc == 0 and certification_result.rc == 0) else 'NEEDS_ATTENTION' }}"
-    create: yes
+    create: true

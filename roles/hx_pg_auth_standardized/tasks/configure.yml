@@ -1,3 +1,4 @@
+---
 
 ---
 # Configuration Tasks for HX PostgreSQL Authentication
@@ -9,7 +10,7 @@
     owner: postgres
     group: postgres
     mode: '0644'
-    backup: yes
+    backup: true
   notify: reload postgresql config
   tags: [configure]
 
@@ -20,7 +21,7 @@
     owner: postgres
     group: postgres
     mode: '0640'
-    backup: yes
+    backup: true
   notify: reload postgresql config
   tags: [configure]
 
@@ -31,7 +32,7 @@
     owner: postgres
     group: postgres
     mode: '0640'
-    backup: yes
+    backup: true
   when: hx_pg_gss_user | length > 0
   notify: reload postgresql config
   tags: [configure]
@@ -77,7 +78,7 @@
     path: "{{ hx_pg_conf_path }}"
     regexp: "^#?{{ item.key }}"
     line: "{{ item.key }} = {{ item.value }}"
-    backup: yes
+    backup: true
   loop:
     - { key: "log_destination", value: "'stderr'" }
     - { key: "logging_collector", value: "on" }
@@ -100,7 +101,7 @@
     path: "{{ hx_pg_conf_path }}"
     regexp: "^#?{{ item.key }}"
     line: "{{ item.key }} = {{ item.value }}"
-    backup: yes
+    backup: true
   loop:
     - { key: "ssl", value: "{{ hx_pg_ssl_enabled | ternary('on', 'off') }}" }
     - { key: "ssl_cert_file", value: "'{{ hx_pg_ssl_cert_file }}'" }
@@ -118,7 +119,7 @@
     path: "{{ hx_pg_conf_path }}"
     regexp: "^#?{{ item.key }}"
     line: "{{ item.key }} = {{ item.value }}"
-    backup: yes
+    backup: true
   loop:
     - { key: "max_connections", value: "{{ hx_pg_max_connections }}" }
     - { key: "shared_buffers", value: "'{{ hx_pg_shared_buffers }}'" }
@@ -161,7 +162,7 @@
   lineinfile:
     path: "{{ hx_pg_log_dir }}/configuration.log"
     line: "{{ ansible_date_time.iso8601 }} - PostgreSQL authentication configuration completed"
-    create: yes
+    create: true
     owner: postgres
     group: postgres
     mode: '0644'
