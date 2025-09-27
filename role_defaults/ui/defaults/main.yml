@@ -1,4 +1,3 @@
-
 ---
 # UI Services Role Defaults
 # Web Interfaces and Load Balancers
@@ -32,7 +31,7 @@ webui:
   version: "{{ webui_version | default('3.0.0') }}"
   port: "{{ webui_port | default(3000) }}"
   host: "{{ webui_host | default('0.0.0.0') }}"
-  
+
   # Application Configuration
   app:
     title: "{{ webui_app_title | default('HX AI Assistant') }}"
@@ -41,14 +40,14 @@ webui:
     logo: "{{ webui_app_logo | default('/assets/logo.png') }}"
     theme: "{{ webui_app_theme | default('dark') }}"
     language: "{{ webui_app_language | default('en') }}"
-    
+
   # API Configuration
   api:
     base_url: "{{ webui_api_base_url | default('http://' + groups['llm_services'][0] + ':4000') }}"
     timeout: "{{ webui_api_timeout | default(30000) }}"
     retry_attempts: "{{ webui_api_retry_attempts | default(3) }}"
     retry_delay: "{{ webui_api_retry_delay | default(1000) }}"
-    
+
   # Authentication Configuration
   auth:
     enabled: "{{ webui_auth_enabled | default(true) }}"
@@ -56,7 +55,7 @@ webui:
     secret_key: "{{ vault_jwt_secret }}"
     token_expiry: "{{ webui_auth_token_expiry | default(86400) }}"
     refresh_token_expiry: "{{ webui_auth_refresh_token_expiry | default(604800) }}"
-    
+
     # OAuth Configuration
     oauth:
       enabled: "{{ webui_oauth_enabled | default(false) }}"
@@ -69,7 +68,7 @@ webui:
           client_secret: "{{ vault_github_oauth_client_secret }}"
 
       providers: "{{ webui_oauth_providers | default(providers_template) }}"
-  
+
   # Database Configuration
   database:
     type: "{{ webui_database_type | default('postgresql') }}"
@@ -80,14 +79,14 @@ webui:
     password: "{{ vault_webui_db_password }}"
     pool_size: "{{ webui_database_pool_size | default(20) }}"
     ssl_mode: "{{ webui_database_ssl_mode | default('require') }}"
-    
+
   # Redis Configuration
   redis:
     host: "{{ webui_redis_host | default(groups['cache_services'][0]) }}"
     port: "{{ webui_redis_port | default(6379) }}"
     db: "{{ webui_redis_db | default(2) }}"
     password: "{{ vault_redis_password }}"
-    
+
   # Session Configuration
   session:
     store: "{{ webui_session_store | default('redis') }}"
@@ -96,7 +95,7 @@ webui:
     secure: "{{ webui_session_secure | default(true) }}"
     http_only: "{{ webui_session_http_only | default(true) }}"
     same_site: "{{ webui_session_same_site | default('strict') }}"
-    
+
   # File Upload Configuration
   upload:
     enabled: "{{ webui_upload_enabled | default(true) }}"
@@ -109,7 +108,7 @@ webui:
       'application/pdf'
     ]) }}"
     storage_path: "{{ webui_upload_storage_path | default('/data/uploads') }}"
-    
+
   # Chat Configuration
   chat:
     max_message_length: "{{ webui_chat_max_message_length | default(4000) }}"
@@ -117,7 +116,7 @@ webui:
     auto_save: "{{ webui_chat_auto_save | default(true) }}"
     typing_indicator: "{{ webui_chat_typing_indicator | default(true) }}"
     read_receipts: "{{ webui_chat_read_receipts | default(true) }}"
-    
+
     # Model Selection Template
     default_model: "{{ webui_chat_default_model | default('gpt-4') }}"
     available_models_template:
@@ -135,7 +134,7 @@ webui:
         max_tokens: "{{ webui_chat_claude3_max_tokens | default(4096) }}"
 
     available_models: "{{ webui_chat_available_models | default(available_models_template) }}"
-        
+
   # UI Features
   features:
     dark_mode: "{{ webui_features_dark_mode | default(true) }}"
@@ -145,7 +144,7 @@ webui:
     file_sharing: "{{ webui_features_file_sharing | default(true) }}"
     conversation_export: "{{ webui_features_conversation_export | default(true) }}"
     search_history: "{{ webui_features_search_history | default(true) }}"
-    
+
   # Performance Configuration
   performance:
     enable_compression: "{{ webui_performance_enable_compression | default(true) }}"
@@ -153,7 +152,7 @@ webui:
     minify_assets: "{{ webui_performance_minify_assets | default(true) }}"
     lazy_loading: "{{ webui_performance_lazy_loading | default(true) }}"
     virtual_scrolling: "{{ webui_performance_virtual_scrolling | default(true) }}"
-    
+
   # Logging Configuration
   logging:
     level: "{{ webui_logging_level | default('info') }}"
@@ -161,7 +160,7 @@ webui:
     file: "{{ webui_logging_file | default('/var/log/ui/webui.log') }}"
     max_size: "{{ webui_logging_max_size | default('100MB') }}"
     max_files: "{{ webui_logging_max_files | default(5) }}"
-    
+
   # Health Check Configuration
   health_check:
     endpoint: "{{ webui_health_check_endpoint | default('/health') }}"
@@ -174,13 +173,13 @@ nginx:
   user: "{{ nginx_user | default('www-data') }}"
   worker_processes: "{{ nginx_worker_processes | default('auto') }}"
   worker_connections: "{{ nginx_worker_connections | default(1024) }}"
-  
+
   # Main Configuration
   main:
     error_log: "{{ nginx_error_log | default('/var/log/nginx/error.log') }}"
     access_log: "{{ nginx_access_log | default('/var/log/nginx/access.log') }}"
     pid: "{{ nginx_pid | default('/var/run/nginx.pid') }}"
-    
+
   # HTTP Configuration
   http:
     sendfile: "{{ nginx_sendfile | default(true) }}"
@@ -189,12 +188,12 @@ nginx:
     keepalive_timeout: "{{ nginx_keepalive_timeout | default(65) }}"
     types_hash_max_size: "{{ nginx_types_hash_max_size | default(2048) }}"
     server_tokens: "{{ nginx_server_tokens | default(false) }}"
-    
+
     # Client Configuration
     client_max_body_size: "{{ nginx_client_max_body_size | default('100M') }}"
     client_body_timeout: "{{ nginx_client_body_timeout | default(60) }}"
     client_header_timeout: "{{ nginx_client_header_timeout | default(60) }}"
-    
+
     # Gzip Configuration
     gzip: "{{ nginx_gzip | default(true) }}"
     gzip_vary: "{{ nginx_gzip_vary | default(true) }}"
@@ -210,7 +209,7 @@ nginx:
       'application/json',
       'image/svg+xml'
     ]) }}"
-      
+
     # SSL Configuration
     ssl_protocols: "{{ nginx_ssl_protocols | default(['TLSv1.2', 'TLSv1.3']) }}"
     ssl_ciphers: "{{ nginx_ssl_ciphers | default('ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS') }}"
@@ -219,7 +218,7 @@ nginx:
     ssl_session_timeout: "{{ nginx_ssl_session_timeout | default('10m') }}"
     ssl_stapling: "{{ nginx_ssl_stapling | default(true) }}"
     ssl_stapling_verify: "{{ nginx_ssl_stapling_verify | default(true) }}"
-    
+
     # Security Headers Template
     security_headers_template:
       x_frame_options: "{{ nginx_x_frame_options | default('DENY') }}"
@@ -230,7 +229,7 @@ nginx:
       strict_transport_security: "{{ nginx_strict_transport_security | default('max-age=31536000; includeSubDomains; preload') }}"
 
     security_headers: "{{ nginx_security_headers | default(security_headers_template) }}"
-      
+
   # Rate Limiting
   rate_limiting:
     enabled: "{{ nginx_rate_limiting_enabled | default(true) }}"
@@ -239,7 +238,7 @@ nginx:
     rate: "{{ nginx_rate_limiting_rate | default('10r/s') }}"
     burst: "{{ nginx_rate_limiting_burst | default(20) }}"
     nodelay: "{{ nginx_rate_limiting_nodelay | default(true) }}"
-    
+
   # Upstream Configuration Template
   upstreams_template:
     - name: "webui_backend"
@@ -248,7 +247,7 @@ nginx:
         - "{{ groups['web_interfaces'][1] }}:3000 backup"
       method: "{{ nginx_webui_backend_method | default('least_conn') }}"
       keepalive: "{{ nginx_webui_backend_keepalive | default(32) }}"
-      
+
     - name: "api_backend"
       servers:
         - "{{ groups['llm_services'][0] }}:4000"
@@ -269,14 +268,14 @@ load_balancer:
     advert_int: "{{ keepalived_advert_int | default(1) }}"
     auth_type: "{{ keepalived_auth_type | default('PASS') }}"
     auth_pass: "{{ vault_keepalived_password }}"
-    
+
     # Virtual IP Configuration
     virtual_ips_template:
       - ip: "{{ vip_address }}"
         interface: "{{ keepalived_vip_interface | default('eth0') }}"
 
     virtual_ips: "{{ keepalived_virtual_ips | default(virtual_ips_template) }}"
-        
+
     # Health Check Scripts Template
     vrrp_scripts_template:
       - name: "chk_nginx"
@@ -287,7 +286,7 @@ load_balancer:
         rise: "{{ keepalived_nginx_check_rise | default(2) }}"
 
     vrrp_scripts: "{{ keepalived_vrrp_scripts | default(vrrp_scripts_template) }}"
-        
+
   # HAProxy Configuration (alternative to nginx)
   haproxy:
     enabled: "{{ haproxy_enabled | default(false) }}"
@@ -296,7 +295,7 @@ load_balancer:
       uri: "{{ haproxy_stats_uri | default('/stats') }}"
       username: "{{ haproxy_stats_username | default('admin') }}"
       password: "{{ vault_haproxy_stats_password }}"
-      
+
     # Global Configuration
     global:
       maxconn: "{{ haproxy_global_maxconn | default(4096) }}"
@@ -307,7 +306,7 @@ load_balancer:
       user: "{{ haproxy_global_user | default('haproxy') }}"
       group: "{{ haproxy_global_group | default('haproxy') }}"
       daemon: "{{ haproxy_global_daemon | default(true) }}"
-      
+
     # Default Configuration
     defaults:
       mode: "{{ haproxy_defaults_mode | default('http') }}"
@@ -335,7 +334,7 @@ ssl_certificates:
     email: "{{ ssl_letsencrypt_email | default(admin_email) }}"
     domains: "{{ ssl_letsencrypt_domains | default([domain_name, 'www.' + domain_name, 'api.' + domain_name]) }}"
     challenge_type: "{{ ssl_letsencrypt_challenge_type | default('http-01') }}"
-    
+
   # Self-signed Certificate (for development)
   self_signed:
     enabled: "{{ ssl_self_signed_enabled | default(environment == 'development') }}"
@@ -345,7 +344,7 @@ ssl_certificates:
     organization: "{{ ssl_self_signed_organization | default(organization) }}"
     organizational_unit: "{{ ssl_self_signed_organizational_unit | default('IT Department') }}"
     common_name: "{{ ssl_self_signed_common_name | default(domain_name) }}"
-    
+
 # Monitoring Configuration
 monitoring:
   # Nginx Monitoring
@@ -353,7 +352,7 @@ monitoring:
     enabled: "{{ ui_monitoring_nginx_status_enabled | default(true) }}"
     location: "{{ ui_monitoring_nginx_status_location | default('/nginx_status') }}"
     allow_ips: "{{ ui_monitoring_nginx_status_allow_ips | default(['127.0.0.1', network_subnet]) }}"
-      
+
   # Custom Metrics Template
   custom_metrics_template:
     - name: "http_requests_total"
@@ -377,12 +376,12 @@ backup:
     enabled: "{{ ui_backup_web_content_enabled | default(true) }}"
     schedule: "{{ ui_backup_web_content_schedule | default('0 3 * * *') }}"
     retention_days: "{{ ui_backup_web_content_retention_days | default(30) }}"
-    
+
   configurations:
     enabled: "{{ ui_backup_configurations_enabled | default(true) }}"
     schedule: "{{ ui_backup_configurations_schedule | default('0 2 * * *') }}"
     retention_days: "{{ ui_backup_configurations_retention_days | default(90) }}"
-    
+
   ssl_certificates:
     enabled: "{{ ui_backup_ssl_certificates_enabled | default(true) }}"
     schedule: "{{ ui_backup_ssl_certificates_schedule | default('0 1 * * 0') }}"
@@ -418,14 +417,14 @@ security:
       'RESPONSE-959-BLOCKING-EVALUATION',
       'RESPONSE-980-CORRELATION'
     ]) }}"
-      
+
   # DDoS Protection
   ddos_protection:
     enabled: "{{ ui_security_ddos_protection_enabled | default(true) }}"
     rate_limit: "{{ ui_security_ddos_protection_rate_limit | default('100r/s') }}"
     burst: "{{ ui_security_ddos_protection_burst | default(200) }}"
     connection_limit: "{{ ui_security_ddos_protection_connection_limit | default(50) }}"
-    
+
   # Bot Protection
   bot_protection:
     enabled: "{{ ui_security_bot_protection_enabled | default(true) }}"
@@ -440,14 +439,14 @@ ui_environment_config:
     ssl_verification: "{{ ui_dev_ssl_verification | default(false) }}"
     cache_enabled: "{{ ui_dev_cache_enabled | default(false) }}"
     minification: "{{ ui_dev_minification | default(false) }}"
-    
+
   test:
     debug_mode: "{{ ui_debug_mode | default(true) }}"
     ssl_verification: "{{ ui_test_ssl_verification | default(false) }}"
     cache_enabled: "{{ ui_test_cache_enabled | default(true) }}"
     minification: "{{ ui_test_minification | default(false) }}"
     load_testing: "{{ ui_test_load_testing | default(true) }}"
-    
+
   production:
     debug_mode: "{{ ui_debug_mode | default(false) }}"
     ssl_verification: "{{ ui_prod_ssl_verification | default(true) }}"

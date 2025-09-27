@@ -1,4 +1,4 @@
-
+---
 # LiteLLM Gateway Configuration for PostgreSQL Integration
 # This configuration demonstrates SQLAlchemy + PostgreSQL backend integration
 
@@ -16,16 +16,16 @@ server:
 database:
   # PostgreSQL connection URL with psycopg2 driver
   url: postgresql+psycopg2://litellm_user:REDACTED_PASSWORD@192.168.10.19/litellm_db
-  
+
   # Connection pool settings
   pool_size: 5
   max_overflow: 5
   pool_recycle_seconds: 1800
   pool_pre_ping: true
-  
+
   # Connection timeout settings
   connect_timeout: 30
-  
+
   # Enable SQL query logging (set to false in production)
   echo: false
 
@@ -33,16 +33,16 @@ database:
 telemetry:
   # Enable request logging to database
   request_logging_enabled: true
-  
+
   # Persist all requests to database
   persist_requests: true
-  
+
   # Log response data
   log_responses: true
-  
+
   # Enable metrics collection
   metrics_enabled: true
-  
+
   # Callback configuration for custom logging
   callbacks:
     - callback_type: "database"
@@ -56,7 +56,7 @@ auth:
     - TEST_KEY
     - DEMO_KEY_001
     - POC_VALIDATION_KEY
-  
+
   # Optional: Enable user tracking
   track_user_id: true
 
@@ -68,7 +68,7 @@ models:
       model: openai/gpt-4o-mini
       api_key: REDACTED_MODEL_API_KEY
       api_base: https://api.openai.com/v1
-    
+
   # Additional model for testing (if needed)
   - model_name: gpt-3.5-turbo
     litellm_params:
@@ -80,11 +80,11 @@ models:
 router_settings:
   # Enable request routing
   routing_strategy: "simple-shuffle"
-  
+
   # Retry configuration
   num_retries: 2
   timeout: 300
-  
+
   # Fallback models
   fallbacks:
     - gpt-3.5-turbo
@@ -93,18 +93,18 @@ router_settings:
 general_settings:
   # Master key for admin operations (optional)
   master_key: REDACTED_MASTER_KEY
-  
+
   # Enable CORS for web applications
   enable_cors: true
-  
+
   # Allowed origins for CORS
   allowed_origins:
     - "http://localhost:3000"
     - "http://192.168.10.18:3000"
-  
+
   # Request size limits
   max_request_size_mb: 10
-  
+
   # Enable streaming responses
   stream: true
 
@@ -112,10 +112,10 @@ general_settings:
 health_check:
   # Enable health check endpoint
   enabled: true
-  
+
   # Health check endpoint path
   endpoint: "/health"
-  
+
   # Include database connectivity in health check
   check_database: true
 
@@ -123,14 +123,14 @@ health_check:
 logging:
   # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
   level: INFO
-  
+
   # Log format
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  
+
   # Enable file logging
   file_logging: true
   log_file: "/var/log/litellm/gateway.log"
-  
+
   # Log rotation
   max_log_file_size_mb: 100
   backup_count: 5
@@ -139,7 +139,7 @@ logging:
 rate_limiting:
   # Enable rate limiting
   enabled: false
-  
+
   # Requests per minute per API key
   requests_per_minute: 100
 
@@ -147,7 +147,7 @@ rate_limiting:
 cost_tracking:
   # Enable cost tracking
   enabled: true
-  
+
   # Track costs per user/API key
   track_cost_per_key: true
 
@@ -155,12 +155,12 @@ cost_tracking:
 environment:
   # Environment name (development, staging, production)
   name: "poc"
-  
+
   # Environment-specific settings
   settings:
     # Enable debug mode for POC
     debug_mode: true
-    
+
     # Verbose logging for troubleshooting
     verbose_logging: true
 
@@ -168,13 +168,13 @@ environment:
 callbacks:
   # Pre-request callback
   pre_call_hook: null
-  
-  # Post-request callback  
+
+  # Post-request callback
   post_call_hook: null
-  
+
   # Success callback
   success_callback: null
-  
+
   # Failure callback
   failure_callback: null
 
@@ -182,10 +182,10 @@ callbacks:
 cache:
   # Enable response caching
   enabled: false
-  
+
   # Cache type (redis, memory)
   type: "memory"
-  
+
   # Cache TTL in seconds
   ttl: 3600
 
@@ -200,11 +200,11 @@ proxy:
 ssl:
   # Enable SSL
   enabled: false
-  
+
   # SSL certificate paths
   cert_file: null
   key_file: null
-  
+
   # SSL verification
   verify_ssl: true
 
@@ -212,10 +212,10 @@ ssl:
 monitoring:
   # Enable monitoring
   enabled: true
-  
+
   # Metrics endpoint
   metrics_endpoint: "/metrics"
-  
+
   # Prometheus integration
   prometheus_enabled: false
 
@@ -230,7 +230,7 @@ custom_headers:
 feature_flags:
   # Enable experimental features
   experimental_features: false
-  
+
   # Enable beta features
   beta_features: false
 
@@ -238,9 +238,9 @@ feature_flags:
 backup:
   # Enable automatic backups
   enabled: false
-  
+
   # Backup schedule
   schedule: "0 2 * * *"  # Daily at 2 AM
-  
+
   # Backup retention days
   retention_days: 30

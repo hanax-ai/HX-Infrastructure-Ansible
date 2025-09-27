@@ -1,4 +1,3 @@
-
 ---
 # Security Patching Automation
 - name: Update package repositories
@@ -43,8 +42,8 @@
 - name: Create pre-patch system snapshot
   shell: |
     # Create a simple system state snapshot
-    dpkg -l > /var/backups/pre-patch-packages-$(date +%Y%m%d-%H%M%S).list 2>/dev/null || \
-    rpm -qa > /var/backups/pre-patch-packages-$(date +%Y%m%d-%H%M%S).list 2>/dev/null || \
+    dpkg -l > /var/backups/pre-patch-packages-$(date +%Y%m%d-%H%M%S).list 2>/dev/null || 
+    rpm -qa > /var/backups/pre-patch-packages-$(date +%Y%m%d-%H%M%S).list 2>/dev/null || 
     echo "Package list creation failed"
   when: create_patch_snapshot | default(true)
 
@@ -58,7 +57,7 @@
       dnf -y --security update
     fi
   register: security_patch_result
-  when: 
+  when:
     - (security_updates_count.stdout | int) > 0
     - apply_security_patches | default(true)
 
@@ -80,7 +79,7 @@
       echo "Reboot required but auto_reboot is disabled"
     fi
   register: reboot_schedule
-  when: 
+  when:
     - reboot_required | default(false)
     - reboot_required_check | default(true)
 
@@ -126,7 +125,7 @@
     alert_message: "Security patching completed on {{ inventory_hostname }}. {{ security_updates_count.stdout }} updates available, {{ 'applied' if security_patch_result is changed else 'not applied' }}"
     alert_data: "{{ security_patch_report }}"
     alert_severity: "{{ 'warning' if reboot_required else 'info' }}"
-  when: 
+  when:
     - send_patch_notifications | default(true)
     - (security_updates_count.stdout | int) > 0
 

@@ -2,25 +2,25 @@
 # Security Hardening Playbook
 - name: Security Hardening
   hosts: all
-  become: yes
-  gather_facts: yes
-  
+  become: true
+  gather_facts: true
+
   roles:
     - geerlingguy.security
     - geerlingguy.firewall
-  
+
   tasks:
     - name: Ensure SSH key-based authentication
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
         regexp: '^#?PasswordAuthentication'
         line: 'PasswordAuthentication no'
         state: present
       notify: restart ssh
       when: security_level == "high"
-      
+
   handlers:
     - name: restart ssh
-      service:
+      ansible.builtin.service:
         name: ssh
         state: restarted

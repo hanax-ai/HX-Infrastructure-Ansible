@@ -2,7 +2,7 @@
 # Intelligent Monitoring Configuration
 intelligent_monitoring:
   enabled: true
-  
+
   anomaly_detection:
     enabled: true
     algorithms:
@@ -12,7 +12,7 @@ intelligent_monitoring:
       - name: "lstm_autoencoder"
         sequence_length: 60
         threshold: 0.95
-    
+
     metrics_to_monitor:
       - cpu_utilization
       - memory_utilization
@@ -21,7 +21,7 @@ intelligent_monitoring:
       - response_time
       - error_rate
       - request_rate
-    
+
     alert_thresholds:
       anomaly_score: 0.8
       consecutive_anomalies: 3
@@ -38,7 +38,7 @@ intelligent_monitoring:
         type: "arima"
         features: ["cpu_utilization", "memory_utilization"]
         prediction_horizon: 1800  # 30 minutes
-    
+
     scaling_policies:
       scale_up_threshold: 0.8
       scale_down_threshold: 0.3
@@ -55,7 +55,7 @@ intelligent_monitoring:
       - name: "spot_instance_optimization"
         frequency: "hourly"
         savings_target: 0.4  # 40% cost reduction
-    
+
     budget_alerts:
       daily_threshold: 1000
       monthly_threshold: 25000
@@ -68,12 +68,12 @@ ai_models:
   storage_path: "/opt/hx/ai-models/monitoring"
   update_frequency: "daily"
   training_data_retention: 90  # days
-  
+
   model_configs:
     anomaly_detection:
       retrain_threshold: 0.1  # accuracy drop
       min_training_samples: 1000
-    
+
     predictive_scaling:
       retrain_threshold: 0.15
       min_training_samples: 2000
@@ -83,11 +83,11 @@ integrations:
   prometheus:
     url: "{{ prometheus_url | default('http://localhost:9090') }}"
     scrape_interval: 15
-  
+
   grafana:
     url: "{{ grafana_url | default('http://localhost:3000') }}"
     api_key: "{{ grafana_api_key | default('') }}"
-  
+
   alertmanager:
     url: "{{ alertmanager_url | default('http://localhost:9093') }}"
     webhook_url: "http://localhost:8081/alerts"

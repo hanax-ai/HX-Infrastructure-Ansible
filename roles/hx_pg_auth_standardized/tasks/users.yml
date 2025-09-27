@@ -1,4 +1,3 @@
-
 ---
 # User Management Tasks for HX PostgreSQL Authentication
 
@@ -32,7 +31,7 @@
   postgresql_user:
     name: "{{ hx_pg_app_user }}"
     password: "{{ hx_pg_app_password }}"
-    encrypted: yes
+    encrypted: true
     state: present
     role_attr_flags: LOGIN
   become: true
@@ -74,8 +73,8 @@
   shell: |
     set -euo pipefail
     export PGPASSWORD="{{ hx_pg_app_password }}"
-    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" \
-         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" \
+    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" 
+         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" 
          -c '\conninfo' -c 'SELECT current_user, current_database();'
   args:
     executable: /bin/bash
@@ -92,7 +91,7 @@
   postgresql_user:
     name: "{{ hx_pg_app_user }}"
     password: "{{ hx_pg_app_password }}"
-    encrypted: yes
+    encrypted: true
     state: present
   become: true
   become_user: postgres
@@ -109,8 +108,8 @@
   shell: |
     set -euo pipefail
     export PGPASSWORD="{{ hx_pg_app_password }}"
-    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" \
-         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" \
+    psql -h "{{ ansible_default_ipv4.address }}" -p "{{ hx_pg_port }}" 
+         -U "{{ hx_pg_app_user }}" -d "{{ hx_pg_db }}" 
          -c '\conninfo' -c 'SELECT current_user, current_database();'
   args:
     executable: /bin/bash
@@ -184,7 +183,7 @@
   lineinfile:
     path: "{{ hx_pg_log_dir }}/users.log"
     line: "{{ ansible_date_time.iso8601 }} - User management completed: {{ hx_pg_user_summary | to_json }}"
-    create: yes
+    create: true
     owner: postgres
     group: postgres
     mode: '0644'

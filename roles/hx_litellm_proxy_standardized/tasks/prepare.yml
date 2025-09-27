@@ -57,7 +57,7 @@
       - libpq-dev
       - python3-psycopg2
     state: present
-  when: 
+  when:
     - hx_litellm_database_enabled | default(false) | bool
     - hx_litellm_database_type == "postgresql"
   tags: ['prepare']
@@ -104,7 +104,7 @@
     name: redis-server
     state: started
     enabled: true
-  when: 
+  when:
     - hx_litellm_caching_enabled | default(false) | bool
     - hx_litellm_cache_type == "redis"
   tags: ['prepare']
@@ -120,7 +120,7 @@
       line: "bind 127.0.0.1"
     - regexp: "^# requirepass"
       line: "requirepass {{ hx_litellm_redis_password }}"
-  when: 
+  when:
     - hx_litellm_caching_enabled | default(false) | bool
     - hx_litellm_cache_type == "redis"
     - hx_litellm_redis_password | length > 0

@@ -1,4 +1,3 @@
-
 ---
 # Verification tasks for hx_domain_join_standardized role
 # Comprehensive testing and validation of domain join
@@ -42,7 +41,7 @@
     - name: Test Kerberos authentication with service account
       ansible.builtin.shell:
         cmd: >
-          echo "{{ hx_domain_join_service_password }}" | 
+          echo "{{ hx_domain_join_service_password }}" |
           kinit {{ hx_domain_join_service_account }}@{{ hx_domain_join_realm }}
       register: kinit_test
       become: true
@@ -110,7 +109,7 @@
       register: user_lookup_short
       changed_when: false
       failed_when: false
-      when: not hx_domain_join_use_fully_qualified_names | default(false)
+      when: falset hx_domain_join_use_fully_qualified_names | default(false)
 
     - name: Assert user lookup works
       ansible.builtin.assert:
@@ -186,7 +185,7 @@
           - sudo_config_check.results | selectattr('changed', 'equalto', false) | list | length == hx_domain_join_sudo_groups | length
         fail_msg: "Sudo access configuration is incorrect"
         success_msg: "Sudo access configured correctly"
-  when: 
+  when:
     - hx_domain_join_test_sudo_access | default(true)
     - hx_domain_join_sudo_groups | length > 0
 
@@ -226,7 +225,7 @@
     - name: Assert time is synchronized
       ansible.builtin.assert:
         that:
-          - "'NTP synchronized: yes' in ntp_status.stdout or 'System clock synchronized: yes' in ntp_status.stdout"
+          - "'NTP synchronized: true' in ntp_status.stdout or 'System clock synchronized: true' in ntp_status.stdout"
         fail_msg: "Time synchronization is not working"
         success_msg: "Time synchronization is working correctly"
   when: hx_domain_join_configure_ntp | default(true)
@@ -342,7 +341,7 @@
       - "User Lookup: {{ 'Working' if user_lookup.rc == 0 or user_lookup_short.rc == 0 else 'Failed' }}"
       - "Group Lookup: {{ 'Working' if group_lookup.results | selectattr('rc', 'equalto', 0) | list | length > 0 else 'Failed' }}"
       - "Home Directory: {{ 'Working' if home_creation.rc == 0 or home_dir_stat.stat.exists else 'Failed' }}"
-      - "Time Sync: {{ 'Synchronized' if 'synchronized: yes' in ntp_status.stdout else 'Not synchronized' }}"
+      - "Time Sync: {{ 'Synchronized' if 'synchronized: true' in ntp_status.stdout else 'Not synchronized' }}"
       - "DC Connectivity: {{ 'Working' if ldap_connectivity.results | selectattr('failed', 'equalto', false) | list | length > 0 else 'Failed' }}"
       - "Security Config: Verified and secure"
   when: hx_domain_join_enable_logging | default(true)

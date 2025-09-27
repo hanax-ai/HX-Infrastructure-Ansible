@@ -69,7 +69,7 @@
     job: "/var/lib/backup/scripts/backup-health-check.sh"
     minute: "*/30"
     state: present
-  become: yes
+  become: true
 
 - name: Schedule backup status report
   cron:
@@ -79,7 +79,7 @@
     minute: "0"
     hour: "8"
     state: present
-  become: yes
+  become: true
 
 - name: Create backup monitoring service
   template:
@@ -102,10 +102,10 @@
 - name: Enable and start backup monitoring timer
   systemd:
     name: backup-monitoring.timer
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
-  when: not ansible_check_mode
+    daemon_reload: true
+  when: falset ansible_check_mode
 
 - name: Create Prometheus metrics exporter
   template:
@@ -129,10 +129,10 @@
 - name: Enable and start backup metrics service
   systemd:
     name: backup-metrics
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
-  when: 
+    daemon_reload: true
+  when:
     - backup_automation.monitoring.prometheus_metrics
     - not ansible_check_mode
 
@@ -169,7 +169,7 @@
     minute: "0"
     hour: "6"
     state: present
-  become: yes
+  become: true
 
 - name: Create backup performance monitoring script
   template:
@@ -195,7 +195,7 @@
     minute: "0"
     hour: "*/4"
     state: present
-  become: yes
+  become: true
 
 - name: Create backup trend analysis script
   template:
@@ -214,7 +214,7 @@
     hour: "9"
     weekday: "1"
     state: present
-  become: yes
+  become: true
 
 - name: Create backup monitoring configuration
   template:

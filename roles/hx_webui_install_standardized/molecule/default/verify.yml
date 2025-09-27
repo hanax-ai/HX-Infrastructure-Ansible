@@ -12,7 +12,7 @@
           loop:
             - "/etc/systemd/system/hx-webui-install-standardized.service"
           when: "'hx_webui_install_standardized' != 'hx_pg_auth_standardized'"
-        
+
         - name: Check configuration directories
           stat:
             path: "{{ item }}"
@@ -21,7 +21,7 @@
             - "/etc/webui"
             - "/opt/hx-webui-install-standardized"
           failed_when: false
-        
+
         - name: Verify log directories
           stat:
             path: "{{ item }}"
@@ -29,7 +29,7 @@
           loop:
             - "/var/log/webui"
           failed_when: false
-        
+
         - name: Display verification results
           debug:
             msg: "Verification completed for hx_webui_install_standardized"

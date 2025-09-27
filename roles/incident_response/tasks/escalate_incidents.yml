@@ -1,4 +1,3 @@
-
 ---
 # Incident Escalation Procedures
 - name: Identify incidents requiring escalation
@@ -25,7 +24,7 @@
       escalation_timeout: "{{ escalation_timeout | default(300) }}"
   loop: "{{ escalation_incidents }}"
   loop_control:
-    extended: yes
+    extended: true
 
 - name: Send immediate escalation alerts
   include_role:
@@ -85,7 +84,7 @@
           incidents: "{{ escalation_notifications }}"
           escalation_level: 1
           hostname: "{{ inventory_hostname }}"
-  when: 
+  when:
     - pagerduty_alerts_enabled | default(false)
     - pagerduty_routing_key is defined
     - escalation_notifications | length > 0

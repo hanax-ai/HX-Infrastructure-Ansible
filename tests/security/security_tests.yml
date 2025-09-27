@@ -2,8 +2,8 @@
 # Security Validation Tests
 - name: Security Compliance Tests
   hosts: all
-  gather_facts: yes
-  
+  gather_facts: true
+
   tasks:
     - name: Check SSH configuration
       lineinfile:
@@ -11,14 +11,14 @@
         regexp: '^PasswordAuthentication'
         line: 'PasswordAuthentication no'
         state: present
-      check_mode: yes
+      check_mode: true
       register: ssh_config
-      
+
     - name: Verify firewall status
       command: ufw status
       register: firewall_status
-      ignore_errors: yes
-      
+      ignore_errors: true
+
     - name: Check for unauthorized users
       getent:
         database: passwd

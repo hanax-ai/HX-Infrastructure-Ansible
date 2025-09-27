@@ -44,7 +44,7 @@
     fail_msg: "Provider {{ item.key }} has invalid or missing API key"
     success_msg: "Provider {{ item.key }} configuration validated"
   loop: "{{ hx_litellm_providers | dict2items }}"
-  when: 
+  when:
     - item.value.enabled | default(false) | bool
   no_log: true
   tags: ['validate']
@@ -80,7 +80,7 @@
 - name: "Hx | LiteLLM | Warn about port conflicts"
   debug:
     msg: "Warning: Port {{ hx_litellm_port }} appears to be in use"
-  when: 
+  when:
     - hx_litellm_port_check.failed is defined
     - not hx_litellm_port_check.failed
   tags: ['validate']

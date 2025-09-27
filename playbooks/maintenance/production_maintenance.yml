@@ -1,4 +1,3 @@
-
 ---
 # Production Maintenance Playbook - Phase 2 Day 2
 # Comprehensive maintenance procedures with enhanced safety
@@ -19,12 +18,12 @@
 
   pre_tasks:
     - name: Include operational safety framework
-      include_role:
+      ansible.builtin.include_role:
         name: operational_safety
       tags: [safety, pre_tasks]
 
     - name: Verify maintenance window
-      fail:
+      ansible.builtin.fail:
         msg: "Maintenance only allowed during scheduled window: {{ maintenance_windows.primary.start }}-{{ maintenance_windows.primary.end }} {{ maintenance_windows.primary.timezone }}"
       when:
         - ansible_date_time.hour | int < (maintenance_windows.primary.start[:2] | int)
@@ -32,7 +31,7 @@
       tags: [safety, maintenance_window]
 
     - name: Check for active alerts
-      uri:
+      ansible.builtin.uri:
         url: "{{ monitoring_config.api_url | default('http://localhost:9090/api/v1/alerts') }}"
         method: GET
         timeout: 10
@@ -41,7 +40,7 @@
       tags: [safety, monitoring]
 
     - name: Fail if critical alerts present
-      fail:
+      ansible.builtin.fail:
         msg: "Critical alerts detected. Resolve before maintenance: {{ alert_check.json.data.alerts | map(attribute='labels.alertname') | list }}"
       when:
         - alert_check is succeeded
@@ -51,7 +50,7 @@
 
   tasks:
     - name: Create maintenance status file
-      file:
+      ansible.builtin.file:
         path: "/tmp/maintenance_in_progress"
         state: touch
         owner: root
@@ -60,8 +59,8 @@
       tags: [maintenance, status]
 
     - name: Update package cache
-      package:
-        update_cache: yes
+      ansible.builtin.package:
+        update_cache: true
       when: ansible_os_family in ['Debian', 'RedHat']
       tags: [maintenance, packages]
 
@@ -79,15 +78,15 @@
       tags: [maintenance, packages]
 
     - name: Log available updates
-      debug:
+      ansible.builtin.debug:
         msg: "{{ available_updates.stdout }} updates available for {{ inventory_hostname }}"
       tags: [maintenance, packages]
 
     - name: Apply security updates only
-      package:
+      ansible.builtin.package:
         name: "*"
         state: latest
-        security: yes
+        security: true
       when:
         - ansible_os_family == 'RedHat'
         - available_updates.stdout | int > 0
@@ -123,16 +122,16 @@
       tags: [maintenance, disk]
 
     - name: Alert on high disk usage
-      debug:
+      ansible.builtin.debug:
         msg: "WARNING: High disk usage detected on {{ inventory_hostname }}: {{ disk_usage_check.stdout_lines }}"
       when: disk_usage_check.stdout_lines | length > 0
       tags: [maintenance, disk]
 
     - name: Check system services
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ item }}"
         state: started
-        enabled: yes
+        enabled: true
       loop: "{{ critical_services | default(['ssh', 'networking']) }}"
       tags: [maintenance, services]
 
@@ -145,7 +144,7 @@
       tags: [maintenance, database]
 
     - name: Check application health (app servers)
-      uri:
+      ansible.builtin.uri:
         url: "http://localhost:{{ application_config.port | default(8080) }}/health"
         method: GET
         timeout: 10
@@ -155,7 +154,7 @@
       tags: [maintenance, application]
 
     - name: Restart services if needed
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ item }}"
         state: restarted
       loop: "{{ services_to_restart | default([]) }}"
@@ -164,13 +163,13 @@
 
   post_tasks:
     - name: Remove maintenance status file
-      file:
+      ansible.builtin.file:
         path: "/tmp/maintenance_in_progress"
         state: absent
       tags: [maintenance, status]
 
     - name: Generate maintenance report
-      template:
+      ansible.builtin.template:
         src: maintenance_report.j2
         dest: "/var/log/maintenance-report-{{ ansible_date_time.epoch }}.txt"
         owner: root
@@ -201,19 +200,19 @@
 
   handlers:
     - name: restart nginx
-      systemd:
+      ansible.builtin.systemd:
         name: nginx
         state: restarted
       when: "'web' in group_names"
 
     - name: restart postgresql
-      systemd:
+      ansible.builtin.systemd:
         name: postgresql
         state: restarted
       when: "'database' in group_names"
 
     - name: restart application
-      systemd:
+      ansible.builtin.systemd:
         name: "{{ application_config.service_name | default('hx-app') }}"
         state: restarted
       when: "'application' in group_names"

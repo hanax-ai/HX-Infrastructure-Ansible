@@ -2,7 +2,7 @@
 - name: Failure Simulation Test
   hosts: localhost
   connection: local
-  gather_facts: yes
+  gather_facts: true
   vars:
     service_monitoring:
       enabled: true

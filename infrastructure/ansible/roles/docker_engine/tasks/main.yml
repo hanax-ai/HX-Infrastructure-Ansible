@@ -1,0 +1,33 @@
+---
+# Docker Engine role - main task orchestration
+# Container runtime management and security
+
+- name: "docker_engine : Validate Docker installation requirements"
+  ansible.builtin.import_tasks: validate.yml
+  tags:
+    - role:docker_engine
+    - phase:validate
+
+- name: "docker_engine : Prepare Docker installation environment"
+  ansible.builtin.import_tasks: prepare.yml
+  tags:
+    - role:docker_engine
+    - phase:prepare
+
+- name: "docker_engine : Install Docker Engine and components"
+  ansible.builtin.import_tasks: install.yml
+  tags:
+    - role:docker_engine
+    - phase:install
+
+- name: "docker_engine : Configure Docker daemon and security"
+  ansible.builtin.import_tasks: configure.yml
+  tags:
+    - role:docker_engine
+    - phase:configure
+
+- name: "docker_engine : Verify Docker installation and configuration"
+  ansible.builtin.import_tasks: verify.yml
+  tags:
+    - role:docker_engine
+    - phase:verify

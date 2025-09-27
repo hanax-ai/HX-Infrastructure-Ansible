@@ -2,7 +2,7 @@
 # Self-Healing Infrastructure Configuration
 self_healing:
   enabled: true
-  
+
   incident_detection:
     enabled: true
     sources:
@@ -10,7 +10,7 @@ self_healing:
       - log_analysis
       - health_checks
       - anomaly_detection
-    
+
     severity_levels:
       critical:
         auto_remediate: true
@@ -35,20 +35,20 @@ self_healing:
         - postgresql
         - redis
         - application
-    
+
     resource_scaling:
       enabled: true
       cpu_threshold: 90
       memory_threshold: 85
       scale_up_factor: 1.5
       scale_down_factor: 0.7
-    
+
     failover:
       enabled: true
       health_check_interval: 30
       failover_timeout: 120
       rollback_timeout: 300
-    
+
     log_rotation:
       enabled: true
       disk_threshold: 85
@@ -66,7 +66,7 @@ self_healing:
         type: "regression"
         features: ["memory_usage", "gc_frequency", "heap_size"]
         prediction_horizon: 3600  # 1 hour
-    
+
     maintenance_windows:
       - day: "sunday"
         start_time: "02:00"
@@ -77,7 +77,7 @@ self_healing:
     enabled: true
     correlation_window: 300  # 5 minutes
     confidence_threshold: 0.8
-    
+
     analysis_methods:
       - correlation_analysis
       - pattern_matching
@@ -92,7 +92,7 @@ self_healing:
         critical: "#ops-critical"
         high: "#ops-alerts"
         medium: "#ops-monitoring"
-    
+
     email:
       enabled: true
       smtp_server: "{{ smtp_server | default('localhost') }}"
@@ -100,7 +100,7 @@ self_healing:
         critical: ["ops-team@hanax.ai", "on-call@hanax.ai"]
         high: ["ops-team@hanax.ai"]
         medium: ["ops-team@hanax.ai"]
-    
+
     pagerduty:
       enabled: false
       integration_key: "{{ pagerduty_key | default('') }}"
@@ -122,7 +122,7 @@ automation_rules:
         parameters:
           severity: "high"
           message: "High CPU detected, scaling up"
-  
+
   - name: "service_down_remediation"
     trigger:
       metric: "service_health"
@@ -164,7 +164,7 @@ ml_config:
   models_path: "/opt/hx/ai-models/self-healing"
   training_data_retention: 90  # days
   retraining_frequency: "weekly"
-  
+
   incident_classifier:
     algorithm: "random_forest"
     features:

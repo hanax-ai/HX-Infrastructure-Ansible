@@ -1,0 +1,41 @@
+---
+# Common role - verification tasks
+# Verify configuration integrity and system health
+
+- name: "common : Verify essential packages are installed"
+  ansible.builtin.package_facts:
+    manager: auto
+  tags:
+    - role:common
+    - phase:verify
+    - verification:packages
+
+- name: "common : Assert essential packages are present"
+  ansible.builtin.assert:
+    that:
+      - item in ansible_facts.packages
+    fail_msg: "Essential package not installed: {{ item }}"
+  loop: "{{ common_essential_packages }}"
+  tags:
+    - role:common
+    - phase:verify
+    - verification:packages
+
+- name: "common : Verify system timezone configuration"
+  ansible.builtin.command: timedatectl show --property=Timezone --value
+  register: common_current_timezone
+  changed_when: false
+  tags:
+    - role:common
+    - phase:verify
+    - verification:timezone
+
+- name: "common : Assert timezone is correctly set"
+  ansible.builtin.assert:
+    that:
+      - common_current_timezone.stdout == common_timezone
+    fail_msg: "Timezone not set correctly. Expected: {{ common_timezone }}, Current: {{ common_current_timezone.stdout }}"
+  tags:
+    - role:common
+    - phase:verify
+    - verification:timezone

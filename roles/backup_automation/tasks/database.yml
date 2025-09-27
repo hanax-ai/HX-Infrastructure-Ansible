@@ -13,7 +13,7 @@
     - "{{ backup_automation.base_directory }}/database/redis"
     - "{{ backup_automation.temp_directory }}/database"
     - "/var/lib/backup/scripts"
-  become: yes
+  become: true
 
 - name: Create PostgreSQL backup script
   template:
@@ -81,10 +81,10 @@
   command: /var/lib/backup/scripts/test-postgresql-connection.sh
   register: postgresql_test
   failed_when: postgresql_test.rc != 0
-  become: yes
+  become: true
   become_user: backup
   changed_when: false
-  when: 
+  when:
     - (database_backup is defined) and (database_backup.databases.postgresql.enabled | default(false))
     - not ansible_check_mode
 
@@ -92,10 +92,10 @@
   command: /var/lib/backup/scripts/test-redis-connection.sh
   register: redis_test
   failed_when: redis_test.rc != 0
-  become: yes
+  become: true
   become_user: backup
   changed_when: false
-  when: 
+  when:
     - (database_backup is defined) and (database_backup.databases.redis.enabled | default(false))
     - not ansible_check_mode
 
@@ -210,10 +210,10 @@
 - name: Enable and start database backup metrics service
   systemd:
     name: database-backup-metrics
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
-  when: 
+    daemon_reload: true
+  when:
     - (backup_automation is defined) and
       (backup_automation.monitoring is defined) and
       (backup_automation.monitoring.prometheus_metrics | default(false))

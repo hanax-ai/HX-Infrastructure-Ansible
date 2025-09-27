@@ -1,21 +1,20 @@
-
 ---
 - name: Production Environment Smoke Tests
   hosts: production
   gather_facts: true
   serial: 1  # Run tests one host at a time in production
-  
+
   vars:
     max_response_time: 1.0
     max_cpu_load_multiplier: 1.5
     max_memory_usage: 85.0
     max_disk_usage: 80
-    
+
   tasks:
     - name: Test basic connectivity
       ping:
       register: ping_result
-      
+
     - name: Verify system is responsive
       assert:
         that:
@@ -103,7 +102,7 @@
         - name: Check disk space
           shell: df -h / | awk 'NR==2 {print $5}' | sed 's/%//'
           register: disk_usage
-          
+
         - name: Verify sufficient disk space
           assert:
             that:
@@ -114,7 +113,7 @@
         - name: Check memory usage
           shell: free | awk 'NR==2{printf "%.2f", $3*100/$2}'
           register: memory_usage
-          
+
         - name: Verify memory usage is reasonable
           assert:
             that:

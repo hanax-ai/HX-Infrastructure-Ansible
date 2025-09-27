@@ -77,7 +77,7 @@
   debug:
     msg: "Warning: Port {{ item.item }} appears to be in use"
   loop: "{{ hx_webui_port_check.results }}"
-  when: 
+  when:
     - item.failed is defined
     - not item.failed
   tags: ['validate']

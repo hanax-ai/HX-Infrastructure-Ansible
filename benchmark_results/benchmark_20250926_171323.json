@@ -1,0 +1,11 @@
+{
+  "benchmark_timestamp": "2025-09-26 17:13:23 UTC",
+  "slo_thresholds": ,
+  "results": {},
+  "summary": {
+    "total_tests": 0,
+    "passed_tests": 0,
+    "failed_tests": 0,
+    "slo_compliance": 0.0
+  }
+}
