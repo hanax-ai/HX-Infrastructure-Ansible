@@ -8,7 +8,7 @@ on:
   push:
     branches: [ main, develop, 'phase-*', 'feature/*' ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, 'phase-*' ]
 
 env:
   ANSIBLE_HOST_KEY_CHECKING: false
