@@ -1,0 +1,38 @@
+
+---
+# Common role - configuration tasks
+# Configure system baseline settings
+
+- name: "common : Configure system timezone"
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+  become: true
+  notify: restart systemd-timesyncd
+  tags:
+    - role:common
+    - phase:configure
+    - system:timezone
+
+- name: "common : Configure system locale"
+  ansible.builtin.locale_gen:
+    name: "{{ common_locale }}"
+    state: present
+  become: true
+  when: ansible_distribution_file_variety == "Debian"
+  tags:
+    - role:common
+    - phase:configure
+    - system:locale
+
+- name: "common : Setup log rotation for common logs"
+  ansible.builtin.template:
+    src: logrotate-common.j2
+    dest: /etc/logrotate.d/common
+    mode: '0644'
+    owner: root
+    group: root
+  become: true
+  tags:
+    - role:common
+    - phase:configure
+    - logging:rotation

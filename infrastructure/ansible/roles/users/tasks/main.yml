@@ -1,0 +1,34 @@
+
+---
+# Users role - main task orchestration
+# User account management and access control
+
+- name: "users : Validate user configuration requirements"
+  ansible.builtin.import_tasks: validate.yml
+  tags:
+    - role:users
+    - phase:validate
+
+- name: "users : Prepare user management environment"
+  ansible.builtin.import_tasks: prepare.yml
+  tags:
+    - role:users
+    - phase:prepare
+
+- name: "users : Install user management dependencies"
+  ansible.builtin.import_tasks: install.yml
+  tags:
+    - role:users
+    - phase:install
+
+- name: "users : Configure users and access policies"
+  ansible.builtin.import_tasks: configure.yml
+  tags:
+    - role:users
+    - phase:configure
+
+- name: "users : Verify user configuration integrity"
+  ansible.builtin.import_tasks: verify.yml
+  tags:
+    - role:users
+    - phase:verify

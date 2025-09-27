@@ -1,0 +1,60 @@
+
+---
+# Common role - default variables
+# Configurable parameters with secure defaults
+
+# System validation settings
+common_supported_architectures:
+  - x86_64
+  - aarch64
+
+common_supported_distributions:
+  - Ubuntu
+  - Debian
+  - CentOS
+  - RHEL
+
+# Network connectivity checks (optional)
+common_connectivity_checks: []
+# Example:
+# common_connectivity_checks:
+#   - "https://archive.ubuntu.com"
+#   - "https://security.ubuntu.com"
+
+# Disk space requirements (in bytes, optional)
+# common_min_disk_space: 10737418240  # 10GB
+
+# System configuration
+common_timezone: "UTC"
+common_locale: "en_US.UTF-8"
+
+# Directory creation
+common_system_directories:
+  - /var/log/ansible
+  - /etc/ansible/facts.d
+  - /opt/scripts
+
+# Package management
+common_essential_packages:
+  - curl
+  - wget
+  - unzip
+  - tar
+  - htop
+  - vim
+  - rsync
+  - logrotate
+  - cron
+
+common_utility_packages:
+  - jq
+  - tree
+  - less
+  - tmux
+
+# Development tools (disabled by default)
+common_install_development_tools: false
+common_development_packages:
+  - git
+  - build-essential
+  - python3-pip

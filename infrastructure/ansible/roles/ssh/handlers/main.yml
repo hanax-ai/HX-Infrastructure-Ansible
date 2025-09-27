@@ -1,0 +1,24 @@
+
+---
+# SSH role - handlers
+# SSH service management handlers
+
+- name: restart ssh service
+  ansible.builtin.service:
+    name: "{{ ssh_service_name | default('ssh') }}"
+    state: restarted
+  become: true
+  listen: restart ssh service
+
+- name: reload ssh service
+  ansible.builtin.service:
+    name: "{{ ssh_service_name | default('ssh') }}"
+    state: reloaded
+  become: true
+  listen: reload ssh service
+
+- name: validate ssh config
+  ansible.builtin.command: sshd -t
+  become: true
+  listen: validate ssh config
+  changed_when: false

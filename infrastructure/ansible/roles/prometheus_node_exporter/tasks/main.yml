@@ -1,0 +1,34 @@
+
+---
+# Prometheus Node Exporter role - main task orchestration
+# System metrics collection and monitoring
+
+- name: "prometheus_node_exporter : Validate Node Exporter requirements"
+  ansible.builtin.import_tasks: validate.yml
+  tags:
+    - role:prometheus_node_exporter
+    - phase:validate
+
+- name: "prometheus_node_exporter : Prepare Node Exporter installation"
+  ansible.builtin.import_tasks: prepare.yml
+  tags:
+    - role:prometheus_node_exporter
+    - phase:prepare
+
+- name: "prometheus_node_exporter : Install Node Exporter binary"
+  ansible.builtin.import_tasks: install.yml
+  tags:
+    - role:prometheus_node_exporter
+    - phase:install
+
+- name: "prometheus_node_exporter : Configure Node Exporter service"
+  ansible.builtin.import_tasks: configure.yml
+  tags:
+    - role:prometheus_node_exporter
+    - phase:configure
+
+- name: "prometheus_node_exporter : Verify Node Exporter functionality"
+  ansible.builtin.import_tasks: verify.yml
+  tags:
+    - role:prometheus_node_exporter
+    - phase:verify

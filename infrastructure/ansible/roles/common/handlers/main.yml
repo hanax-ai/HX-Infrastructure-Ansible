@@ -1,0 +1,26 @@
+
+---
+# Common role - handlers
+# Service management and restart handlers
+
+- name: restart systemd-timesyncd
+  ansible.builtin.service:
+    name: systemd-timesyncd
+    state: restarted
+    enabled: true
+  become: true
+  listen: restart systemd-timesyncd
+
+- name: reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+  listen: reload systemd daemon
+
+- name: restart cron service
+  ansible.builtin.service:
+    name: "{{ common_cron_service_name | default('cron') }}"
+    state: restarted
+    enabled: true
+  become: true
+  listen: restart cron service

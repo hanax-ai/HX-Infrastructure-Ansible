@@ -1,0 +1,40 @@
+
+---
+# SSH role - metadata
+# Role information and dependencies
+
+galaxy_info:
+  role_name: ssh
+  author: HX Infrastructure Team
+  description: Secure SSH server and client configuration
+  company: Hana-X AI
+  license: MIT
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - system
+    - ssh
+    - security
+    - hardening
+
+dependencies:
+  - role: common
+
+# Collections used by this role
+collections:
+  - ansible.builtin
+  - ansible.posix

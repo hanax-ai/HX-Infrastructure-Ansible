@@ -1,0 +1,42 @@
+
+---
+# Docker Engine role - metadata
+# Role information and dependencies
+
+galaxy_info:
+  role_name: docker_engine
+  author: HX Infrastructure Team
+  description: Docker Engine installation and configuration with security hardening
+  company: Hana-X AI
+  license: MIT
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+    - name: EL
+      versions:
+        - "8"
+        - "9"
+
+  galaxy_tags:
+    - docker
+    - containers
+    - runtime
+    - infrastructure
+
+dependencies:
+  - role: common
+  - role: users
+
+# Collections used by this role
+collections:
+  - ansible.builtin
+  - community.docker
+  - ansible.posix

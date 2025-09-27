@@ -1,0 +1,42 @@
+
+---
+# Ansible Collections Requirements
+# Standard collections for infrastructure automation
+
+collections:
+  # Core Ansible collections
+  - name: ansible.builtin
+    version: ">=2.12.0"
+
+  - name: ansible.posix
+    version: ">=1.5.4"
+
+  # Community collections for extended functionality
+  - name: community.general
+    version: ">=8.0.0"
+
+  - name: community.docker
+    version: ">=3.0.0"
+
+  - name: community.crypto
+    version: ">=2.0.0"
+
+  # Monitoring and observability
+  - name: community.grafana
+    version: ">=1.0.0"
+
+  # Cloud providers (commonly used)
+  - name: community.aws
+    version: ">=7.0.0"
+    when: cloud_provider == "aws"
+
+  - name: google.cloud
+    version: ">=1.0.0"
+    when: cloud_provider == "gcp"
+
+  - name: azure.azcollection
+    version: ">=1.0.0"
+    when: cloud_provider == "azure"
+
+# Role dependencies from Ansible Galaxy
+roles: []

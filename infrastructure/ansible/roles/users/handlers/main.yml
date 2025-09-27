@@ -1,0 +1,27 @@
+
+---
+# Users role - handlers
+# User management related handlers
+
+- name: update user database
+  ansible.builtin.command: updatedb
+  become: true
+  listen: update user database
+  when: ansible_facts['os_family'] == "Debian"
+  changed_when: false
+
+- name: restart nscd
+  ansible.builtin.service:
+    name: nscd
+    state: restarted
+  become: true
+  listen: restart nscd
+  when: ansible_facts.packages['nscd'] is defined
+
+- name: restart sssd
+  ansible.builtin.service:
+    name: sssd
+    state: restarted
+  become: true
+  listen: restart sssd
+  when: ansible_facts.packages['sssd'] is defined
